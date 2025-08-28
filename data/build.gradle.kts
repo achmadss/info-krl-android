@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.data"
+    namespace = "dev.achmad.data"
     compileSdk = 36
 
     defaultConfig {

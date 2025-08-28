@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.androidstarter"
+    namespace = "dev.achmad.comuline"
     compileSdk = 36
 
     defaultConfig {
