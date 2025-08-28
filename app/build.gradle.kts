@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.material.icons)
     implementation(libs.material.motion.compose.core)
     implementation(libs.coil.compose)
+    implementation(libs.androidx.core.splashscreen)
 
     implementation(libs.voyager.navigator)
     implementation(libs.voyager.tabNavigator)
@@ -65,6 +66,8 @@ dependencies {
 
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
+
+    implementation(libs.androidx.work.runtime.ktx)
 
     implementation(project(":core"))
     implementation(project(":domain"))
