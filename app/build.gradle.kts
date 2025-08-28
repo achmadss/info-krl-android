@@ -9,7 +9,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.androidstarter"
+        applicationId = "dev.achmad.comuline"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

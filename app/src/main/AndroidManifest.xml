@@ -11,11 +11,11 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AndroidStarter">
+        android:theme="@style/Theme.Comuline">
         <activity
             android:name=".base.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.AndroidStarter">
+            android:theme="@style/Theme.Comuline">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
