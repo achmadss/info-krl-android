@@ -3,7 +3,7 @@ package dev.achmad.comuline.base
 import android.app.Application
 import android.util.Log
 import dev.achmad.core.di.coreModule
-import dev.achmad.domain.di.domainModule
+import dev.achmad.data.di.dataModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
@@ -31,7 +31,7 @@ class MainApplication: Application() {
             modules(
                 listOf(
                     coreModule,
-                    domainModule,
+                    dataModule,
                 )
             )
         }

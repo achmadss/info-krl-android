@@ -9,7 +9,7 @@ fun StationEntity.toDomain(): Station {
         uid = uid,
         id = id,
         name = name,
-        favorite = favorite,
+        favorite = favorite ?: false,
         type = Station.Type(type),
         active = active,
         daop = daop,

@@ -23,6 +23,9 @@ android {
             )
         }
     }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -39,9 +42,5 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.android)
-
     implementation(project(":core"))
-    implementation(project(":data"))
 }

@@ -17,7 +17,7 @@ data class StationEntity(
     val name: String,
 
     @ColumnInfo(name = "favorite")
-    val favorite: Boolean = false,
+    val favorite: Boolean? = false,
 
     @ColumnInfo(name = "type")
     val type: String,
