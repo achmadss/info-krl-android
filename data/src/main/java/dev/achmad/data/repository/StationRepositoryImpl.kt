@@ -9,6 +9,8 @@ import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
@@ -17,10 +19,16 @@ class StationRepositoryImpl(
     private val api: ComulineApi,
 ): StationRepository {
     override val stations: Flow<List<Station>> =
-        stationDao.subscribeAll().map { it.toDomain() }
+        stationDao.subscribeAll()
+            .map { it.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
 
     override val favoriteStations: Flow<List<Station>> =
-        stationDao.subscribeAll(favorite = true).map { it.toDomain() }
+        stationDao.subscribeAll(favorite = true)
+            .map { it.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
 
     override suspend fun refresh() {
         withContext(Dispatchers.IO) {

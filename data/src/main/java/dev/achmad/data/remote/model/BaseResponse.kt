@@ -10,7 +10,7 @@ data class BaseResponse<T>(
 ) {
     @Serializable
     data class Metadata(
-        @SerialName("success") val success: Boolean?,
-        @SerialName("message") val message: String?,
+        @SerialName("success") val success: Boolean? = null,
+        @SerialName("message") val message: String? = null,
     )
 }

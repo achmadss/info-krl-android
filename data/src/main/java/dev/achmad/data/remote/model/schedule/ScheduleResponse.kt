@@ -14,7 +14,7 @@ data class ScheduleResponse(
     @SerialName("train_id") val trainId: String,
     @SerialName("departs_at") val departsAt: String,
     @SerialName("arrives_at") val arrivesAt: String,
-    @SerialName("metadata") val metadata: Metadata,
+    @SerialName("metadata") val metadata: Metadata? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
 ) {

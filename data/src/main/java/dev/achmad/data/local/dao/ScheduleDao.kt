@@ -32,6 +32,9 @@ interface ScheduleDao {
     @Query("SELECT * FROM schedules")
     fun subscribeAll(): Flow<List<ScheduleEntity>>
 
+    @Query("SELECT * FROM schedules WHERE station_id = :stationId")
+    fun subscribeAllByStationId(stationId: String): Flow<List<ScheduleEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(station: ScheduleEntity)
 

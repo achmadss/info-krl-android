@@ -8,9 +8,9 @@ fun StationResponse.toStationUpdate(): StationUpdate {
         id = id,
         name = name,
         type = type,
-        active = metadata.active,
-        daop = metadata.origin?.daop,
-        fgEnable = metadata.origin?.fgEnable,
+        active = metadata?.active,
+        daop = metadata?.origin?.daop,
+        fgEnable = metadata?.origin?.fgEnable,
         createdAt = createdAt,
         updatedAt = updatedAt
     )

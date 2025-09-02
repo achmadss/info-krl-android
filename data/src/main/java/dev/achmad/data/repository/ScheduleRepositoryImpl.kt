@@ -8,8 +8,11 @@ import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.repository.ScheduleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 
 class ScheduleRepositoryImpl(
     private val scheduleDao: ScheduleDao,
@@ -17,13 +20,31 @@ class ScheduleRepositoryImpl(
 ): ScheduleRepository {
 
     override val schedules: Flow<List<Schedule>> =
-        scheduleDao.subscribeAll().map { it.toDomain() }
+        scheduleDao.subscribeAll()
+            .map { it.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
 
     override suspend fun refreshScheduleByStationId(stationId: String) {
         withContext(Dispatchers.IO) {
             val schedules = api.getScheduleByStationId(stationId).data.map { it.toEntity() }
             scheduleDao.insert(schedules)
         }
+    }
+
+    override suspend fun subscribeByStationId(
+        stationId: String,
+        skipPastSchedule: Boolean,
+    ): Flow<List<Schedule>> {
+        return scheduleDao.subscribeAllByStationId(stationId)
+            .map {
+                val schedules = it.toDomain()
+                if (skipPastSchedule) {
+                    schedules.filter { it.departsAt.isAfter(LocalDateTime.now()) }
+                } else schedules
+            }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
     }
 
 }

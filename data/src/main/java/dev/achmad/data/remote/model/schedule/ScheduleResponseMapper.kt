@@ -13,7 +13,7 @@ fun ScheduleResponse.toEntity(): ScheduleEntity {
         route = route,
         departsAt = departsAt,
         arrivesAt = arrivesAt,
-        color = metadata.origin?.color,
+        color = metadata?.origin?.color,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
