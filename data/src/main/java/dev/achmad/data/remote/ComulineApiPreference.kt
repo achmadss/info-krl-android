@@ -7,6 +7,6 @@ class ComulineApiPreference(
 ) {
     fun baseUrl() = preferenceStore.getString(
         key = "api_base_url",
-        defaultValue = "https://www.api.comuline.com"
+        defaultValue = "https://comuline-api.achmad.dev"
     )
 }
