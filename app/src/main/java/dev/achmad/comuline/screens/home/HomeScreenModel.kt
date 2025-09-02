@@ -65,28 +65,6 @@ class HomeScreenModel(
         initialValue = emptyList()
     )
 
-//    val destinationGroups = combine(
-//        searchQuery,
-//        favoriteStations,
-//        schedules,
-//    ) { query, stations, schedules ->
-//        val filteredStations = when {
-//            query.isNullOrBlank() -> stations
-//            else -> stations.filter { it.name.contains(query, ignoreCase = true) }
-//        }
-//        val schedulesByStation = schedules.groupBy { it.stationId }
-//        filteredStations.map { station ->
-//            DestinationGroup(
-//                station = station,
-//                schedules = schedulesByStation[station.id].orEmpty()
-//            )
-//        }
-//    }.stateIn(
-//        scope = screenModelScope,
-//        started = SharingStarted.Eagerly,
-//        initialValue = emptyList()
-//    )
-
     fun search(query: String?) = _searchQuery.update { query }
 
     fun refreshStation(context: Context) {
