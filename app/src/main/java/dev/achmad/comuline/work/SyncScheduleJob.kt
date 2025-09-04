@@ -8,6 +8,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.util.isRunning
 import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
@@ -19,6 +20,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class SyncScheduleJob(
     context: Context,
@@ -26,13 +30,30 @@ class SyncScheduleJob(
 ): CoroutineWorker(context, workerParams) {
 
     private val scheduleRepository by injectLazy<ScheduleRepository>()
+    private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
         return try {
             val stationId = inputData.getString(KEY_STATION_ID)
                 ?: throw IllegalArgumentException("Station ID cannot be null")
             val delay = inputData.getLong(KEY_DELAY, 0)
-            scheduleRepository.fetchByStationId(stationId)
+            val immediate = inputData.getBoolean(KEY_IMMEDIATE, false)
+            val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId).get()
+
+            if (immediate) {
+                scheduleRepository.fetchByStationId(stationId)
+            } else {
+                val zone = ZoneId.systemDefault()
+                val now = LocalDateTime.ofInstant(Instant.now(), zone)
+                val lastFetch = LocalDateTime.ofInstant(
+                    Instant.ofEpochMilli(lastFetchSchedule),
+                    zone
+                )
+                if (now.toLocalDate().isAfter(lastFetch.toLocalDate())) {
+                    scheduleRepository.fetchByStationId(stationId)
+                }
+            }
+
             delay(delay)
             Result.success()
         } catch (e: Exception) {
@@ -46,6 +67,7 @@ class SyncScheduleJob(
         private const val TAG = "RefreshSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
+        private const val KEY_IMMEDIATE = "KEY_IMMEDIATE"
 
         fun subscribeState(
             context: Context,
@@ -70,6 +92,7 @@ class SyncScheduleJob(
         fun start(
             context: Context,
             stationId: String,
+            immediate: Boolean = false,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
@@ -79,7 +102,8 @@ class SyncScheduleJob(
 
             val inputData = workDataOf(
                 KEY_STATION_ID to stationId,
-                KEY_DELAY to finishDelay
+                KEY_DELAY to finishDelay,
+                KEY_IMMEDIATE to immediate,
             )
             val request = OneTimeWorkRequestBuilder<SyncScheduleJob>()
                 .addTag(TAG)
