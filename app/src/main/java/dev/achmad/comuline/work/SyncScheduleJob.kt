@@ -37,22 +37,12 @@ class SyncScheduleJob(
             val stationId = inputData.getString(KEY_STATION_ID)
                 ?: throw IllegalArgumentException("Station ID cannot be null")
             val delay = inputData.getLong(KEY_DELAY, 0)
-            val immediate = inputData.getBoolean(KEY_IMMEDIATE, false)
-            val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId).get()
+            val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
+            val zone = ZoneId.systemDefault()
+            val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
-            if (immediate) {
-                scheduleRepository.fetchByStationId(stationId)
-            } else {
-                val zone = ZoneId.systemDefault()
-                val now = LocalDateTime.ofInstant(Instant.now(), zone)
-                val lastFetch = LocalDateTime.ofInstant(
-                    Instant.ofEpochMilli(lastFetchSchedule),
-                    zone
-                )
-                if (now.toLocalDate().isAfter(lastFetch.toLocalDate())) {
-                    scheduleRepository.fetchByStationId(stationId)
-                }
-            }
+            scheduleRepository.fetchAndStoreByStationId(stationId)
+            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
 
             delay(delay)
             Result.success()
@@ -67,7 +57,20 @@ class SyncScheduleJob(
         private const val TAG = "RefreshSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
-        private const val KEY_IMMEDIATE = "KEY_IMMEDIATE"
+
+        private fun shouldSync(
+            stationId: String,
+        ): Boolean {
+            val applicationPreference by injectLazy<ApplicationPreference>()
+            val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
+            val zone = ZoneId.systemDefault()
+            val now = LocalDateTime.ofInstant(Instant.now(), zone)
+            val lastFetch = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(lastFetchSchedule.get()),
+                zone
+            )
+            return now.toLocalDate().isAfter(lastFetch.toLocalDate())
+        }
 
         fun subscribeState(
             context: Context,
@@ -92,7 +95,17 @@ class SyncScheduleJob(
         fun start(
             context: Context,
             stationId: String,
-            immediate: Boolean = false,
+            finishDelay: Long = 0
+        ): Boolean {
+            if (!shouldSync(stationId)) {
+                return false
+            }
+            return startNow(context, stationId, finishDelay)
+        }
+
+        fun startNow(
+            context: Context,
+            stationId: String,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
@@ -103,7 +116,6 @@ class SyncScheduleJob(
             val inputData = workDataOf(
                 KEY_STATION_ID to stationId,
                 KEY_DELAY to finishDelay,
-                KEY_IMMEDIATE to immediate,
             )
             val request = OneTimeWorkRequestBuilder<SyncScheduleJob>()
                 .addTag(TAG)

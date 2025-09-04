@@ -1,11 +1,13 @@
 package dev.achmad.data.repository
 
-import androidx.room.withTransaction
+import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.ComulineDatabase
 import dev.achmad.data.local.dao.ScheduleDao
 import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.schedule.toDomain
 import dev.achmad.data.remote.ComulineApi
+import dev.achmad.data.remote.model.BaseResponse
+import dev.achmad.data.remote.model.schedule.ScheduleResponse
 import dev.achmad.data.remote.model.schedule.toEntity
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.repository.ScheduleRepository
@@ -30,30 +32,31 @@ class ScheduleRepositoryImpl(
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
 
-    override suspend fun fetchByStationId(stationId: String) {
+    override suspend fun fetchAndStoreByStationId(stationId: String) {
         withContext(Dispatchers.IO) {
-            val schedules = api.getScheduleByStationId(stationId).data.map { it.toEntity() }
-            database.withTransaction {
-                scheduleDao.insert(schedules)
-                val station = stationDao.awaitSingle(stationId)
-                    ?: throw NullPointerException("Cannot find station with id $stationId")
-                stationDao.update(
-                    station.copy(hasFetchedSchedulePreviously = true)
-                )
+            val response = api.getScheduleByStationId(stationId)
+            val data = response.parseAs<BaseResponse<List<ScheduleResponse>>>()
+            if (data.metadata.success == false) {
+                throw Exception(data.metadata.message)
             }
+            val schedules = data.data.map { it.toEntity() }
+            scheduleDao.insert(schedules)
         }
     }
 
-    override suspend fun subscribeByStationId(
+
+    override fun subscribeByStationId(
         stationId: String,
         skipPastSchedule: Boolean,
     ): Flow<List<Schedule>> {
         val now = LocalDateTime.now()
         return scheduleDao.subscribeAllByStationId(stationId)
-            .map {
-                val schedules = it.toDomain()
+            .map { entities ->
+                val schedules = entities.toDomain()
                 if (skipPastSchedule) {
-                    schedules.filter { it.departsAt.isAfter(now) }
+                    schedules.filter { schedule ->
+                        schedule.departsAt.isAfter(now)
+                    }
                 } else schedules
             }
             .distinctUntilChanged()

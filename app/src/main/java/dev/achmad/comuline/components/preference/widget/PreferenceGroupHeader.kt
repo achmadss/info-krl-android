@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import dev.achmad.comuline.components.preference.widget.PrefsHorizontalPadding
 
 @Composable
 fun PreferenceGroupHeader(

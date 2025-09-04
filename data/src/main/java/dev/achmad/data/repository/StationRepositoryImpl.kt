@@ -1,10 +1,13 @@
 package dev.achmad.data.repository
 
+import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.ComulineDatabase
 import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.station.toDomain
 import dev.achmad.data.local.entity.station.toEntity
 import dev.achmad.data.remote.ComulineApi
+import dev.achmad.data.remote.model.BaseResponse
+import dev.achmad.data.remote.model.station.StationResponse
 import dev.achmad.data.remote.model.station.toStationUpdate
 import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.StationRepository
@@ -33,9 +36,12 @@ class StationRepositoryImpl(
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
 
-    override suspend fun refresh() {
+    override suspend fun fetchAndStore() {
         withContext(Dispatchers.IO) {
-            val stationUpdates = api.getStations().data.map { it.toStationUpdate() }
+            val response = api.getStations()
+            val stationUpdates = response
+                .parseAs<BaseResponse<List<StationResponse>>>().data
+                .map { it.toStationUpdate() }
             stationDao.upsert(stationUpdates)
         }
     }

@@ -8,7 +8,7 @@ interface StationRepository {
     val stations: Flow<List<Station>>
     val favoriteStations: Flow<List<Station>>
 
-    suspend fun refresh()
+    suspend fun fetchAndStore()
     suspend fun toggleFavorite(station: Station)
     suspend fun awaitSingle(id: String): Station?
 

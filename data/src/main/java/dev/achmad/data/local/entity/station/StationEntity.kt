@@ -17,7 +17,10 @@ data class StationEntity(
     val name: String,
 
     @ColumnInfo(name = "favorite")
-    val favorite: Boolean? = false,
+    val favorite: Boolean? = null,
+
+    @ColumnInfo(name = "favorite_position")
+    val favoritePosition: Int? = null,
 
     @ColumnInfo(name = "type")
     val type: String,
@@ -36,7 +39,4 @@ data class StationEntity(
 
     @ColumnInfo(name = "updated_at")
     val updatedAt: String,
-
-    @ColumnInfo(name = "has_fetched_schedule_previously")
-    val hasFetchedSchedulePreviously: Boolean? = false,
 )

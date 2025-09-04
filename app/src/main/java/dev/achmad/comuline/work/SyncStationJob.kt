@@ -12,11 +12,9 @@ import dev.achmad.comuline.util.isRunning
 import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.StationRepository
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
 
@@ -30,8 +28,8 @@ class SyncStationJob(
 
     override suspend fun doWork(): Result {
         return try {
-            stationRepository.refresh()
-            applicationPreference.isFirstRun().set(false)
+            stationRepository.fetchAndStore()
+            applicationPreference.hasFetchedStations().set(true)
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()

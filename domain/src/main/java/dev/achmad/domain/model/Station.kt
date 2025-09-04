@@ -8,13 +8,13 @@ data class Station(
     val uid: String,
     val name: String,
     val favorite: Boolean,
+    val favoritePosition: Int?,
     val type: Type,
     val active: Boolean?,
     val daop: Int?,
     val fgEnable: Int?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
-    val hasFetchedSchedulePreviously: Boolean,
 ) {
     enum class Type {
         KRL;

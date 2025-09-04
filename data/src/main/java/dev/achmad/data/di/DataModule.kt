@@ -2,8 +2,6 @@ package dev.achmad.data.di
 
 import androidx.room.Room
 import dev.achmad.data.local.ComulineDatabase
-import dev.achmad.data.local.dao.ScheduleDao
-import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.remote.ComulineApi
 import dev.achmad.data.remote.ComulineApiPreference
 import dev.achmad.data.repository.ScheduleRepositoryImpl

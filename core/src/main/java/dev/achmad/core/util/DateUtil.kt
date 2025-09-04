@@ -1,6 +1,5 @@
 package dev.achmad.core.util
 
-import android.util.Log
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset

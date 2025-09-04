@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import dev.achmad.comuline.components.drawVerticalScrollbar
 
 /**
  * LazyColumn with scrollbar.

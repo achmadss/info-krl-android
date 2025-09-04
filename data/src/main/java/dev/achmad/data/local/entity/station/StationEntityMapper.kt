@@ -10,13 +10,13 @@ fun StationEntity.toDomain(): Station {
         id = id,
         name = name,
         favorite = favorite ?: false,
+        favoritePosition = favoritePosition,
         type = Station.Type(type),
         active = active,
         daop = daop,
         fgEnable = fgEnable,
         createdAt = createdAt.toLocalDateTime(),
         updatedAt = updatedAt.toLocalDateTime(),
-        hasFetchedSchedulePreviously = hasFetchedSchedulePreviously ?: false
     )
 }
 
@@ -26,13 +26,13 @@ fun Station.toEntity(): StationEntity {
         id = id,
         name = name,
         favorite = favorite,
+        favoritePosition = favoritePosition,
         type = type.name,
         active = active,
         daop = daop,
         fgEnable = fgEnable,
         createdAt = createdAt.format(),
         updatedAt = updatedAt.format(),
-        hasFetchedSchedulePreviously = hasFetchedSchedulePreviously
     )
 }
 

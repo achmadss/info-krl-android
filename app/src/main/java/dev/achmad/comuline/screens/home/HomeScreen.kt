@@ -23,8 +23,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Train
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -42,7 +42,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -239,7 +238,7 @@ private fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    text = "No stations found.\n Add station to track your favorite stations",
+                    text = "No pinned stations found\n Pin station to track station schedules",
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -259,7 +258,6 @@ private fun HomeScreen(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(128.dp))
             }
             return@Scaffold
         }
@@ -344,32 +342,11 @@ private fun mapTabContents(
             ),
             content = { contentPadding, _ ->
                 val schedules = group.scheduleGroup.collectAsState().value
-
-                // check if first time sync
-                val isFirstTimeSync by remember(group.station.id, syncState) {
-                    derivedStateOf {
-                        !group.station.hasFetchedSchedulePreviously && syncState?.isFinished?.not() == true
-                    }
-                }
-
-                // show full loading only for first time sync
-                if (isFirstTimeSync || schedules == null) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(contentPadding),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    return@TabContent
-                }
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-                    if (schedules.isNotEmpty()) {
+                    if (schedules?.isNotEmpty() == true) {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -386,12 +363,25 @@ private fun mapTabContents(
                             }
                         }
                     } else {
-
+                        Column(
+                            modifier = Modifier.align(Alignment.Center),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(36.dp),
+                                imageVector = Icons.Default.EventBusy,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                text = "No schedule found.\nCheck again tomorrow.",
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
-                    if (
-                        group.station.hasFetchedSchedulePreviously &&
-                        syncState?.isFinished?.not() == true
-                    ) {
+                    if (schedules == null || syncState?.isFinished?.not() == true) {
                         LinearProgressIndicator(
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -411,7 +401,7 @@ private fun ScheduleItem(
 ) {
     val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
-    val schedules = scheduleGroup.schedules
+    val schedules = scheduleGroup.schedules.ifEmpty { return }
     val firstSchedule = schedules.first().first
     val firstScheduleEta = schedules.first().second
     val color = firstSchedule.color.toColor()
@@ -504,24 +494,32 @@ private fun ScheduleItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                schedules.take(4).map { schedule ->
-                    Column(
-                        modifier = Modifier.weight(0.25f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = schedule.first.departsAt.format(
-                                DateTimeFormatter.ofPattern("HH:mm")
-                            ),
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Bold,
-                            ),
-                        )
-                        Text(
-                            text = schedule.second,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
+                Row(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    val previewSchedules =
+                        if (schedules.size <= 4) schedules
+                        else schedules.take(5).drop(1)
+
+                    previewSchedules.map { schedule ->
+                        Column(
+                            modifier = Modifier.weight(0.25f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Text(
+                                text = schedule.first.departsAt.format(
+                                    DateTimeFormatter.ofPattern("HH:mm")
+                                ),
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                            )
+                            Text(
+                                text = schedule.second,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
                     }
                 }
                 Icon(
