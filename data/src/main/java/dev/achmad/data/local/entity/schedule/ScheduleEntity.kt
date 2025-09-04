@@ -41,5 +41,5 @@ data class ScheduleEntity(
     val createdAt: String,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: String
+    val updatedAt: String,
 )

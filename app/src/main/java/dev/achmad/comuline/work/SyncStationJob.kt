@@ -7,36 +7,58 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
+import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.util.isRunning
 import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.stateIn
 
-class RefreshStationJob(
+class SyncStationJob(
     context: Context,
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
     private val stationRepository by injectLazy<StationRepository>()
+    private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
         return try {
             stationRepository.refresh()
+            applicationPreference.isFirstRun().set(false)
             Result.success()
         } catch (e: Exception) {
-            if (e is CancellationException) {
-                // assume success although cancelled
-                Result.success()
-            } else {
-                e.printStackTrace()
-                Result.failure()
-            }
+            e.printStackTrace()
+            Result.failure()
         }
     }
 
     companion object {
         private const val WORK_NAME = "RefreshStation"
+
+        fun subscribeState(
+            context: Context,
+            scope: CoroutineScope,
+        ): StateFlow<WorkInfo.State?> {
+            val workQuery = WorkQuery.Builder
+                .fromTags(listOf(WORK_NAME))
+                .build()
+
+            return context.workManager
+                .getWorkInfosFlow(workQuery)
+                .mapNotNull { it.firstOrNull()?.state }
+                .stateIn(
+                    scope = scope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = null
+                )
+        }
 
         fun start(
             context: Context,
@@ -46,7 +68,7 @@ class RefreshStationJob(
                 return false
             }
 
-            val request = OneTimeWorkRequestBuilder<RefreshStationJob>()
+            val request = OneTimeWorkRequestBuilder<SyncStationJob>()
                 .addTag(WORK_NAME)
                 .build()
             workManager.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)

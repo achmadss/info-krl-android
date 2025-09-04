@@ -35,5 +35,8 @@ data class StationEntity(
     val createdAt: String,
 
     @ColumnInfo(name = "updated_at")
-    val updatedAt: String
+    val updatedAt: String,
+
+    @ColumnInfo(name = "has_fetched_schedule_previously")
+    val hasFetchedSchedulePreviously: Boolean? = false,
 )

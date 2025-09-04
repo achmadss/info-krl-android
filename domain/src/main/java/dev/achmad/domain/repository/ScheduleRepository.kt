@@ -7,10 +7,10 @@ interface ScheduleRepository {
 
     val schedules: Flow<List<Schedule>>
 
-    suspend fun refreshScheduleByStationId(stationId: String)
+    suspend fun fetchByStationId(stationId: String)
     suspend fun subscribeByStationId(
         stationId: String,
-        skipPastSchedule: Boolean = true
+        skipPastSchedule: Boolean = false
     ): Flow<List<Schedule>>
 
 }

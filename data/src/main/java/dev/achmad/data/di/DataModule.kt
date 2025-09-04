@@ -30,10 +30,6 @@ val dataModule = module {
             .build()
     }
 
-    // dao
-    single<StationDao> { get<ComulineDatabase>().stationDao() }
-    single<ScheduleDao> { get<ComulineDatabase>().scheduleDao() }
-
     // repositories
     single<StationRepository> { StationRepositoryImpl(get(), get()) }
     single<ScheduleRepository> { ScheduleRepositoryImpl(get(), get()) }

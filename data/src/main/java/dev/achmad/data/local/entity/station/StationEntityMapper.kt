@@ -16,6 +16,7 @@ fun StationEntity.toDomain(): Station {
         fgEnable = fgEnable,
         createdAt = createdAt.toLocalDateTime(),
         updatedAt = updatedAt.toLocalDateTime(),
+        hasFetchedSchedulePreviously = hasFetchedSchedulePreviously ?: false
     )
 }
 
@@ -31,6 +32,7 @@ fun Station.toEntity(): StationEntity {
         fgEnable = fgEnable,
         createdAt = createdAt.format(),
         updatedAt = updatedAt.format(),
+        hasFetchedSchedulePreviously = hasFetchedSchedulePreviously
     )
 }
 

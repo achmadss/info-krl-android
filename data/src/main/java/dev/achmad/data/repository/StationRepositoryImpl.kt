@@ -1,5 +1,6 @@
 package dev.achmad.data.repository
 
+import dev.achmad.data.local.ComulineDatabase
 import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.station.toDomain
 import dev.achmad.data.local.entity.station.toEntity
@@ -15,9 +16,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class StationRepositoryImpl(
-    private val stationDao: StationDao,
     private val api: ComulineApi,
+    private val database: ComulineDatabase,
+    private val stationDao: StationDao = database.stationDao(),
 ): StationRepository {
+
     override val stations: Flow<List<Station>> =
         stationDao.subscribeAll()
             .map { it.toDomain() }
@@ -37,14 +40,15 @@ class StationRepositoryImpl(
         }
     }
 
-    override suspend fun toggleFavorite(station: Station, favorite: Boolean) {
+    override suspend fun toggleFavorite(station: Station) {
         withContext(Dispatchers.IO) {
-            stationDao.update(station.toEntity().copy(favorite = favorite))
+            val updated = station.copy(favorite = !station.favorite).toEntity()
+            stationDao.update(updated)
         }
     }
 
-    override fun subscribeSingle(id: String): Flow<Station?> {
-        return stationDao.subscribeSingle(id).map { it?.toDomain() }
+    override suspend fun awaitSingle(id: String): Station? {
+        return stationDao.awaitSingle(id)?.toDomain()
     }
 
 }

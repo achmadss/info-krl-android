@@ -14,6 +14,7 @@ data class Station(
     val fgEnable: Int?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
+    val hasFetchedSchedulePreviously: Boolean,
 ) {
     enum class Type {
         KRL;

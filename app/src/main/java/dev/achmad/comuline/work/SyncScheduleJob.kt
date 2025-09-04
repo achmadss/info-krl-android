@@ -10,12 +10,17 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dev.achmad.comuline.util.isRunning
 import dev.achmad.comuline.util.workManager
-import dev.achmad.comuline.work.RefreshStationJob.Companion
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.ScheduleRepository
-import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
-class RefreshScheduleJob(
+class SyncScheduleJob(
     context: Context,
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
@@ -26,17 +31,13 @@ class RefreshScheduleJob(
         return try {
             val stationId = inputData.getString(KEY_STATION_ID)
                 ?: throw IllegalArgumentException("Station ID cannot be null")
-
-            scheduleRepository.refreshScheduleByStationId(stationId)
+            val delay = inputData.getLong(KEY_DELAY, 0)
+            scheduleRepository.fetchByStationId(stationId)
+            delay(delay)
             Result.success()
         } catch (e: Exception) {
-            if (e is CancellationException) {
-                // assume success although cancelled
-                Result.success()
-            } else {
-                e.printStackTrace()
-                Result.failure()
-            }
+            e.printStackTrace()
+            Result.failure()
         }
     }
 
@@ -44,18 +45,43 @@ class RefreshScheduleJob(
 
         private const val TAG = "RefreshSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
+        private const val KEY_DELAY = "KEY_DELAY"
+
+        fun subscribeState(
+            context: Context,
+            scope: CoroutineScope,
+            stationId: String,
+        ): StateFlow<WorkInfo.State?> {
+            val workQuery = WorkQuery.Builder
+                .fromTags(listOf(stationId))
+                .build()
+
+            return context.workManager
+                .getWorkInfosFlow(workQuery)
+                .map { it.firstOrNull()?.state }
+                .distinctUntilChanged()
+                .stateIn(
+                    scope = scope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = null
+                )
+        }
 
         fun start(
             context: Context,
             stationId: String,
+            finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
             if (workManager.isRunning(stationId)) {
                 return false
             }
 
-            val inputData = workDataOf(KEY_STATION_ID to stationId)
-            val request = OneTimeWorkRequestBuilder<RefreshScheduleJob>()
+            val inputData = workDataOf(
+                KEY_STATION_ID to stationId,
+                KEY_DELAY to finishDelay
+            )
+            val request = OneTimeWorkRequestBuilder<SyncScheduleJob>()
                 .addTag(TAG)
                 .addTag(stationId)
                 .setInputData(inputData)

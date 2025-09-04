@@ -9,7 +9,7 @@ interface StationRepository {
     val favoriteStations: Flow<List<Station>>
 
     suspend fun refresh()
-    suspend fun toggleFavorite(station: Station, favorite: Boolean)
-    fun subscribeSingle(id: String): Flow<Station?>
+    suspend fun toggleFavorite(station: Station)
+    suspend fun awaitSingle(id: String): Station?
 
 }
