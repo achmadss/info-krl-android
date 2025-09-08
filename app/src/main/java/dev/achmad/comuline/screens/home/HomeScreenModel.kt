@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 data class DestinationGroup(
@@ -26,8 +25,13 @@ data class DestinationGroup(
 ) {
     data class ScheduleGroup(
         val destinationStation: Station,
-        val schedules: List<Pair<Schedule, String>>
-    )
+        val schedules: List<UISchedule>
+    ) {
+        data class UISchedule(
+            val schedule: Schedule,
+            val eta: String,
+        )
+    }
 }
 
 class HomeScreenModel(
@@ -36,10 +40,9 @@ class HomeScreenModel(
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
-
     private val focusedStationId = MutableStateFlow<String?>(null)
 
-    private val minuteTick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
+    private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
         started = SharingStarted.Eagerly,
         initialValue = null
@@ -63,26 +66,22 @@ class HomeScreenModel(
         stations,
         favoriteStations,
     ) { stations, favorites ->
-        // Create the base structure without time-dependent calculations
         favorites
             .sortedBy { it.favoritePosition }
             .map { favorite ->
                 val scheduleFlow = getScheduleFlow(favorite.id)
-
-                // Combine the schedule flow with minuteTick for time updates
                 val scheduleGroupFlow = combine(
                     scheduleFlow,
-                    minuteTick
+                    tick
                 ) { schedule, minuteTick ->
-                    schedule?.let {
-                        mapToScheduleGroup(it, stations, minuteTick)
-                    }
+                    if (schedule != null && minuteTick != null) {
+                        mapToScheduleGroup(schedule, stations, minuteTick)
+                    } else null
                 }.stateIn(
                     scope = screenModelScope,
                     started = SharingStarted.Eagerly,
                     initialValue = null
                 )
-
                 DestinationGroup(
                     station = favorite,
                     scheduleGroup = scheduleGroupFlow
@@ -98,7 +97,6 @@ class HomeScreenModel(
         return scheduleFlowsCache.getOrPut(stationId) {
             scheduleRepository.subscribeByStationId(
                 stationId = stationId,
-                skipPastSchedule = true
             ).stateIn(
                 scope = screenModelScope,
                 started = SharingStarted.Eagerly,
@@ -110,7 +108,7 @@ class HomeScreenModel(
     private fun mapToScheduleGroup(
         schedule: List<Schedule>,
         stations: List<Station>,
-        minuteTick: LocalDateTime?
+        minuteTick: LocalDateTime
     ) = schedule
         .groupBy { it.stationDestinationId }
         .mapNotNull { (stationId, schedulesForStation) ->
@@ -118,55 +116,47 @@ class HomeScreenModel(
             station?.let {
                 DestinationGroup.ScheduleGroup(
                     destinationStation = it,
-                    schedules = schedulesForStation
-                        .sortedBy { it.departsAt }
-                        .map {
-                            Pair(
-                                first = it,
-                                second = etaString(
-                                    now = minuteTick ?: LocalDateTime.now(),
-                                    target = it.departsAt
-                                )
-                            )
-                        },
+                    schedules = mapToUISchedule(schedulesForStation, minuteTick),
                 )
             }
         }
 
-    fun startAutoRefresh(context: Context) {
-        screenModelScope.launch {
-            minuteTick.collect { it?.let { refresh(context) } }
+    private fun mapToUISchedule(
+        schedulesForStation: List<Schedule>,
+        minuteTick: LocalDateTime
+    ) = schedulesForStation
+        .sortedBy { it.departsAt }
+        .mapNotNull {
+            if (it.departsAt.isAfter(minuteTick)) {
+                DestinationGroup.ScheduleGroup.UISchedule(
+                    schedule = it,
+                    eta = etaString(
+                        now = minuteTick,
+                        target = it.departsAt
+                    )
+                )
+            } else null
         }
-    }
 
-    fun onTabFocused(
-        context: Context,
-        stationId: String
-    ) {
-        focusedStationId.update { stationId }
-        refresh(context)
-    }
-
-    fun refresh(
-        context: Context,
-        manual: Boolean = false,
-    ) {
+    fun fetchSchedules(context: Context) {
         focusedStationId.value?.let {
-            val finishDelay = 1000L // add delay for UI better UX
-            if (manual) {
+            if (SyncScheduleJob.shouldSync(it)) {
+                val finishDelay = 500L // add delay for better UX
                 SyncScheduleJob.startNow(
                     context = context,
                     stationId = it,
                     finishDelay = finishDelay
                 )
-                return
             }
-            SyncScheduleJob.start(
-                context = context,
-                stationId = it,
-                finishDelay = finishDelay
-            )
         }
+    }
+
+    fun onTabFocused(
+        context: Context,
+        stationId: String,
+    ) {
+        focusedStationId.update { stationId }
+        fetchSchedules(context)
     }
 
 }

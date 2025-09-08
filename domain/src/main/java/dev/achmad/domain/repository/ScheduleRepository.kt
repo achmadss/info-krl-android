@@ -8,9 +8,6 @@ interface ScheduleRepository {
     val schedules: Flow<List<Schedule>>
 
     suspend fun fetchAndStoreByStationId(stationId: String)
-    fun subscribeByStationId(
-        stationId: String,
-        skipPastSchedule: Boolean = false
-    ): Flow<List<Schedule>>
+    fun subscribeByStationId(stationId: String): Flow<List<Schedule>>
 
 }

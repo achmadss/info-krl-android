@@ -103,7 +103,7 @@ object HomeScreen: Screen {
         val destinationGroups by screenModel.destinationGroups.collectAsState()
 
         LaunchedEffect(Unit) {
-            screenModel.startAutoRefresh(applicationContext)
+            screenModel.fetchSchedules(applicationContext)
         }
 
         HomeScreen(
@@ -402,8 +402,8 @@ private fun ScheduleItem(
     val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
     val schedules = scheduleGroup.schedules.ifEmpty { return }
-    val firstSchedule = schedules.first().first
-    val firstScheduleEta = schedules.first().second
+    val firstSchedule = schedules.first().schedule
+    val firstScheduleEta = schedules.first().eta
     val color = firstSchedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
 
@@ -507,7 +507,7 @@ private fun ScheduleItem(
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
-                                text = schedule.first.departsAt.format(
+                                text = schedule.schedule.departsAt.format(
                                     DateTimeFormatter.ofPattern("HH:mm")
                                 ),
                                 style = MaterialTheme.typography.labelMedium.copy(
@@ -515,7 +515,7 @@ private fun ScheduleItem(
                                 ),
                             )
                             Text(
-                                text = schedule.second,
+                                text = schedule.eta,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
                             )

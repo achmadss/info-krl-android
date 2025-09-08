@@ -45,20 +45,9 @@ class ScheduleRepositoryImpl(
     }
 
 
-    override fun subscribeByStationId(
-        stationId: String,
-        skipPastSchedule: Boolean,
-    ): Flow<List<Schedule>> {
-        val now = LocalDateTime.now()
+    override fun subscribeByStationId(stationId: String): Flow<List<Schedule>> {
         return scheduleDao.subscribeAllByStationId(stationId)
-            .map { entities ->
-                val schedules = entities.toDomain()
-                if (skipPastSchedule) {
-                    schedules.filter { schedule ->
-                        schedule.departsAt.isAfter(now)
-                    }
-                } else schedules
-            }
+            .map { it.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
     }

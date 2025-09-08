@@ -58,7 +58,7 @@ class SyncScheduleJob(
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 
-        private fun shouldSync(
+        fun shouldSync(
             stationId: String,
         ): Boolean {
             val applicationPreference by injectLazy<ApplicationPreference>()
