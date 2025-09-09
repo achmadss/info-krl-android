@@ -129,10 +129,7 @@ private fun HomeScreen(
     onTabFocused: (String) -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
-    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateFlow.collectAsState()
-
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
-
     val syncStates = destinationGroups.associate { group ->
         group.station.id to remember(group.station.id) {
             SyncScheduleJob.subscribeState(
@@ -165,22 +162,6 @@ private fun HomeScreen(
                     onTabFocused(it.station.id)
                 }
             }
-    }
-
-    LaunchedEffect(destinationGroups) {
-        if (destinationGroups.isNotEmpty()) {
-            when(lifecycleState) {
-                Lifecycle.State.CREATED, Lifecycle.State.RESUMED -> {
-                    destinationGroups.getOrNull(pagerState.currentPage)?.station?.id?.let {
-                        SyncScheduleJob.start(
-                            context = applicationContext,
-                            stationId = it,
-                        )
-                    }
-                }
-                else -> Unit
-            }
-        }
     }
 
     BackHandler(searchQuery != null) {
