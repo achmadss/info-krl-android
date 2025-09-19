@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Warning
@@ -50,7 +52,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.comuline.R
 import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.components.AppBarTitle
+import dev.achmad.comuline.components.DraggableItem
 import dev.achmad.comuline.components.SearchToolbar
+import dev.achmad.comuline.components.dragContainer
+import dev.achmad.comuline.components.rememberDragDropState
 import dev.achmad.comuline.work.SyncStationJob
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.model.Station
@@ -80,7 +85,7 @@ object StationsScreen: Screen {
         StationsScreen(
             loading = when {
                 syncState == WorkInfo.State.ENQUEUED ||
-                    syncState == WorkInfo.State.RUNNING -> true
+                        syncState == WorkInfo.State.RUNNING -> true
                 else -> false
             },
             error = when(syncState) {
@@ -92,7 +97,7 @@ object StationsScreen: Screen {
             onChangeSearchQuery = { query ->
                 screenModel.search(query)
             },
-            onToggleFavorite = { station ->
+            onTogglePin = { station ->
                 screenModel.toggleFavorite(station)
             },
             onNavigateUp = {
@@ -102,7 +107,10 @@ object StationsScreen: Screen {
                 SyncStationJob.start(appContext)
             },
             onClickStation = { station ->
-                // TODO navigate to station detail
+                // TODO
+            },
+            onReorderFavorites = { fromIndex, toIndex ->
+                screenModel.reorderFavorites(fromIndex, toIndex)
             }
         )
     }
@@ -116,10 +124,11 @@ private fun StationsScreen(
     stations: List<Station>?,
     searchQuery: String?,
     onChangeSearchQuery: (String?) -> Unit,
-    onToggleFavorite: (Station) -> Unit,
+    onTogglePin: (Station) -> Unit,
     onNavigateUp: () -> Unit,
     onTryAgain: () -> Unit,
     onClickStation: (Station) -> Unit,
+    onReorderFavorites: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -131,9 +140,7 @@ private fun StationsScreen(
                     titleContent = { AppBarTitle("Stations") },
                     searchQuery = searchQuery,
                     onChangeSearchQuery = onChangeSearchQuery,
-                    navigateUp = {
-                        onNavigateUp()
-                    },
+                    navigateUp = { onNavigateUp() },
                 )
             }
         }
@@ -144,9 +151,7 @@ private fun StationsScreen(
                     .fillMaxSize()
                     .padding(contentPadding),
                 contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
+            ) { CircularProgressIndicator() }
             return@Scaffold
         }
 
@@ -195,59 +200,98 @@ private fun StationsScreen(
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                TextButton(
-                    onClick = onTryAgain,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                        )
+                TextButton(onClick = onTryAgain) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Try Again"
-                        )
+                        Text(text = "Try Again")
                     }
                 }
             }
             return@Scaffold
         }
 
+        val pinnedStations = stations
+            ?.filter { it.favorite }
+            ?.sortedBy { it.favoritePosition }
+            ?: emptyList()
+
+        val unpinnedStations = stations
+            ?.filter { !it.favorite }
+            ?: emptyList()
+
+        val listState = rememberLazyListState()
+
+        val enableDragDrop = searchQuery.isNullOrBlank() && pinnedStations.isNotEmpty()
+        val dragDropState = if (enableDragDrop) {
+            rememberDragDropState(
+                lazyListState = listState,
+                onMove = { fromIndex, toIndex ->
+                    val fromListIndex = fromIndex - 1
+                    val toListIndex = toIndex - 1
+
+                    if (fromListIndex >= 0 && fromListIndex < pinnedStations.size &&
+                        toListIndex >= 0 && toListIndex < pinnedStations.size) {
+                        onReorderFavorites(fromListIndex, toListIndex)
+                    }
+                }
+            ).apply {
+                minDraggableIndex = 1 // first draggable item index (after header)
+                maxDraggableIndex = pinnedStations.size
+            }
+        } else null
+
         LazyColumn(
             modifier = modifier
                 .fillMaxSize()
                 .padding(contentPadding),
+            state = listState,
             contentPadding = PaddingValues(bottom = 16.dp),
         ) {
-            if (stations != null && stations.any { it.favorite }) {
-                val pinnedStations = stations.filter { it.favorite }
+            if (pinnedStations.isNotEmpty()) {
                 item {
                     Text(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        text = "Pinned",
+                        text = if (enableDragDrop) "Pinned (Hold to drag)" else "Pinned",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
+
                 itemsIndexed(
                     items = pinnedStations,
                     key = { _, item -> item.id.plus("_pinned") }
                 ) { index, station ->
-                    StationItem(
-                        station = station,
-                        onTogglePin = { onToggleFavorite(station) },
-                        onClick = { onClickStation(station) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem()
-                    )
+                    if (enableDragDrop && dragDropState != null) {
+                        DraggableItem(
+                            dragDropState = dragDropState,
+                            index = index + 1 // + 1 to take into account header, not ideal but works for now
+                        ) { isDragging ->
+                            StationItem(
+                                station = station,
+                                onTogglePin = { onTogglePin(station) },
+                                onClick = { onClickStation(station) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .dragContainer(dragDropState, station.id.plus("_pinned")),
+                                isDragging = isDragging,
+                                showDragHandle = true
+                            )
+                        }
+                    } else {
+                        StationItem(
+                            station = station,
+                            onTogglePin = { onTogglePin(station) },
+                            onClick = { onClickStation(station) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     if (index != pinnedStations.lastIndex) {
                         HorizontalDivider()
                     }
                 }
             }
+
             if (!stations.isNullOrEmpty()) {
                 item {
                     Text(
@@ -258,22 +302,19 @@ private fun StationsScreen(
                     )
                 }
             }
+
             itemsIndexed(
-                items = stations ?: emptyList(),
+                items = unpinnedStations,
                 key = { _, item -> item.id }
             ) { index, station ->
-                if (!station.favorite) {
-                    StationItem(
-                        station = station,
-                        onTogglePin = { onToggleFavorite(station) },
-                        onClick = { onClickStation(station) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem()
-                    )
-                    if (index != stations?.lastIndex) {
-                        HorizontalDivider()
-                    }
+                StationItem(
+                    station = station,
+                    onTogglePin = { onTogglePin(station) },
+                    onClick = { onClickStation(station) },
+                    modifier = Modifier.fillMaxWidth().animateItem()
+                )
+                if (index != unpinnedStations.lastIndex) {
+                    HorizontalDivider()
                 }
             }
         }
@@ -285,33 +326,48 @@ private fun StationItem(
     station: Station,
     onTogglePin: () -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isDragging: Boolean = false,
+    showDragHandle: Boolean = false
 ) {
-    val icon = when {
-        station.favorite -> R.drawable.push_pin
-        else -> R.drawable.push_pin_outline
+    val icon = if (station.favorite) R.drawable.push_pin else R.drawable.push_pin_outline
+    val backgroundColor = if (isDragging) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.surface
     }
-    Row(
-        modifier = modifier
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Surface(
+        modifier = modifier,
+        color = backgroundColor,
+        shadowElevation = if (isDragging) 4.dp else 0.dp
     ) {
-        Text(
-            modifier = Modifier.weight(1f),
-            text = station.name,
-            style = MaterialTheme.typography.bodyLarge,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        IconButton(
-            onClick = onTogglePin,
+        Row(
+            modifier = Modifier.clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                painter = painterResource(icon),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+            if (showDragHandle) {
+                Icon(
+                    imageVector = Icons.Default.DragHandle,
+                    contentDescription = "Drag handle",
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+            }
+            Text(
+                modifier = Modifier.weight(1f),
+                text = station.name,
+                style = MaterialTheme.typography.bodyLarge,
+                overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.width(12.dp))
+            IconButton(onClick = onTogglePin) {
+                Icon(
+                    painter = painterResource(icon),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

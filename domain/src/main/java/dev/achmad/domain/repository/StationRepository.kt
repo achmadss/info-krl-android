@@ -10,6 +10,9 @@ interface StationRepository {
 
     suspend fun fetchAndStore()
     suspend fun toggleFavorite(station: Station)
+    suspend fun updateFavorite(station: Station)
+    suspend fun reorderFavorites(stations: List<Station>)
     suspend fun awaitSingle(id: String): Station?
+    fun subscribeSingle(id: String): Flow<Station?>
 
 }

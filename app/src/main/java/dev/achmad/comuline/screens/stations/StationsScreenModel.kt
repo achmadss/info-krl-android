@@ -36,7 +36,7 @@ class StationsScreenModel(
 
     val filteredStations = combine(
         searchQuery,
-        stations,
+        stations
     ) { query, stations ->
         when {
             query.isNullOrBlank() -> stations
@@ -52,8 +52,36 @@ class StationsScreenModel(
 
     fun toggleFavorite(station: Station) {
         screenModelScope.launch {
-            stationRepository.toggleFavorite(station)
+            if (!station.favorite) {
+                val currentFavorites = stations.value?.filter { it.favorite } ?: emptyList()
+                val updatedStation = station.copy(
+                    favorite = true,
+                    favoritePosition = currentFavorites.size
+                )
+                stationRepository.updateFavorite(updatedStation)
+            } else {
+                stationRepository.toggleFavorite(station)
+                val remainingFavorites = stations.value
+                    ?.filter { it.favorite && it.id != station.id }
+                    ?.sortedBy { it.favoritePosition }
+                    ?: emptyList()
+                if (remainingFavorites.isNotEmpty()) {
+                    stationRepository.reorderFavorites(remainingFavorites)
+                }
+            }
         }
     }
 
+    fun reorderFavorites(fromIndex: Int, toIndex: Int) {
+        val current = stations.value
+            ?.filter { it.favorite }
+            ?.sortedBy { it.favoritePosition }
+            ?.toMutableList() ?: return
+
+        if (fromIndex < current.size && toIndex < current.size) {
+            val movedItem = current.removeAt(fromIndex)
+            current.add(toIndex, movedItem)
+            screenModelScope.launch { stationRepository.reorderFavorites(current) }
+        }
+    }
 }

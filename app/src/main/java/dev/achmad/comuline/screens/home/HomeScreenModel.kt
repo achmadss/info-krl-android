@@ -40,7 +40,8 @@ class HomeScreenModel(
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
-    private val focusedStationId = MutableStateFlow<String?>(null)
+    private val _focusedStationId = MutableStateFlow<String?>(null)
+
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -139,7 +140,7 @@ class HomeScreenModel(
         }
 
     fun fetchSchedules(context: Context) {
-        focusedStationId.value?.let {
+        _focusedStationId.value?.let {
             if (SyncScheduleJob.shouldSync(it)) {
                 val finishDelay = 500L // add delay for better UX
                 SyncScheduleJob.startNow(
@@ -155,7 +156,7 @@ class HomeScreenModel(
         context: Context,
         stationId: String,
     ) {
-        focusedStationId.update { stationId }
+        _focusedStationId.update { stationId }
         fetchSchedules(context)
     }
 

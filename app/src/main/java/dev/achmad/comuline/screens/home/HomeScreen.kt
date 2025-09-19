@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
@@ -51,6 +53,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -61,8 +64,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.work.WorkInfo
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -142,7 +143,21 @@ private fun HomeScreen(
     val tabs = mapTabContents(destinationGroups, syncStates, onClickAddStation)
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val pagerState = rememberPagerState { tabs.size }
+
+    var focusedStationId by rememberSaveable { mutableStateOf<String?>(null) }
+    val initialPage = remember(destinationGroups, focusedStationId) {
+        if (focusedStationId != null) {
+            destinationGroups
+                .indexOfFirst { it.station.id == focusedStationId }
+                .takeIf { it >= 0 } ?: 0
+        } else 0
+    }
+    val pagerState = remember(tabs.size) {
+        PagerState(
+            currentPage = initialPage,
+            pageCount = { tabs.size }
+        )
+    }
 
     LaunchedEffect(destinationGroups) {
         snapshotFlow { searchQuery }
@@ -159,6 +174,8 @@ private fun HomeScreen(
         snapshotFlow { pagerState.targetPage }
             .collect {
                 destinationGroups.getOrNull(pagerState.targetPage)?.let {
+                    val stationId = it.station.id
+                    focusedStationId = stationId
                     onTabFocused(it.station.id)
                 }
             }
@@ -206,7 +223,9 @@ private fun HomeScreen(
     ) { contentPadding ->
         if (destinationGroups.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(contentPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
@@ -303,7 +322,6 @@ private fun HomeScreen(
     }
 }
 
-@Composable
 private fun mapTabContents(
     destinationGroups: List<DestinationGroup>,
     syncStates: Map<String, State<WorkInfo.State?>>,
@@ -375,6 +393,139 @@ private fun mapTabContents(
 }
 
 @Composable
+private fun NewScheduleItem(
+    index: Int,
+    lastIndex: Int,
+    scheduleGroup: DestinationGroup.ScheduleGroup,
+) {
+    val station = scheduleGroup.destinationStation
+    val schedules = scheduleGroup.schedules.ifEmpty { return }
+    val firstSchedule = schedules.first().schedule
+    val firstScheduleEta = schedules.first().eta
+    val color = firstSchedule.color.toColor()
+
+    Column(
+        modifier = Modifier.padding(
+            start = 16.dp,
+            end = 16.dp,
+            top = 16.dp
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(color, CircleShape)
+                    .size(16.dp),
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = firstSchedule.line,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+                Text(
+                    text = station.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(4.dp))
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Next Departure",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = firstSchedule.departsAt.format(
+                        DateTimeFormatter.ofPattern("HH:mm")
+                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = firstScheduleEta,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Upcoming Departures",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.outline
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val previewSchedules =
+                if (schedules.size <= 4) schedules
+                else schedules.take(5).drop(1)
+
+            previewSchedules.map { schedule ->
+                Column(
+                    modifier = Modifier.weight(0.25f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = schedule.schedule.departsAt.format(
+                            DateTimeFormatter.ofPattern("HH:mm")
+                        ),
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                        ),
+                    )
+                    Text(
+                        text = schedule.eta,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+            )
+        }
+        if (index != lastIndex) {
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun ScheduleItem(
     index: Int,
     lastIndex: Int,
@@ -390,6 +541,7 @@ private fun ScheduleItem(
 
     Row(
         modifier = Modifier,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
@@ -415,58 +567,58 @@ private fun ScheduleItem(
             Spacer(modifier = Modifier.height(2.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = "Directions to",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Text(
-                    text = "Departs at",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "Directions to",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = station.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = firstSchedule.trainId,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.End,
+                ) {
+                    Text(
+                        text = "Departs at",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = firstSchedule.departsAt.format(
+                            DateTimeFormatter.ofPattern("HH:mm")
+                        ),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = firstScheduleEta,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = station.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                )
-                Text(
-                    text = firstSchedule.departsAt.format(
-                        DateTimeFormatter.ofPattern("HH:mm")
-                    ),
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                )
-            }
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = firstSchedule.trainId,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Text(
-                    text = firstScheduleEta,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Next departures",
+                text = "Next Departures",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )

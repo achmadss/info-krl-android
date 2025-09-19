@@ -48,13 +48,39 @@ class StationRepositoryImpl(
 
     override suspend fun toggleFavorite(station: Station) {
         withContext(Dispatchers.IO) {
-            val updated = station.copy(favorite = !station.favorite).toEntity()
+            val updated = station.copy(
+                favorite = !station.favorite,
+                favoritePosition = if (!station.favorite) null else station.favoritePosition
+            ).toEntity()
             stationDao.update(updated)
+        }
+    }
+
+    override suspend fun updateFavorite(station: Station) {
+        withContext(Dispatchers.IO) {
+            val updated = station.toEntity()
+            stationDao.update(updated)
+        }
+    }
+
+    override suspend fun reorderFavorites(stations: List<Station>) {
+        withContext(Dispatchers.IO) {
+            val updates = stations.mapIndexed { index, station ->
+                station.copy(favoritePosition = index).toEntity()
+            }
+            stationDao.update(updates)
         }
     }
 
     override suspend fun awaitSingle(id: String): Station? {
         return stationDao.awaitSingle(id)?.toDomain()
+    }
+
+    override fun subscribeSingle(id: String): Flow<Station?> {
+        return stationDao.subscribeSingle(id)
+            .map { it?.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
     }
 
 }
