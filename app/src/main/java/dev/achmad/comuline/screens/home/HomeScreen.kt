@@ -155,6 +155,7 @@ private fun HomeScreen(
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     val syncStates = destinationGroups.associate { group ->
         group.station.id to remember(group.station.id) {
             SyncScheduleJob.subscribeState(
@@ -167,6 +168,8 @@ private fun HomeScreen(
     val tabs = mapTabContents(
         destinationGroups = destinationGroups,
         syncStates = syncStates,
+        searchQuery = searchQuery,
+        searchResults = searchResults,
         onClickAddStation = onClickAddStation,
         onClickStationDetail = onClickStationDetail
     )
@@ -187,21 +190,23 @@ private fun HomeScreen(
         )
     }
 
-    LaunchedEffect(searchQuery) {
+    LaunchedEffect(searchQuery, destinationGroups) {
         snapshotFlow { searchQuery?.uppercase() }
             .debounce(300)
             .collect { query ->
                 if (!query.isNullOrEmpty()) {
-                    val pairs = destinationGroups
-                        .map { destinationGroup ->
-                            val station = destinationGroup.scheduleGroup.value
-                                ?.map { it.destinationStation }
-                                ?.firstOrNull { it.name.contains(query) }
-                            destinationGroup to station
-                        }
-                    // TODO show numbers beside each tab how many destination station
-                    //  was found matching with the search query and also filter the list
-                    //  to only show the matching destination stations
+                    val results = destinationGroups.associate { destinationGroup ->
+                        val matchCount = destinationGroup.scheduleGroup.value
+                            ?.count { scheduleGroup ->
+                                // Only count if destination matches AND has upcoming schedules
+                                scheduleGroup.destinationStation.name.uppercase().contains(query) &&
+                                scheduleGroup.schedules.isNotEmpty()
+                            } ?: 0
+                        destinationGroup.station.id to matchCount
+                    }
+                    searchResults = results
+                } else {
+                    searchResults = emptyMap()
                 }
             }
     }
@@ -356,16 +361,21 @@ private fun HomeScreen(
     }
 }
 
+@Composable
 private fun mapTabContents(
     destinationGroups: List<DestinationGroup>,
     syncStates: Map<String, State<WorkInfo.State?>>,
+    searchQuery: String?,
+    searchResults: Map<String, Int>,
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String) -> Unit,
 ): List<TabContent> {
     val tabs = destinationGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
+        val badgeCount = searchResults[group.station.id]?.takeIf { it > 0 }
         TabContent(
             title = group.station.name,
+            badgeNumber = badgeCount,
             searchEnabled = true,
             actions = listOf(
                 AppBar.Action(
@@ -376,12 +386,22 @@ private fun mapTabContents(
             ),
             content = { contentPadding, _ ->
                 val schedules = group.scheduleGroup.collectAsState().value
+                val query = searchQuery?.uppercase()
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
                     if (schedules?.isNotEmpty() == true && schedules.flatMap { it.schedules }.isNotEmpty()) {
-                        val routes = schedules
+                        // Filter schedules based on search query
+                        val filteredSchedules = if (!query.isNullOrEmpty()) {
+                            schedules.filter { scheduleGroup ->
+                                scheduleGroup.destinationStation.name.uppercase().contains(query)
+                            }
+                        } else {
+                            schedules
+                        }
+
+                        val routes = filteredSchedules
                             .groupBy { it.schedules.firstOrNull()?.schedule?.line }
                             .mapNotNull {
                                 if (it.key != null) {
@@ -397,51 +417,50 @@ private fun mapTabContents(
                         ) {
                             items(routes) { route ->
                                 OutlinedCard {
-                                    Column {
-                                        val density = LocalDensity.current
-                                        val firstSchedule = route.second.first().schedules.first().schedule
-                                        var height by remember { mutableStateOf(0.dp) }
-                                        val color = firstSchedule.color.toColor()
-                                        Row {
-                                            Box(
-                                                modifier = Modifier
-                                                    .height(height)
-                                                    .background(firstSchedule.color.toColor())
-                                                    .padding(start = 6.dp),
+                                    val density = LocalDensity.current
+                                    val firstSchedule = route.second.first().schedules.first().schedule
+                                    var height by remember { mutableStateOf(0.dp) }
+                                    val color = firstSchedule.color.toColor()
+                                    Row {
+                                        Box(
+                                            modifier = Modifier
+                                                .height(height)
+                                                .background(firstSchedule.color.toColor())
+                                                .padding(start = 6.dp),
+                                        )
+                                        Column(
+                                            modifier = Modifier
+                                                .onSizeChanged { with(density) { height = it.height.toDp() } }
+                                        ) {
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Text(
+                                                modifier = Modifier.padding(start = 16.dp),
+                                                text = firstSchedule.line,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (isSystemInDarkTheme()) {
+                                                    color.brighter(0.35f)
+                                                } else color.darken(0.10f),
+                                                overflow = TextOverflow.Ellipsis,
                                             )
-                                            Column(
-                                                modifier = Modifier
-                                                    .onSizeChanged { with(density) { height = it.height.toDp() } }
-                                            ) {
-                                                Spacer(modifier = Modifier.height(16.dp))
-                                                Text(
-                                                    modifier = Modifier.padding(start = 16.dp),
-                                                    text = firstSchedule.line,
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    color = if (isSystemInDarkTheme()) {
-                                                        color.brighter(0.35f)
-                                                    } else color.darken(0.10f),
-                                                    overflow = TextOverflow.Ellipsis,
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            HorizontalDivider()
+                                            route.second.forEachIndexed { index, item ->
+                                                ScheduleItem(
+                                                    index = index,
+                                                    lastIndex = route.second.lastIndex,
+                                                    scheduleGroup = item,
+                                                    onClick = {
+                                                        onClickStationDetail(
+                                                            route.first,
+                                                            item.schedules.first().schedule.trainId
+                                                        )
+                                                    }
                                                 )
-                                                Spacer(modifier = Modifier.height(16.dp))
-                                                HorizontalDivider()
                                             }
+                                            HorizontalDivider()
                                         }
-                                        route.second.forEachIndexed { index, item ->
-                                            ScheduleItem(
-                                                index = index,
-                                                lastIndex = route.second.lastIndex,
-                                                scheduleGroup = item,
-                                                onClick = {
-                                                    onClickStationDetail(
-                                                        route.first,
-                                                        item.schedules.first().schedule.trainId
-                                                    )
-                                                }
-                                            )
-                                        }
-                                        HorizontalDivider()
                                     }
+
                                 }
                             }
                         }
@@ -483,114 +502,98 @@ private fun ScheduleItem(
     scheduleGroup: DestinationGroup.ScheduleGroup,
     onClick: () -> Unit,
 ) {
-    val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
     val schedules = scheduleGroup.schedules.ifEmpty { return }
     val firstSchedule = schedules.first().schedule
     val firstScheduleEta = schedules.first().eta
-    val color = firstSchedule.color.toColor()
-    var height by remember { mutableStateOf(0.dp) }
 
-    Row(
+    Column(
         modifier = Modifier
-            .clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically,
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(top = 16.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .height(height)
-                .background(color)
-                .padding(start = 6.dp),
-        )
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .onSizeChanged { with(density) { height = it.height.toDp() } }
-                .padding(top = 16.dp),
+                .height(IntrinsicSize.Min)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column {
+                Text(
+                    text = firstSchedule.departsAt.format(
+                        DateTimeFormatter.ofPattern("HH:mm")
+                    ),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = firstScheduleEta,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            VerticalDivider()
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                Column {
-                    Text(
-                        text = firstSchedule.departsAt.format(
-                            DateTimeFormatter.ofPattern("HH:mm")
-                        ),
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = firstScheduleEta,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                VerticalDivider()
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = station.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row {
-                        Row(
-                            modifier = Modifier,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(12.dp),
-                                imageVector = Icons.Default.Train,
-                                contentDescription = null,
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = firstSchedule.trainId,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Row(
-                            modifier = Modifier,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(12.dp),
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = null,
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "16 stops",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
+                Text(
+                    text = station.name,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row {
+                    Row(
+                        modifier = Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(12.dp),
+                            imageVector = Icons.Default.Train,
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = firstSchedule.trainId,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Row(
+                        modifier = Modifier,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(12.dp),
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "16 stops",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
                     }
                 }
             }
-            if (index != lastIndex) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-            if (index == lastIndex) {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+        }
+        if (index != lastIndex) {
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+        if (index == lastIndex) {
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
-
 }

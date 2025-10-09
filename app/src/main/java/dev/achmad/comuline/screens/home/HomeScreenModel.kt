@@ -131,7 +131,8 @@ class HomeScreenModel(
     ) = schedulesForStation
         .sortedBy { it.departsAt }
         .mapNotNull {
-            if (it.departsAt.isAfter(minuteTick)) {
+//            if (it.departsAt.isAfter(minuteTick)) {
+            if (true) {
                 DestinationGroup.ScheduleGroup.UISchedule(
                     schedule = it,
                     eta = etaString(
