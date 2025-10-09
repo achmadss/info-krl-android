@@ -1,22 +1,25 @@
 package dev.achmad.comuline.screens.home
 
-import android.content.Context
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.comuline.util.etaString
 import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.core.di.util.inject
+import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 data class DestinationGroup(
@@ -41,7 +44,7 @@ class HomeScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val _focusedStationId = MutableStateFlow<String?>(null)
-
+    val focusedStationId = _focusedStationId.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -139,25 +142,18 @@ class HomeScreenModel(
             } else null
         }
 
-    fun fetchSchedules(context: Context) {
-        _focusedStationId.value?.let {
-            if (SyncScheduleJob.shouldSync(it)) {
-                val finishDelay = 500L // add delay for better UX
+    fun fetchSchedules() {
+        favoriteStations.value.map { favorite ->
+            if (SyncScheduleJob.shouldSync(favorite.id)) {
                 SyncScheduleJob.startNow(
-                    context = context,
-                    stationId = it,
-                    finishDelay = finishDelay
+                    context = injectContext(),
+                    stationId = favorite.id,
+                    finishDelay = 500L
                 )
             }
         }
     }
 
-    fun onTabFocused(
-        context: Context,
-        stationId: String,
-    ) {
-        _focusedStationId.update { stationId }
-        fetchSchedules(context)
-    }
+    fun onTabFocused(stationId: String) = _focusedStationId.update { stationId }
 
 }

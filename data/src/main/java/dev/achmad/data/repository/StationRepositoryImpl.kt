@@ -21,8 +21,9 @@ import kotlinx.coroutines.withContext
 class StationRepositoryImpl(
     private val api: ComulineApi,
     private val database: ComulineDatabase,
-    private val stationDao: StationDao = database.stationDao(),
 ): StationRepository {
+
+    private val stationDao: StationDao = database.stationDao()
 
     override val stations: Flow<List<Station>> =
         stationDao.subscribeAll()

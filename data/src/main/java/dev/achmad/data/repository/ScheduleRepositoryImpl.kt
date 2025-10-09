@@ -22,9 +22,9 @@ import java.time.LocalDateTime
 class ScheduleRepositoryImpl(
     private val api: ComulineApi,
     private val database: ComulineDatabase,
-    private val stationDao: StationDao = database.stationDao(),
-    private val scheduleDao: ScheduleDao = database.scheduleDao(),
 ): ScheduleRepository {
+
+    private val scheduleDao: ScheduleDao = database.scheduleDao()
 
     override val schedules: Flow<List<Schedule>> =
         scheduleDao.subscribeAll()
@@ -40,6 +40,9 @@ class ScheduleRepositoryImpl(
                 throw Exception(data.metadata.message)
             }
             val schedules = data.data.map { it.toEntity() }
+            if (schedules.isEmpty()) {
+                throw Exception("data is empty")
+            }
             scheduleDao.insert(schedules)
         }
     }

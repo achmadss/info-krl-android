@@ -7,4 +7,5 @@ class ApplicationPreference(
 ) {
     fun hasFetchedStations() = preferenceStore.getBoolean("first_run", false)
     fun lastFetchSchedule(stationId: String) = preferenceStore.getLong("last_fetch_schedule_$stationId")
+    fun lastFetchRoute(trainId: String) = preferenceStore.getLong("last_fetch_route_$trainId")
 }

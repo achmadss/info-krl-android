@@ -56,6 +56,7 @@ import dev.achmad.comuline.components.DraggableItem
 import dev.achmad.comuline.components.SearchToolbar
 import dev.achmad.comuline.components.dragContainer
 import dev.achmad.comuline.components.rememberDragDropState
+import dev.achmad.comuline.screens.home.station_detail.StationDetailScreen
 import dev.achmad.comuline.work.SyncStationJob
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.model.Station
@@ -107,7 +108,7 @@ object StationsScreen: Screen {
                 SyncStationJob.start(appContext)
             },
             onClickStation = { station ->
-                // TODO
+                screenModel.toggleFavorite(station)
             },
             onReorderFavorites = { fromIndex, toIndex ->
                 screenModel.reorderFavorites(fromIndex, toIndex)

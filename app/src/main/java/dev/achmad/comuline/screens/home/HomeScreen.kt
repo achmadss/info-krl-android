@@ -2,14 +2,19 @@ package dev.achmad.comuline.screens.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,21 +22,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Train
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
@@ -40,6 +49,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -76,7 +86,10 @@ import dev.achmad.comuline.components.AppBarActions
 import dev.achmad.comuline.components.AppBarTitle
 import dev.achmad.comuline.components.SearchToolbar
 import dev.achmad.comuline.components.TabText
+import dev.achmad.comuline.screens.home.station_detail.StationDetailScreen
 import dev.achmad.comuline.screens.stations.StationsScreen
+import dev.achmad.comuline.util.brighter
+import dev.achmad.comuline.util.darken
 import dev.achmad.comuline.util.toColor
 import dev.achmad.comuline.work.SyncScheduleJob
 import kotlinx.coroutines.CoroutineScope
@@ -99,22 +112,31 @@ object HomeScreen: Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val applicationContext = LocalContext.current.applicationContext
         val screenModel = rememberScreenModel { HomeScreenModel() }
         val destinationGroups by screenModel.destinationGroups.collectAsState()
+        val focusedStationId by screenModel.focusedStationId.collectAsState()
 
         LaunchedEffect(Unit) {
-            screenModel.fetchSchedules(applicationContext)
+            screenModel.fetchSchedules()
         }
 
         HomeScreen(
             syncScope = screenModel.screenModelScope,
             destinationGroups = destinationGroups,
+            focusedStationId = focusedStationId,
+            onTabFocused = { stationId ->
+                screenModel.onTabFocused(stationId)
+            },
             onClickAddStation = {
                 navigator.push(StationsScreen)
             },
-            onTabFocused = { stationId ->
-                screenModel.onTabFocused(applicationContext, stationId)
+            onClickStationDetail = { route, trainId ->
+                navigator.push(
+                    StationDetailScreen(
+                        route = route,
+                        trainId = trainId
+                    )
+                )
             }
         )
     }
@@ -126,8 +148,10 @@ object HomeScreen: Screen {
 private fun HomeScreen(
     syncScope: CoroutineScope,
     destinationGroups: List<DestinationGroup>,
-    onClickAddStation: () -> Unit,
+    focusedStationId: String?,
     onTabFocused: (String) -> Unit,
+    onClickAddStation: () -> Unit,
+    onClickStationDetail: (String, String) -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -140,11 +164,15 @@ private fun HomeScreen(
             )
         }.collectAsState()
     }
-    val tabs = mapTabContents(destinationGroups, syncStates, onClickAddStation)
+    val tabs = mapTabContents(
+        destinationGroups = destinationGroups,
+        syncStates = syncStates,
+        onClickAddStation = onClickAddStation,
+        onClickStationDetail = onClickStationDetail
+    )
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var focusedStationId by rememberSaveable { mutableStateOf<String?>(null) }
     val initialPage = remember(destinationGroups, focusedStationId) {
         if (focusedStationId != null) {
             destinationGroups
@@ -159,23 +187,29 @@ private fun HomeScreen(
         )
     }
 
-    LaunchedEffect(destinationGroups) {
-        snapshotFlow { searchQuery }
+    LaunchedEffect(searchQuery) {
+        snapshotFlow { searchQuery?.uppercase() }
             .debounce(300)
             .collect { query ->
                 if (!query.isNullOrEmpty()) {
-                    destinationGroups.firstOrNull { it.station.name.contains(query, ignoreCase = true) }
-                        ?.let { pagerState.animateScrollToPage(destinationGroups.indexOf(it)) }
+                    val pairs = destinationGroups
+                        .map { destinationGroup ->
+                            val station = destinationGroup.scheduleGroup.value
+                                ?.map { it.destinationStation }
+                                ?.firstOrNull { it.name.contains(query) }
+                            destinationGroup to station
+                        }
+                    // TODO show numbers beside each tab how many destination station
+                    //  was found matching with the search query and also filter the list
+                    //  to only show the matching destination stations
                 }
             }
     }
 
-    LaunchedEffect(destinationGroups) {
+    LaunchedEffect(Unit) {
         snapshotFlow { pagerState.targetPage }
             .collect {
                 destinationGroups.getOrNull(pagerState.targetPage)?.let {
-                    val stationId = it.station.id
-                    focusedStationId = stationId
                     onTabFocused(it.station.id)
                 }
             }
@@ -326,6 +360,7 @@ private fun mapTabContents(
     destinationGroups: List<DestinationGroup>,
     syncStates: Map<String, State<WorkInfo.State?>>,
     onClickAddStation: () -> Unit,
+    onClickStationDetail: (String, String) -> Unit,
 ): List<TabContent> {
     val tabs = destinationGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
@@ -345,20 +380,69 @@ private fun mapTabContents(
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-                    if (schedules?.isNotEmpty() == true) {
+                    if (schedules?.isNotEmpty() == true && schedules.flatMap { it.schedules }.isNotEmpty()) {
+                        val routes = schedules
+                            .groupBy { it.schedules.firstOrNull()?.schedule?.line }
+                            .mapNotNull {
+                                if (it.key != null) {
+                                    Pair(it.key!!, it.value)
+                                } else null
+                            }
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(contentPadding),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            itemsIndexed(
-                                items = schedules,
-                                key = { _, item -> item.destinationStation.id }
-                            ) { index, schedule ->
-                                ScheduleItem(index, schedules.lastIndex, schedule)
-                            }
-                            item {
-                                HorizontalDivider()
+                            items(routes) { route ->
+                                OutlinedCard {
+                                    Column {
+                                        val density = LocalDensity.current
+                                        val firstSchedule = route.second.first().schedules.first().schedule
+                                        var height by remember { mutableStateOf(0.dp) }
+                                        val color = firstSchedule.color.toColor()
+                                        Row {
+                                            Box(
+                                                modifier = Modifier
+                                                    .height(height)
+                                                    .background(firstSchedule.color.toColor())
+                                                    .padding(start = 6.dp),
+                                            )
+                                            Column(
+                                                modifier = Modifier
+                                                    .onSizeChanged { with(density) { height = it.height.toDp() } }
+                                            ) {
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                Text(
+                                                    modifier = Modifier.padding(start = 16.dp),
+                                                    text = firstSchedule.line,
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = if (isSystemInDarkTheme()) {
+                                                        color.brighter(0.35f)
+                                                    } else color.darken(0.10f),
+                                                    overflow = TextOverflow.Ellipsis,
+                                                )
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                HorizontalDivider()
+                                            }
+                                        }
+                                        route.second.forEachIndexed { index, item ->
+                                            ScheduleItem(
+                                                index = index,
+                                                lastIndex = route.second.lastIndex,
+                                                scheduleGroup = item,
+                                                onClick = {
+                                                    onClickStationDetail(
+                                                        route.first,
+                                                        item.schedules.first().schedule.trainId
+                                                    )
+                                                }
+                                            )
+                                        }
+                                        HorizontalDivider()
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -393,143 +477,11 @@ private fun mapTabContents(
 }
 
 @Composable
-private fun NewScheduleItem(
-    index: Int,
-    lastIndex: Int,
-    scheduleGroup: DestinationGroup.ScheduleGroup,
-) {
-    val station = scheduleGroup.destinationStation
-    val schedules = scheduleGroup.schedules.ifEmpty { return }
-    val firstSchedule = schedules.first().schedule
-    val firstScheduleEta = schedules.first().eta
-    val color = firstSchedule.color.toColor()
-
-    Column(
-        modifier = Modifier.padding(
-            start = 16.dp,
-            end = 16.dp,
-            top = 16.dp
-        )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(color, CircleShape)
-                    .size(16.dp),
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = firstSchedule.line,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Text(
-                    text = station.name,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(4.dp))
-                .background(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Next Departure",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = firstSchedule.departsAt.format(
-                        DateTimeFormatter.ofPattern("HH:mm")
-                    ),
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = firstScheduleEta,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "Upcoming Departures",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.outline
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val previewSchedules =
-                if (schedules.size <= 4) schedules
-                else schedules.take(5).drop(1)
-
-            previewSchedules.map { schedule ->
-                Column(
-                    modifier = Modifier.weight(0.25f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Text(
-                        text = schedule.schedule.departsAt.format(
-                            DateTimeFormatter.ofPattern("HH:mm")
-                        ),
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    )
-                    Text(
-                        text = schedule.eta,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-            )
-        }
-        if (index != lastIndex) {
-            HorizontalDivider(
-                modifier = Modifier.padding(top = 16.dp)
-            )
-        }
-    }
-}
-
-@Composable
 private fun ScheduleItem(
     index: Int,
     lastIndex: Int,
     scheduleGroup: DestinationGroup.ScheduleGroup,
+    onClick: () -> Unit,
 ) {
     val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
@@ -540,66 +492,30 @@ private fun ScheduleItem(
     var height by remember { mutableStateOf(0.dp) }
 
     Row(
-        modifier = Modifier,
+        modifier = Modifier
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier = Modifier
                 .height(height)
-                .background(
-                    color = color,
-                )
+                .background(color)
                 .padding(start = 6.dp),
         )
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .onSizeChanged { with(density) { height = it.height.toDp() } }
-                .padding(horizontal = 8.dp)
-                .padding(top = 8.dp),
+                .padding(top = 16.dp),
         ) {
-            Text(
-                text = firstSchedule.line,
-                style = MaterialTheme.typography.labelMedium,
-                color = color,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(modifier = Modifier.height(2.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min)
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = "Directions to",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = station.name,
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold
-                        ),
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = firstSchedule.trainId,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Column(
-                    horizontalAlignment = Alignment.End,
-                ) {
-                    Text(
-                        text = "Departs at",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
+                Column {
                     Text(
                         text = firstSchedule.departsAt.format(
                             DateTimeFormatter.ofPattern("HH:mm")
@@ -608,65 +524,71 @@ private fun ScheduleItem(
                             fontWeight = FontWeight.Bold
                         ),
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = firstScheduleEta,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
                 }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Next Departures",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
+                Spacer(modifier = Modifier.width(12.dp))
+                VerticalDivider()
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    val previewSchedules =
-                        if (schedules.size <= 4) schedules
-                        else schedules.take(5).drop(1)
-
-                    previewSchedules.map { schedule ->
-                        Column(
-                            modifier = Modifier.weight(0.25f),
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                    Text(
+                        text = station.name,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row {
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = schedule.schedule.departsAt.format(
-                                    DateTimeFormatter.ofPattern("HH:mm")
-                                ),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                ),
+                            Icon(
+                                modifier = Modifier.size(12.dp),
+                                imageVector = Icons.Default.Train,
+                                contentDescription = null,
                             )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = schedule.eta,
+                                text = firstSchedule.trainId,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Row(
+                            modifier = Modifier,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(12.dp),
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "16 stops",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.outline,
                             )
                         }
                     }
                 }
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                )
             }
             if (index != lastIndex) {
                 HorizontalDivider(
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 16.dp)
                 )
             }
             if (index == lastIndex) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

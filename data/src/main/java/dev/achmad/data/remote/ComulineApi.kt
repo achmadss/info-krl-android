@@ -26,4 +26,10 @@ class ComulineApi(
             GET(preference.baseUrl().get() + "/v1/schedule/$stationId")
         ).await()
     }
+
+    suspend fun getRouteByTrainId(trainId: String): Response {
+        return networkHelper.client.newCall(
+            GET(preference.baseUrl().get() + "/v1/route/$trainId")
+        ).await()
+    }
 }
