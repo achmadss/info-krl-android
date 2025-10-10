@@ -16,14 +16,15 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.comuline.components.AppBar
 
 data class StationDetailScreen(
-    private val route: String,
-    private val trainId: String,
+    private val originStationId: String,
+    private val destinationStationId: String,
+    private val scheduleId: String? = null,
 ): Screen {
 
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { StationDetailScreenModel(trainId) }
+        val screenModel = rememberScreenModel { StationDetailScreenModel(destinationStationId) }
 
         StationDetailScreen(
             onNavigateUp = {

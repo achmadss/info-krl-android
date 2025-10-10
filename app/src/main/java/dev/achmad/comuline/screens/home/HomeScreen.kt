@@ -130,11 +130,12 @@ object HomeScreen: Screen {
             onClickAddStation = {
                 navigator.push(StationsScreen)
             },
-            onClickStationDetail = { route, trainId ->
+            onClickStationDetail = { originStationId, destinationStationId, scheduleId ->
                 navigator.push(
                     StationDetailScreen(
-                        route = route,
-                        trainId = trainId
+                        originStationId = originStationId,
+                        destinationStationId = destinationStationId,
+                        scheduleId = scheduleId
                     )
                 )
             }
@@ -151,7 +152,7 @@ private fun HomeScreen(
     focusedStationId: String?,
     onTabFocused: (String) -> Unit,
     onClickAddStation: () -> Unit,
-    onClickStationDetail: (String, String) -> Unit,
+    onClickStationDetail: (String, String, String) -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -389,7 +390,7 @@ private fun mapTabContents(
     syncStates: Map<String, State<WorkInfo.State?>>,
     searchQuery: String?,
     searchResults: Map<String, Int>,
-    onClickStationDetail: (String, String) -> Unit,
+    onClickStationDetail: (String, String, String) -> Unit,
 ): List<TabContent> {
     val tabs = destinationGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
@@ -423,7 +424,11 @@ private fun mapTabContents(
                                 key = { _, item -> item.destinationStation.id }
                             ) { index, schedule ->
                                 ScheduleItem(index, schedules.lastIndex, schedule) {
-                                    onClickStationDetail(group.station.id, schedule.destinationStation.id)
+                                    onClickStationDetail(
+                                        group.station.id,
+                                        schedule.destinationStation.id,
+                                        schedule.schedules.first().schedule.id
+                                    )
                                 }
                             }
                             item {
