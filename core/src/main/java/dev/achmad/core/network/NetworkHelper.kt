@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import com.chuckerteam.chucker.api.ChuckerInterceptor
 import dev.achmad.core.network.interceptor.IgnoreGzipInterceptor
 import dev.achmad.core.network.interceptor.UncaughtExceptionInterceptor
 import okhttp3.Cache
@@ -33,6 +34,7 @@ class NetworkHelper(
                     maxSize = 5L * 1024 * 1024, // 5 MiB
                 ),
             )
+            .addInterceptor(ChuckerInterceptor(context))
             .addInterceptor(UncaughtExceptionInterceptor())
             .addNetworkInterceptor(IgnoreGzipInterceptor())
             .addNetworkInterceptor(BrotliInterceptor)

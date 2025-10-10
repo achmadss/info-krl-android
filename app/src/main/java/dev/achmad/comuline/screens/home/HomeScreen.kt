@@ -73,6 +73,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.comuline.BuildConfig
 import dev.achmad.comuline.R
 import dev.achmad.comuline.components.AppBar
 import dev.achmad.comuline.components.AppBarActions
@@ -108,6 +109,7 @@ object HomeScreen: Screen {
         val screenModel = rememberScreenModel { HomeScreenModel() }
         val destinationGroups by screenModel.destinationGroups.collectAsState()
         val focusedStationId by screenModel.focusedStationId.collectAsState()
+        val filterFutureSchedulesOnly by screenModel.filterFutureSchedulesOnly.collectAsState()
 
         LaunchedEffect(Unit) {
             screenModel.fetchSchedules()
@@ -124,6 +126,7 @@ object HomeScreen: Screen {
             syncScope = screenModel.screenModelScope,
             destinationGroups = destinationGroups,
             focusedStationId = focusedStationId,
+            filterFutureSchedulesOnly = filterFutureSchedulesOnly,
             onTabFocused = { stationId ->
                 screenModel.onTabFocused(stationId)
             },
@@ -141,6 +144,9 @@ object HomeScreen: Screen {
             },
             onManualSync = {
                 screenModel.fetchSchedules(true)
+            },
+            onToggleFilterFutureSchedules = {
+                screenModel.toggleFilterFutureSchedules()
             }
         )
     }
@@ -153,10 +159,12 @@ private fun HomeScreen(
     syncScope: CoroutineScope,
     destinationGroups: List<DestinationGroup>,
     focusedStationId: String?,
+    filterFutureSchedulesOnly: Boolean,
     onTabFocused: (String) -> Unit,
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String, String) -> Unit,
     onManualSync: () -> Unit,
+    onToggleFilterFutureSchedules: () -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -277,7 +285,20 @@ private fun HomeScreen(
                                         // TODO
                                     },
                                 ),
-                            )
+                            ) + if (BuildConfig.DEBUG) {
+                                listOf(
+                                    AppBar.OverflowAction(
+                                        title = "----- DEBUG -----",
+                                        enabled = false,
+                                        onClick = {}
+                                    ),
+                                    AppBar.OverflowAction(
+                                        title = if (filterFutureSchedulesOnly) "Show All Schedules" else "Hide Past Schedules",
+                                        icon = Icons.Default.EventBusy,
+                                        onClick = onToggleFilterFutureSchedules,
+                                    )
+                                )
+                            } else emptyList()
                         } else emptyList()
                     )
                 },

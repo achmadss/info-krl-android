@@ -245,11 +245,12 @@ fun AppBarActions(
         }
 
         DropdownMenu(
-            modifier = Modifier.widthIn(min = 180.dp),
+            modifier = Modifier.widthIn(min = 150.dp),
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
         ) {
             overflowActions.map {
+                val enabled = it.enabled
                 DropdownMenuItem(
                     leadingIcon = when {
                         it.icon != null -> {
@@ -257,6 +258,7 @@ fun AppBarActions(
                                 Icon(
                                     imageVector = it.icon,
                                     contentDescription = null,
+                                    tint = if (enabled) LocalContentColor.current else MaterialTheme.colorScheme.outline
                                 )
                             }
                         }
@@ -266,7 +268,13 @@ fun AppBarActions(
                         it.onClick()
                         showMenu = false
                     },
-                    text = { Text(it.title, fontWeight = FontWeight.Normal) },
+                    text = {
+                        Text(
+                            text = it.title,
+                            fontWeight = FontWeight.Normal,
+                            color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.outline
+                        )
+                    },
                 )
             }
         }
@@ -446,6 +454,7 @@ sealed interface AppBar {
     data class OverflowAction(
         val title: String,
         val icon: ImageVector? = null,
+        val enabled: Boolean = true,
         val onClick: () -> Unit,
     ) : AppBarAction
 }
