@@ -8,5 +8,6 @@ interface RouteRepository {
     val routes: Flow<List<Route>>
 
     suspend fun fetchAndStoreByTrainId(trainId: String)
+    fun subscribeSingle(trainId: String): Flow<Route?>
 
 }

@@ -48,7 +48,7 @@ class ScheduleRepositoryImpl(
     }
 
 
-    override fun subscribeByStationId(stationId: String): Flow<List<Schedule>> {
+    override fun subscribeSingle(stationId: String): Flow<List<Schedule>> {
         return scheduleDao.subscribeAllByStationId(stationId)
             .map { it.toDomain() }
             .distinctUntilChanged()

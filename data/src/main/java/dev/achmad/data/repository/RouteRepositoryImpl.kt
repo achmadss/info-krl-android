@@ -41,4 +41,11 @@ class RouteRepositoryImpl(
         }
     }
 
+    override fun subscribeSingle(trainId: String): Flow<Route?> {
+        return routeDao.subscribeSingle(trainId)
+            .map { it?.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+    }
+
 }

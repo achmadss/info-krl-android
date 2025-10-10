@@ -94,35 +94,35 @@ class SyncRouteJob(
 
         fun start(
             context: Context,
-            stationId: String,
+            trainId: String,
             finishDelay: Long = 0
         ): Boolean {
-            if (!shouldSync(stationId)) {
+            if (!shouldSync(trainId)) {
                 return false
             }
-            return startNow(context, stationId, finishDelay)
+            return startNow(context, trainId, finishDelay)
         }
 
         fun startNow(
             context: Context,
-            stationId: String,
+            trainId: String,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
-            if (workManager.isRunning(stationId)) {
+            if (workManager.isRunning(trainId)) {
                 return false
             }
 
             val inputData = workDataOf(
-                KEY_TRAIN_ID to stationId,
+                KEY_TRAIN_ID to trainId,
                 KEY_DELAY to finishDelay,
             )
             val request = OneTimeWorkRequestBuilder<SyncRouteJob>()
                 .addTag(TAG)
-                .addTag(stationId)
+                .addTag(trainId)
                 .setInputData(inputData)
                 .build()
-            workManager.enqueueUniqueWork(stationId, ExistingWorkPolicy.KEEP, request)
+            workManager.enqueueUniqueWork(trainId, ExistingWorkPolicy.KEEP, request)
             return true
         }
 

@@ -120,6 +120,13 @@ object HomeScreen: Screen {
             screenModel.fetchSchedules()
         }
 
+        LaunchedEffect(destinationGroups) {
+            if (destinationGroups.isNotEmpty()) {
+                val initialStationId = focusedStationId ?: destinationGroups.firstOrNull()?.station?.id
+                initialStationId?.let { screenModel.onTabFocused(it) }
+            }
+        }
+
         HomeScreen(
             syncScope = screenModel.screenModelScope,
             destinationGroups = destinationGroups,
@@ -506,6 +513,7 @@ private fun ScheduleItem(
     val schedules = scheduleGroup.schedules.ifEmpty { return }
     val firstSchedule = schedules.first().schedule
     val firstScheduleEta = schedules.first().eta
+    val stops = schedules.first().stops
 
     Column(
         modifier = Modifier
@@ -579,7 +587,7 @@ private fun ScheduleItem(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "16 stops",
+                            text = stops?.let { "$it stops" } ?: "Unknown",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline,
                         )
