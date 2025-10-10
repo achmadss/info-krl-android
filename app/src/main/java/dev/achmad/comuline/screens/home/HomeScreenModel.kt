@@ -56,6 +56,9 @@ class HomeScreenModel(
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
+    // Set to false to show all schedules (including past ones) for testing
+    private val filterFutureSchedulesOnly = true
+
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
         started = SharingStarted.Eagerly,
@@ -117,7 +120,7 @@ class HomeScreenModel(
                     // Combine tick with schedules to reactively update train IDs when time changes
                     tick.flatMapLatest { currentTime ->
                         val time = currentTime ?: LocalDateTime.now()
-                        val trainIds = extractFirstTrainIds(schedules, time)
+                        val trainIds = extractFirstTrainIds(schedules, time, filterFutureSchedulesOnly)
 
                         // Fetch routes for any new train IDs that need syncing
                         trainIds.forEach { trainId ->
@@ -125,13 +128,13 @@ class HomeScreenModel(
                         }
 
                         if (trainIds.isEmpty()) {
-                            // No future trains
-                            flowOf(createScheduleGroups(schedules, stations, time))
+                            // No trains
+                            flowOf(createScheduleGroups(schedules, stations, time, filterFutureSchedulesOnly))
                         } else {
-                            // Observe all relevant route flows for current future trains
+                            // Observe all relevant route flows for current trains
                             val routeFlows = trainIds.map { trainId -> getRouteFlow(trainId) }
                             combine(*routeFlows.toTypedArray()) { routes ->
-                                createScheduleGroups(schedules, stations, time)
+                                createScheduleGroups(schedules, stations, time, filterFutureSchedulesOnly)
                             }
                         }
                     }
@@ -147,7 +150,8 @@ class HomeScreenModel(
     private fun createScheduleGroups(
         schedules: List<Schedule>,
         stations: List<Station>,
-        currentTime: LocalDateTime
+        currentTime: LocalDateTime,
+        filterFutureOnly: Boolean = true
     ): List<DestinationGroup.ScheduleGroup> {
         // Group all schedules by destination
         val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
@@ -155,13 +159,17 @@ class HomeScreenModel(
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
             val station = stations.firstOrNull { it.id == destinationId }
             station?.let {
-                // Filter to future schedules for this destination
-                val futureSchedules = schedulesForDest
-                    .filter { it.departsAt.isAfter(currentTime) }
-                    .sortedBy { it.departsAt }
+                // Filter schedules based on time if needed
+                val filteredSchedules = if (filterFutureOnly) {
+                    schedulesForDest.filter { it.departsAt.isAfter(currentTime) }
+                } else {
+                    schedulesForDest
+                }
+                
+                val sortedSchedules = filteredSchedules.sortedBy { it.departsAt }
 
-                // Get the first future train's ID
-                val firstTrainId = futureSchedules.firstOrNull()?.trainId
+                // Get the first train's ID to fetch route
+                val firstTrainId = sortedSchedules.firstOrNull()?.trainId
 
                 // Get or create the route flow, then get its current value
                 val route = firstTrainId?.let { trainId ->
@@ -169,7 +177,7 @@ class HomeScreenModel(
                 }
 
                 // Map schedules to UI models
-                val uiSchedules = futureSchedules.map { schedule ->
+                val uiSchedules = sortedSchedules.map { schedule ->
                     DestinationGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,
                         eta = etaString(
@@ -180,7 +188,7 @@ class HomeScreenModel(
                     )
                 }
 
-                // Only return schedule group if there are future schedules
+                // Return schedule group if there are schedules
                 if (uiSchedules.isNotEmpty()) {
                     DestinationGroup.ScheduleGroup(
                         destinationStation = station,
@@ -195,12 +203,21 @@ class HomeScreenModel(
     }
 
     /**
-     * Extracts the earliest FUTURE train ID for each destination from schedules.
-     * This ensures we only fetch route data for the first upcoming train to each destination.
+     * Extracts the earliest train ID for each destination from schedules.
+     * This ensures we fetch route data for the first train to each destination.
      */
-    private fun extractFirstTrainIds(schedules: List<Schedule>, currentTime: LocalDateTime): List<String> {
-        return schedules
-            .filter { it.departsAt.isAfter(currentTime) }  // Only future schedules
+    private fun extractFirstTrainIds(
+        schedules: List<Schedule>,
+        currentTime: LocalDateTime,
+        filterFutureOnly: Boolean = true
+    ): List<String> {
+        val filtered = if (filterFutureOnly) {
+            schedules.filter { it.departsAt.isAfter(currentTime) }
+        } else {
+            schedules
+        }
+        
+        return filtered
             .groupBy { it.stationDestinationId }
             .mapNotNull { (_, schedulesForDestination) ->
                 schedulesForDestination.minByOrNull { it.departsAt }?.trainId
@@ -236,13 +253,23 @@ class HomeScreenModel(
      * Fetches schedules for all favorite stations that need syncing.
      * Typically called on app start or when returning to the home screen.
      */
-    fun fetchSchedules() {
+    fun fetchSchedules(
+        manualFetch: Boolean = false
+    ) {
         favoriteStations.value.forEach { favorite ->
-            if (SyncScheduleJob.shouldSync(favorite.id)) {
+            val stationId = favorite.id
+            val finishDelay = 500L
+            if (manualFetch) {
                 SyncScheduleJob.startNow(
                     context = injectContext(),
-                    stationId = favorite.id,
-                    finishDelay = 500L
+                    stationId = stationId,
+                    finishDelay = finishDelay
+                )
+            } else {
+                SyncScheduleJob.start(
+                    context = injectContext(),
+                    stationId = stationId,
+                    finishDelay = finishDelay
                 )
             }
             // Also fetch routes for this station after schedules are available
@@ -265,7 +292,7 @@ class HomeScreenModel(
         if (schedules.isEmpty()) return
 
         val currentTime = LocalDateTime.now()
-        extractFirstTrainIds(schedules, currentTime).forEach { trainId ->
+        extractFirstTrainIds(schedules, currentTime, filterFutureSchedulesOnly).forEach { trainId ->
             fetchRoute(trainId)
         }
     }

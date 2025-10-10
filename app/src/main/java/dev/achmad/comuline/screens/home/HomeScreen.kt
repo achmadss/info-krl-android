@@ -138,6 +138,9 @@ object HomeScreen: Screen {
                         scheduleId = scheduleId
                     )
                 )
+            },
+            onManualSync = {
+                screenModel.fetchSchedules(true)
             }
         )
     }
@@ -153,6 +156,7 @@ private fun HomeScreen(
     onTabFocused: (String) -> Unit,
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String, String) -> Unit,
+    onManualSync: () -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -257,9 +261,7 @@ private fun HomeScreen(
                                 AppBar.OverflowAction(
                                     title = "Sync All",
                                     icon = Icons.Default.Refresh,
-                                    onClick = {
-                                        // TODO
-                                    },
+                                    onClick = { onManualSync() },
                                 ),
                                 AppBar.OverflowAction(
                                     title = "Settings",
