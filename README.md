@@ -1,99 +1,89 @@
-# Android Starter
+# Comuline Android
 
-A clean, modular Android project template to kickstart your next Android application. This starter template comes with a multi-module architecture and an easy setup script to customize it for your project.
+An Android application for tracking Indonesian commuter train (KRL) schedules in real-time. Pin your favorite stations and get instant access to departure times, train information, and route details.
+
+> This project is based on the design and concept from [Comuline](https://github.com/comuline/web), the original web application by the Comuline team.
+
+## ✨ Features
+
+- **Station Pinning**: Pin your frequently used stations for quick access
+- **Real-time Schedules**: View upcoming train departures with live countdowns
+- **Pull-to-Refresh**: Refresh individual station schedules with a simple swipe
+- **Smart Sync**: Automatic background synchronization of schedule data
+- **Route Information**: Detailed train routes with stop counts and ETAs
+- **Search**: Quickly find specific destinations across all your pinned stations
+- **Tabbed Interface**: Easy navigation between multiple pinned stations
+- **Material Design 3**: Modern, clean UI following Material Design guidelines
 
 ## 🏗️ Architecture
 
 This project follows a clean, modular architecture with the following modules:
 
-- **`app`** - Main application module containing UI and application-specific code
+- **`app`** - Main application module with UI screens and Jetpack Compose components
 - **`core`** - Core utilities, extensions, and shared functionality
-- **`domain`** - Business logic and use cases
-- **`data`** - Data sources, repositories, and data management
+- **`domain`** - Business logic, blueprints and domain models
+- **`data`** - Data sources, repositories, and API integrations
 
-### Setup Script
+### Tech Stack
 
-You can run the setup script in two ways:
+- **Language**: Kotlin
+- **UI**: Jetpack Compose with Material 3
+- **Navigation**: Voyager
+- **Dependency Injection**: Koin
+- **Background Tasks**: WorkManager
+- **Async**: Kotlin Coroutines & Flow
+- **Image Loading**: Coil
 
-#### Interactive Mode
+## 📱 Screenshots
+
+The app features:
+- Home screen with tabbed station views
+- Schedule listings with color-coded train lines
+- Detailed departure information including train IDs and stop counts
+- Pull-to-refresh functionality on each station tab
+- Search functionality across all stations
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Android Studio Hedgehog or newer
+- Android SDK 26 or higher
+- Gradle 8.x
+
+### Building
+
 ```bash
-chmod +x setup.sh
-./setup.sh
+# Clone the repository
+git clone https://github.com/yourusername/comuline-android.git
+cd comuline-android
+
+# Build the project
+./gradlew build
+
+# Install on device/emulator
+./gradlew installDebug
 ```
-
-The setup script will prompt you for:
-
-- **Project Name**: The display name of your project (e.g., "My Awesome App")
-- **Package Name**: The main package name for your app module (e.g., "com.company.myapp")
-- **Minimum SDK**: The minimum Android SDK version (default: 26)
-
-**Examples:**
-```bash
-Project Name: (Android Starter) My Awesome App
-Package Name: (com.example.androidstarter) com.company.myapp
-Minimum SDK Version: (26) 24
-```
-
-#### Command Line Mode
-```bash
-chmod +x setup.sh
-./setup.sh --name "My Awesome App" --package com.company.myapp --sdk 24 --yes
-```
-
-The script will prompt you for each configuration option.
-
-**Command line options:**
-- `-n, --name PROJECT_NAME` - Set the project name
-- `-p, --package PACKAGE_NAME` - Set the package name (for app module)
-- `-s, --sdk MIN_SDK` - Set the minimum SDK version
-- `-y, --yes` - Skip confirmation prompt
-- `-h, --help` - Show help message
-
-**Examples:**
-```bash
-# Full setup with confirmation
-./setup.sh --name "My App" --package com.company.myapp --sdk 26
-
-# Quick setup without confirmation
-./setup.sh -n "My App" -p com.company.myapp -s 24 -y
-
-# Use some defaults
-./setup.sh --package com.company.myapp --yes
-```
-
-This will configure your project with:
-- App module package: `com.company.myapp`
-- Core module package: `com.company.core`
-- Domain module package: `com.company.domain`
-- Data module package: `com.company.data`
 
 ## 📁 Project Structure
 
-After setup, your project structure will look like this:
-
 ```
-android-starter/
+comuline-android/
 ├── app/                          # Main application module
-│   ├── src/main/java/your/package/name/
-│   └── build.gradle
+│   ├── screens/                  # Screen composables and view models
+│   ├── components/               # Reusable UI components
+│   ├── work/                     # Background sync jobs
+│   ├── util/                     # Utility functions
+│   └── di/                       # Dependency injection
 ├── core/                         # Core utilities module
-│   ├── src/main/java/your/package/core/
-│   └── build.gradle
 ├── domain/                       # Business logic module
-│   ├── src/main/java/your/package/domain/
-│   └── build.gradle
-├── data/                         # Data layer module
-│   ├── src/main/java/your/package/data/
-│   └── build.gradle
-├── build.gradle
-├── settings.gradle
-└── setup.sh
+└── data/                         # Data layer module
 ```
 
 ## 🤝 Contributing
 
-Feel free to submit issues and pull requests to improve this starter template!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3) - see the [LICENSE](LICENSE) file for details.
