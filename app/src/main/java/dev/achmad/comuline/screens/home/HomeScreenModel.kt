@@ -114,23 +114,25 @@ class HomeScreenModel(
                 schedules == null -> flowOf(null)
                 schedules.isEmpty() -> flowOf(emptyList())
                 else -> {
-                    // Determine which route flows we need to observe based on future schedules
-                    val currentTime = LocalDateTime.now()
-                    val trainIds = extractFirstTrainIds(schedules, currentTime)
+                    // Combine tick with schedules to reactively update train IDs when time changes
+                    tick.flatMapLatest { currentTime ->
+                        val time = currentTime ?: LocalDateTime.now()
+                        val trainIds = extractFirstTrainIds(schedules, time)
 
-                    if (trainIds.isEmpty()) {
-                        // No future trains, just combine with tick
-                        combine(tick) { minuteTick ->
-                            val time = minuteTick.firstOrNull() ?: LocalDateTime.now()
-                            createScheduleGroups(schedules, stations, time)
+                        // Fetch routes for any new train IDs that need syncing
+                        trainIds.forEach { trainId ->
+                            fetchRoute(trainId)
                         }
-                    } else {
-                        // Observe all relevant route flows + tick, so UI updates when any change
-                        val routeFlows = trainIds.map { trainId -> getRouteFlow(trainId) }
-                        combine(tick, *routeFlows.toTypedArray()) { values ->
-                            val minuteTick = values.first() as LocalDateTime?
-                            val time = minuteTick ?: LocalDateTime.now()
-                            createScheduleGroups(schedules, stations, time)
+
+                        if (trainIds.isEmpty()) {
+                            // No future trains
+                            flowOf(createScheduleGroups(schedules, stations, time))
+                        } else {
+                            // Observe all relevant route flows for current future trains
+                            val routeFlows = trainIds.map { trainId -> getRouteFlow(trainId) }
+                            combine(*routeFlows.toTypedArray()) { routes ->
+                                createScheduleGroups(schedules, stations, time)
+                            }
                         }
                     }
                 }
