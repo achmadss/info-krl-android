@@ -3,7 +3,6 @@ package dev.achmad.data.repository
 import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.ComulineDatabase
 import dev.achmad.data.local.dao.ScheduleDao
-import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.schedule.toDomain
 import dev.achmad.data.remote.ComulineApi
 import dev.achmad.data.remote.model.BaseResponse
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import java.time.LocalDateTime
 
 class ScheduleRepositoryImpl(
     private val api: ComulineApi,

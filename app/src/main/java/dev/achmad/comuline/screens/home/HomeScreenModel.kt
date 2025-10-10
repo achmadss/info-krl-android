@@ -3,8 +3,8 @@ package dev.achmad.comuline.screens.home
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.comuline.util.etaString
-import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.comuline.work.SyncRouteJob
+import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
@@ -142,10 +142,6 @@ class HomeScreenModel(
         )
     }
 
-    /**
-     * Creates schedule groups from schedules.
-     * Determines which routes are needed based on future schedules and looks them up from cache.
-     */
     private fun createScheduleGroups(
         schedules: List<Schedule>,
         stations: List<Station>,
@@ -190,6 +186,9 @@ class HomeScreenModel(
                     )
                 } else null
             }
+        }.sortedBy { scheduleGroup ->
+            // Sort by the line of the first schedule
+            scheduleGroup.schedules.firstOrNull()?.schedule?.line
         }
     }
 
