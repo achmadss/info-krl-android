@@ -1,5 +1,6 @@
 package dev.achmad.data.repository
 
+import android.content.res.Resources.NotFoundException
 import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.ComulineDatabase
 import dev.achmad.data.local.dao.RouteDao
@@ -33,6 +34,9 @@ class RouteRepositoryImpl(
     override suspend fun fetchAndStoreByTrainId(trainId: String) {
         withContext(Dispatchers.IO) {
             val response = api.getRouteByTrainId(trainId)
+            if (response.code == 404) {
+                throw NotFoundException("trainId not found")
+            }
             val data = response.parseAs<BaseResponse<RouteResponse>>()
             if (data.metadata.success == false) {
                 throw Exception(data.metadata.message)

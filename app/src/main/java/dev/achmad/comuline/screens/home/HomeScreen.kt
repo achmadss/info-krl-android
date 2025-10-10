@@ -37,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -145,6 +146,9 @@ object HomeScreen: Screen {
             onManualSync = {
                 screenModel.fetchSchedules(true)
             },
+            onRefreshStation = { stationId ->
+                screenModel.fetchScheduleForStation(stationId, true)
+            },
             onToggleFilterFutureSchedules = {
                 screenModel.toggleFilterFutureSchedules()
             }
@@ -164,6 +168,7 @@ private fun HomeScreen(
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String, String) -> Unit,
     onManualSync: () -> Unit,
+    onRefreshStation: (String) -> Unit,
     onToggleFilterFutureSchedules: () -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
@@ -183,7 +188,8 @@ private fun HomeScreen(
         syncStates = syncStates,
         searchQuery = searchQuery,
         searchResults = searchResults,
-        onClickStationDetail = onClickStationDetail
+        onClickStationDetail = onClickStationDetail,
+        onRefreshStation = onRefreshStation
     )
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -407,6 +413,7 @@ private fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun mapTabContents(
     destinationGroups: List<DestinationGroup>,
@@ -414,6 +421,7 @@ private fun mapTabContents(
     searchQuery: String?,
     searchResults: Map<String, Int>,
     onClickStationDetail: (String, String, String) -> Unit,
+    onRefreshStation: (String) -> Unit,
 ): List<TabContent> {
     val tabs = destinationGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
@@ -426,61 +434,69 @@ private fun mapTabContents(
             content = { contentPadding, _ ->
                 val schedules = group.scheduleGroup.collectAsState().value
                 val query = searchQuery?.uppercase()
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
+                val isRefreshing = syncState?.isFinished?.not() == true
+
+                PullToRefreshBox(
+                    isRefreshing = isRefreshing,
+                    onRefresh = { onRefreshStation(group.station.id) },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    if (schedules?.isNotEmpty() == true && schedules.flatMap { it.schedules }.isNotEmpty()) {
-                        val filteredSchedules = when {
-                            !query.isNullOrEmpty() -> schedules.filter { scheduleGroup ->
-                                scheduleGroup.destinationStation.name.uppercase().contains(query)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                    ) {
+                        if (schedules?.isNotEmpty() == true && schedules.flatMap { it.schedules }.isNotEmpty()) {
+                            val filteredSchedules = when {
+                                !query.isNullOrEmpty() -> schedules.filter { scheduleGroup ->
+                                    scheduleGroup.destinationStation.name.uppercase().contains(query)
+                                }
+                                else -> schedules
                             }
-                            else -> schedules
-                        }
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(contentPadding),
-                        ) {
-                            itemsIndexed(
-                                items = filteredSchedules,
-                                key = { _, item -> item.destinationStation.id }
-                            ) { index, schedule ->
-                                ScheduleItem(index, schedules.lastIndex, schedule) {
-                                    onClickStationDetail(
-                                        group.station.id,
-                                        schedule.destinationStation.id,
-                                        schedule.schedules.first().schedule.id
-                                    )
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(contentPadding),
+                            ) {
+                                itemsIndexed(
+                                    items = filteredSchedules,
+                                    key = { _, item -> item.destinationStation.id }
+                                ) { index, schedule ->
+                                    ScheduleItem(index, schedules.lastIndex, schedule) {
+                                        onClickStationDetail(
+                                            group.station.id,
+                                            schedule.destinationStation.id,
+                                            schedule.schedules.first().schedule.id
+                                        )
+                                    }
+                                }
+                                item {
+                                    HorizontalDivider()
                                 }
                             }
-                            item {
-                                HorizontalDivider()
+                        } else {
+                            Column(
+                                modifier = Modifier.align(Alignment.Center),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Icon(
+                                    modifier = Modifier.size(36.dp),
+                                    imageVector = Icons.Default.EventBusy,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    text = "No schedule found.\nCheck again tomorrow.",
+                                    textAlign = TextAlign.Center,
+                                )
                             }
                         }
-                    } else {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            Icon(
-                                modifier = Modifier.size(36.dp),
-                                imageVector = Icons.Default.EventBusy,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                text = "No schedule found.\nCheck again tomorrow.",
-                                textAlign = TextAlign.Center,
+                        if (schedules == null || isRefreshing) {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
-                    }
-                    if (schedules == null || syncState?.isFinished?.not() == true) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
             },

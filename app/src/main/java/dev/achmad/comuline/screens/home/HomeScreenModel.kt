@@ -285,6 +285,38 @@ class HomeScreenModel(
     }
 
     /**
+     * Fetches schedule for a specific station.
+     * Used for pull-to-refresh functionality on individual tabs.
+     */
+    fun fetchScheduleForStation(
+        stationId: String,
+        manualFetch: Boolean = true
+    ) {
+        val finishDelay = 500L
+        if (manualFetch) {
+            SyncScheduleJob.startNow(
+                context = injectContext(),
+                stationId = stationId,
+                finishDelay = finishDelay
+            )
+        } else {
+            SyncScheduleJob.start(
+                context = injectContext(),
+                stationId = stationId,
+                finishDelay = finishDelay
+            )
+        }
+        // Also fetch routes for this station after schedules are available
+        screenModelScope.launch {
+            val scheduleFlow = getScheduleFlow(stationId)
+            scheduleFlow
+                .filterNotNull()
+                .first { it.isNotEmpty() }
+            fetchRoutesForStation(stationId, manualFetch)
+        }
+    }
+
+    /**
      * Fetches routes for the first train to each destination from a station.
      * Only fetches if routes need to be synced according to SyncRouteJob.
      */

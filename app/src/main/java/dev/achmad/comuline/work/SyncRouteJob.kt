@@ -1,6 +1,7 @@
 package dev.achmad.comuline.work
 
 import android.content.Context
+import android.content.res.Resources.NotFoundException
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -33,13 +34,15 @@ class SyncRouteJob(
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
+        var trainId: String? = null
+        val zone = ZoneId.systemDefault()
+        val now = LocalDateTime.ofInstant(Instant.now(), zone)
+
         return try {
-            val trainId = inputData.getString(KEY_TRAIN_ID)
+            trainId = inputData.getString(KEY_TRAIN_ID)
                 ?: throw IllegalArgumentException("Station ID cannot be null")
             val delay = inputData.getLong(KEY_DELAY, 0)
             val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
-            val zone = ZoneId.systemDefault()
-            val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
             routeRepository.fetchAndStoreByTrainId(trainId)
             lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
@@ -48,6 +51,12 @@ class SyncRouteJob(
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
+            if (e is NotFoundException) {
+                trainId?.let {
+                    val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
+                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                }
+            }
             Result.failure()
         }
     }
