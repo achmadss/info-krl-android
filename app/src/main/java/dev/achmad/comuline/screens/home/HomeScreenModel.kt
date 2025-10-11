@@ -124,9 +124,7 @@ class HomeScreenModel(
                         val trainIds = extractFirstTrainIds(schedules, time, _filterFutureSchedulesOnly.value)
 
                         // Fetch routes for any new train IDs that need syncing
-                        trainIds.forEach { trainId ->
-                            fetchRoute(trainId)
-                        }
+                        fetchRoute(trainIds)
 
                         if (trainIds.isEmpty()) {
                             // No trains
@@ -292,19 +290,21 @@ class HomeScreenModel(
         stationId: String,
         manualFetch: Boolean = true
     ) {
-        val finishDelay = 500L
-        if (manualFetch) {
-            SyncScheduleJob.startNow(
-                context = injectContext(),
-                stationId = stationId,
-                finishDelay = finishDelay
-            )
-        } else {
-            SyncScheduleJob.start(
-                context = injectContext(),
-                stationId = stationId,
-                finishDelay = finishDelay
-            )
+        screenModelScope.launch {
+            val finishDelay = 500L
+            if (manualFetch) {
+                SyncScheduleJob.startNow(
+                    context = injectContext(),
+                    stationId = stationId,
+                    finishDelay = finishDelay
+                )
+            } else {
+                SyncScheduleJob.start(
+                    context = injectContext(),
+                    stationId = stationId,
+                    finishDelay = finishDelay
+                )
+            }
         }
         // Also fetch routes for this station after schedules are available
         screenModelScope.launch {
@@ -328,8 +328,9 @@ class HomeScreenModel(
         if (schedules.isEmpty()) return
 
         val currentTime = LocalDateTime.now()
-        extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value).forEach { trainId ->
-            fetchRoute(trainId, manualFetch)
+        val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
+        screenModelScope.launch {
+            fetchRoute(trainIds, true)
         }
     }
 
@@ -342,19 +343,19 @@ class HomeScreenModel(
     }
 
     private fun fetchRoute(
-        trainId: String,
+        trainIds: List<String>,
         manualFetch: Boolean = false,
     ) {
         if (manualFetch) {
             SyncRouteJob.startNow(
                 context = injectContext(),
-                trainId = trainId,
+                trainIds = trainIds,
                 finishDelay = 500L
             )
         } else {
             SyncRouteJob.start(
                 context = injectContext(),
-                trainId = trainId,
+                trainIds = trainIds,
                 finishDelay = 500L
             )
         }
