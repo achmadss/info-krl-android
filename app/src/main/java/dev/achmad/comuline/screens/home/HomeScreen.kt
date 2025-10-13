@@ -82,6 +82,7 @@ import dev.achmad.comuline.components.AppBarTitle
 import dev.achmad.comuline.components.SearchToolbar
 import dev.achmad.comuline.components.TabText
 import dev.achmad.comuline.screens.home.station_detail.StationDetailScreen
+import dev.achmad.comuline.screens.settings.SettingsScreen
 import dev.achmad.comuline.screens.stations.StationsScreen
 import dev.achmad.comuline.util.brighter
 import dev.achmad.comuline.util.darken
@@ -151,6 +152,9 @@ object HomeScreen: Screen {
             },
             onToggleFilterFutureSchedules = {
                 screenModel.toggleFilterFutureSchedules()
+            },
+            onNavigateToSettings = {
+                navigator.push(SettingsScreen)
             }
         )
     }
@@ -170,6 +174,7 @@ private fun HomeScreen(
     onManualSync: () -> Unit,
     onRefreshStation: (String) -> Unit,
     onToggleFilterFutureSchedules: () -> Unit,
+    onNavigateToSettings: () -> Unit,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -280,9 +285,7 @@ private fun HomeScreen(
                                 AppBar.OverflowAction(
                                     title = "Settings",
                                     icon = Icons.Outlined.Settings,
-                                    onClick = {
-                                        // TODO
-                                    },
+                                    onClick = { onNavigateToSettings() },
                                 ),
                                 AppBar.OverflowAction(
                                     title = "About",
