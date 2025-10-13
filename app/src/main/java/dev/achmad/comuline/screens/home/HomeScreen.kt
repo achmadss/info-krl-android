@@ -37,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -45,11 +44,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -88,9 +87,11 @@ import dev.achmad.comuline.screens.stations.StationsScreen
 import dev.achmad.comuline.util.brighter
 import dev.achmad.comuline.util.darken
 import dev.achmad.comuline.util.toColor
+import dev.achmad.comuline.work.SyncRouteJob
 import dev.achmad.comuline.work.SyncScheduleJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import java.time.format.DateTimeFormatter
@@ -180,26 +181,31 @@ private fun HomeScreen(
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
     var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+
+    // Combine both SyncScheduleJob and SyncRouteJob states for each station
     val syncStates = destinationGroups.associate { group ->
         group.station.id to remember(group.station.id) {
-            SyncScheduleJob.subscribeState(
+            val scheduleState = SyncScheduleJob.subscribeState(
                 context = applicationContext,
                 scope = syncScope,
                 stationId = group.station.id
             )
-        }.collectAsState()
-    }
+            val routeState = SyncRouteJob.subscribeStateByStation(
+                context = applicationContext,
+                scope = syncScope,
+                stationId = group.station.id
+            )
 
-    // Cache sync states to prevent recreation on every recomposition
-//    val syncStates = remember(destinationGroups) {
-//        destinationGroups.associate { group ->
-//            group.station.id to SyncScheduleJob.subscribeState(
-//                context = applicationContext,
-//                scope = syncScope,
-//                stationId = group.station.id
-//            )
-//        }
-//    }.mapValues { (_, flow) -> flow.collectAsState() }
+            // Combine both states - if either is running, show as refreshing
+            combine(scheduleState, routeState) { schedule, route ->
+                when {
+                    schedule?.isFinished == false -> schedule
+                    route?.isFinished == false -> route
+                    else -> schedule
+                }
+            }
+        }.collectAsState(initial = null)
+    }
 
     val tabs = mapTabContents(
         destinationGroups = destinationGroups,

@@ -1,6 +1,5 @@
 package dev.achmad.comuline.screens.home.station_detail
 
-import android.util.Log
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.comuline.util.etaString
@@ -14,10 +13,11 @@ import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.RouteRepository
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -44,6 +44,8 @@ class StationDetailScreenModel(
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
+    private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
+    private var shouldFetchRoute = true
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -51,7 +53,7 @@ class StationDetailScreenModel(
         initialValue = null
     )
 
-    val schedules: StateFlow<ScheduleGroup?> = combine(
+    val scheduleGroup: StateFlow<ScheduleGroup?> = combine(
         tick,
         getScheduleFlow(originStationId),
         getStationFlow(originStationId),
@@ -64,17 +66,8 @@ class StationDetailScreenModel(
             else -> {
                 val filteredSchedules = schedules
                     .filter { it.stationDestinationId == destinationStationId }
-                    .filter {
-                        it.departsAt.toLocalDate() ==
-                                LocalDate.now()
-                    }
+                    .filter { it.departsAt.toLocalDate() == LocalDate.now() }
                     .sortedBy { it.departsAt }
-                    .let {
-                        screenModelScope.launch {
-                            fetchRoute(it.map { it.trainId })
-                        }
-                        it
-                    }
                     .map { schedule ->
                         ScheduleGroup.UISchedule(
                             schedule = schedule,
@@ -86,7 +79,13 @@ class StationDetailScreenModel(
                             route = getRouteFlow(schedule.trainId),
                         )
                     }
-
+                    .also {
+                        if (shouldFetchRoute && it.isNotEmpty()) {
+                            screenModelScope.launch(Dispatchers.IO) {
+                                fetchRoute(it.map { it.schedule.trainId })
+                            }
+                        }
+                    }
                 ScheduleGroup(
                     originStation = originStation,
                     destinationStation = destinationStation,
@@ -94,7 +93,7 @@ class StationDetailScreenModel(
                 )
             }
         }
-    }.stateIn(
+    }.distinctUntilChanged().stateIn(
         scope = screenModelScope,
         started = SharingStarted.Eagerly,
         initialValue = null
@@ -122,15 +121,18 @@ class StationDetailScreenModel(
     }
 
     private fun getRouteFlow(trainId: String): StateFlow<Route?> {
-        return routeRepository.subscribeSingle(trainId)
-            .stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = null
-        )
+        return routeFlowsCache.getOrPut(trainId) {
+            routeRepository.subscribeSingle(trainId)
+                .stateIn(
+                    scope = screenModelScope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = null
+                )
+        }
     }
 
     private fun fetchRoute(trainIds: List<String>) {
+        shouldFetchRoute = false
         SyncRouteJob.start(
             context = injectContext(),
             trainIds = trainIds,

@@ -66,7 +66,7 @@ class SyncScheduleJob(
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 
-        val maxSchedulePermits =  Semaphore(1)
+        val maxSchedulePermits =  Semaphore(5)
 
         fun shouldSync(
             stationId: String,

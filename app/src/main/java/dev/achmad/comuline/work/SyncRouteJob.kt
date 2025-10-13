@@ -2,9 +2,7 @@ package dev.achmad.comuline.work
 
 import android.content.Context
 import android.content.res.Resources.NotFoundException
-import android.util.Log
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkQuery
@@ -103,10 +101,40 @@ class SyncRouteJob(
         fun subscribeState(
             context: Context,
             scope: CoroutineScope,
+            trainIds: List<String>,
+        ): StateFlow<WorkInfo.State?> {
+            val workQuery = WorkQuery.Builder
+                .fromTags(trainIds)
+                .addStates(listOf(
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.RUNNING,
+                    WorkInfo.State.BLOCKED
+                ))
+                .build()
+
+            return context.workManager
+                .getWorkInfosFlow(workQuery)
+                .map { it.firstOrNull()?.state }
+                .distinctUntilChanged()
+                .stateIn(
+                    scope = scope,
+                    started = SharingStarted.Eagerly,
+                    initialValue = null
+                )
+        }
+
+        fun subscribeStateByStation(
+            context: Context,
+            scope: CoroutineScope,
             stationId: String,
         ): StateFlow<WorkInfo.State?> {
             val workQuery = WorkQuery.Builder
                 .fromTags(listOf(stationId))
+                .addStates(listOf(
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.RUNNING,
+                    WorkInfo.State.BLOCKED
+                ))
                 .build()
 
             return context.workManager
@@ -123,6 +151,7 @@ class SyncRouteJob(
         fun start(
             context: Context,
             trainIds: List<String>,
+            stationId: String? = null,
             finishDelay: Long = 0
         ): Boolean {
             val trainIdsToStart = trainIds.toMutableList()
@@ -132,13 +161,14 @@ class SyncRouteJob(
                 }
             }
             if (trainIdsToStart.isEmpty()) return false
-            return startNow(context, trainIdsToStart, finishDelay)
+            return startNow(context, trainIdsToStart, stationId, finishDelay)
         }
 
 
         fun startNow(
             context: Context,
             trainIds: List<String>,
+            stationId: String? = null,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
@@ -161,6 +191,11 @@ class SyncRouteJob(
 
             trainIdsToEnqueue.forEach {
                 request.addTag(it)
+            }
+            
+            // Add stationId as a tag if provided
+            if (stationId != null) {
+                request.addTag(stationId)
             }
 
             workManager.enqueue(

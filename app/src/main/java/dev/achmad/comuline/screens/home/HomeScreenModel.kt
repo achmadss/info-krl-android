@@ -32,6 +32,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
+private const val fetchScheduleFinishDelay = 1000L
+private const val fetchRouteFinishDelay = 1000L
+
 data class DestinationGroup(
     val station: Station,
     val scheduleGroup: StateFlow<List<ScheduleGroup>?>
@@ -102,7 +105,7 @@ class HomeScreenModel(
                     scheduleGroup = createScheduleGroupFlow(favorite.id, stations)
                 )
             }
-    }.stateIn(
+    }.distinctUntilChanged().stateIn(
         scope = screenModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -122,7 +125,7 @@ class HomeScreenModel(
 
         return scheduleFlow
             .flatMapLatest { schedules ->
-                if (schedules == null || schedules.isEmpty()) {
+                if (schedules.isNullOrEmpty()) {
                     return@flatMapLatest flowOf(null)
                 }
 
@@ -147,13 +150,14 @@ class HomeScreenModel(
                     tick,
                     _filterFutureSchedulesOnly
                 ) { values ->
+                    @Suppress("UNCHECKED_CAST")
                     val currentSchedules = values[0] as List<Schedule>
-                    val currentTime = values[values.size - 2] as LocalDateTime
+                    val time = values[values.size - 2] as LocalDateTime
                     val filterFutureOnly = values[values.size - 1] as Boolean
 
                     // Compute schedule groups off main thread
                     withContext(Dispatchers.Default) {
-                        computeScheduleGroups(currentSchedules, stations, currentTime, filterFutureOnly)
+                        computeScheduleGroups(currentSchedules, stations, time, filterFutureOnly)
                     }
                 }
             }
@@ -282,18 +286,17 @@ class HomeScreenModel(
         screenModelScope.launch(Dispatchers.IO) {
             favoriteStations.value.forEach { favorite ->
                 val stationId = favorite.id
-                val finishDelay = 500L
                 if (manualFetch) {
                     SyncScheduleJob.startNow(
                         context = injectContext(),
                         stationId = stationId,
-                        finishDelay = finishDelay
+                        finishDelay = fetchScheduleFinishDelay
                     )
                 } else {
                     SyncScheduleJob.start(
                         context = injectContext(),
                         stationId = stationId,
-                        finishDelay = finishDelay
+                        finishDelay = fetchScheduleFinishDelay
                     )
                 }
             }
@@ -320,18 +323,17 @@ class HomeScreenModel(
         manualFetch: Boolean = true
     ) {
         screenModelScope.launch(Dispatchers.IO) {
-            val finishDelay = 500L
             if (manualFetch) {
                 SyncScheduleJob.startNow(
                     context = injectContext(),
                     stationId = stationId,
-                    finishDelay = finishDelay
+                    finishDelay = fetchScheduleFinishDelay
                 )
             } else {
                 SyncScheduleJob.start(
                     context = injectContext(),
                     stationId = stationId,
-                    finishDelay = finishDelay
+                    finishDelay = fetchScheduleFinishDelay
                 )
             }
 
@@ -358,7 +360,7 @@ class HomeScreenModel(
         val currentTime = LocalDateTime.now()
         val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
         screenModelScope.launch(Dispatchers.IO) {
-            fetchRoute(trainIds, manualFetch)
+            fetchRoute(trainIds, stationId, manualFetch)
         }
     }
 
@@ -372,19 +374,22 @@ class HomeScreenModel(
 
     private fun fetchRoute(
         trainIds: List<String>,
+        stationId: String? = null,
         manualFetch: Boolean = false,
     ) {
         if (manualFetch) {
             SyncRouteJob.startNow(
                 context = injectContext(),
                 trainIds = trainIds,
-                finishDelay = 500L
+                stationId = stationId,
+                finishDelay = fetchRouteFinishDelay
             )
         } else {
             SyncRouteJob.start(
                 context = injectContext(),
                 trainIds = trainIds,
-                finishDelay = 500L
+                stationId = stationId,
+                finishDelay = fetchRouteFinishDelay
             )
         }
     }

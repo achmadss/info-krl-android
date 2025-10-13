@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package dev.achmad.core.network
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -18,7 +20,6 @@ val jsonMime = "application/json; charset=utf-8".toMediaType()
 val json = Json { ignoreUnknownKeys = true }
 
 // Based on https://github.com/gildor/kotlin-coroutines-okhttp
-@OptIn(ExperimentalCoroutinesApi::class)
 private suspend fun Call.await(callStack: Array<StackTraceElement>): Response {
     return suspendCancellableCoroutine { continuation ->
         val callback =

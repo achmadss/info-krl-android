@@ -1,6 +1,7 @@
 package dev.achmad.comuline.screens.home.station_detail
 
-import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,11 +27,11 @@ import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Train
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -38,22 +39,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -61,12 +60,10 @@ import dev.achmad.comuline.components.AppBar
 import dev.achmad.comuline.util.brighter
 import dev.achmad.comuline.util.darken
 import dev.achmad.comuline.util.toColor
-import dev.achmad.comuline.work.SyncRouteJob
-import dev.achmad.core.di.util.injectContext
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 
-private const val DIVIDER_KEY = "divider_key"
+private const val BLINK_DELAY = 300L
 
 data class StationDetailScreen(
     private val originStationId: String,
@@ -78,7 +75,7 @@ data class StationDetailScreen(
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { StationDetailScreenModel(originStationId, destinationStationId) }
-        val schedules by screenModel.schedules.collectAsState()
+        val schedules by screenModel.scheduleGroup.collectAsState()
 
         StationDetailScreen(
             onNavigateUp = {
@@ -157,9 +154,10 @@ private fun StationDetailScreen(
                 )
             }
         },
-//        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { contentPadding ->
         val lazyListState = rememberLazyListState()
+        var isScrollComplete by remember { mutableStateOf(focusedScheduleId == null) }
+        var blinkScheduleId by remember { mutableStateOf(focusedScheduleId) }
 
         Box(
             modifier = Modifier
@@ -167,13 +165,7 @@ private fun StationDetailScreen(
                 .padding(contentPadding)
         ) {
             when {
-                schedules == null -> {
-                    // Loading state
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                schedules.schedules.isEmpty() -> {
+                schedules?.schedules?.isEmpty() == true -> {
                     // Empty state
                     Column(
                         modifier = Modifier.align(Alignment.Center),
@@ -205,33 +197,50 @@ private fun StationDetailScreen(
                     }
                 }
                 else -> {
-                    LazyColumn(
-                        state = lazyListState,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        itemsIndexed(
-                            items = schedules.schedules,
-                            key = { _, item -> item.schedule.id }
-                        ) { index, uiSchedule ->
-                            ScheduleDetailItem(
-                                index = index,
-                                lastIndex = schedules.schedules.lastIndex,
-                                uiSchedule = uiSchedule,
-                                onClick = { onClickSchedule(uiSchedule.schedule.id) },
-                            )
+                    if (schedules != null) {
+                        LazyColumn(
+                            state = lazyListState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(
+                                items = schedules.schedules,
+                                key = { _, item -> item.schedule.id }
+                            ) { index, uiSchedule ->
+                                ScheduleDetailItem(
+                                    index = index,
+                                    lastIndex = schedules.schedules.lastIndex,
+                                    uiSchedule = uiSchedule,
+                                    onClick = { onClickSchedule(uiSchedule.schedule.id) },
+                                    shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
+                                    onBlinkComplete = { blinkScheduleId = null }
+                                )
+                            }
+                            item {
+                                HorizontalDivider()
+                            }
                         }
-                        item {
-                            HorizontalDivider()
+                        if (focusedScheduleId != null) {
+                            LaunchedEffect(focusedScheduleId) {
+                                val index = schedules.schedules.indexOfFirst {
+                                    it.schedule.id == focusedScheduleId
+                                }
+                                if (index != -1) {
+                                    lazyListState.scrollToItem(index)
+                                }
+                                isScrollComplete = true
+                            }
                         }
                     }
-                    if (focusedScheduleId != null) {
-                        LaunchedEffect(focusedScheduleId) {
-                            val index = schedules.schedules.indexOfFirst {
-                                it.schedule.id == focusedScheduleId
-                            }
-                            if (index != -1) {
-                                lazyListState.animateScrollToItem(index)
-                            }
+                    if (schedules == null || !isScrollComplete) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                            )
                         }
                     }
                 }
@@ -246,15 +255,42 @@ private fun ScheduleDetailItem(
     lastIndex: Int,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
+    shouldBlink: Boolean = false,
+    onBlinkComplete: () -> Unit = {},
 ) {
     val density = LocalDensity.current
     val schedule = uiSchedule.schedule
     val route by uiSchedule.route.collectAsState()
     val color = schedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
+    var blinkState by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        if (shouldBlink) {
+            onBlinkComplete()
+            repeat(2) {
+                blinkState = 1
+                delay(BLINK_DELAY)
+                blinkState = 0
+                delay(BLINK_DELAY)
+            }
+        }
+    }
+
+    // Animated background color
+    val backgroundColor by animateColorAsState(
+        targetValue = if (blinkState == 1) {
+            MaterialTheme.colorScheme.surfaceBright.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.background
+        },
+        animationSpec = tween(durationMillis = 500),
+        label = "highlight_blink"
+    )
 
     Row(
         modifier = Modifier
+            .background(backgroundColor)
             .clickable { onClick() }
     ) {
         Box(
