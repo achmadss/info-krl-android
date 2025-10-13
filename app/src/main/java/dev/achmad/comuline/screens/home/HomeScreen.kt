@@ -49,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -183,6 +184,18 @@ private fun HomeScreen(
             )
         }.collectAsState()
     }
+
+    // Cache sync states to prevent recreation on every recomposition
+//    val syncStates = remember(destinationGroups) {
+//        destinationGroups.associate { group ->
+//            group.station.id to SyncScheduleJob.subscribeState(
+//                context = applicationContext,
+//                scope = syncScope,
+//                stationId = group.station.id
+//            )
+//        }
+//    }.mapValues { (_, flow) -> flow.collectAsState() }
+
     val tabs = mapTabContents(
         destinationGroups = destinationGroups,
         syncStates = syncStates,
@@ -423,7 +436,7 @@ private fun mapTabContents(
     onClickStationDetail: (String, String, String) -> Unit,
     onRefreshStation: (String) -> Unit,
 ): List<TabContent> {
-    val tabs = destinationGroups.map { group ->
+    return destinationGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
         val badgeCount = searchResults[group.station.id]?.takeIf { it > 0 }
         TabContent(
@@ -502,7 +515,6 @@ private fun mapTabContents(
             },
         )
     }
-    return tabs
 }
 
 @Composable
