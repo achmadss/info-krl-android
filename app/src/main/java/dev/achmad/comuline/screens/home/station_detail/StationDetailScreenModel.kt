@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.comuline.util.etaString
 import dev.achmad.comuline.work.SyncRouteJob
+import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
@@ -53,6 +54,22 @@ class StationDetailScreenModel(
         initialValue = null
     )
 
+    init {
+        // Automatically fetch schedules when a new day starts
+        screenModelScope.launch {
+            var lastDate = LocalDate.now()
+            tick.collect { currentDateTime ->
+                currentDateTime?.let {
+                    val currentDate = it.toLocalDate()
+                    if (currentDate.isAfter(lastDate)) {
+                        lastDate = currentDate
+                        fetchSchedule()
+                    }
+                }
+            }
+        }
+    }
+
     val scheduleGroup: StateFlow<ScheduleGroup?> = combine(
         tick,
         getScheduleFlow(originStationId),
@@ -81,9 +98,7 @@ class StationDetailScreenModel(
                     }
                     .also {
                         if (shouldFetchRoute && it.isNotEmpty()) {
-                            screenModelScope.launch(Dispatchers.IO) {
-                                fetchRoute(it.map { it.schedule.trainId })
-                            }
+                            fetchRoute(it.map { it.schedule.trainId })
                         }
                     }
                 ScheduleGroup(
@@ -132,12 +147,24 @@ class StationDetailScreenModel(
     }
 
     private fun fetchRoute(trainIds: List<String>) {
-        shouldFetchRoute = false
-        SyncRouteJob.start(
-            context = injectContext(),
-            trainIds = trainIds,
-            finishDelay = 500
-        )
+        screenModelScope.launch(Dispatchers.IO) {
+            shouldFetchRoute = false
+            SyncRouteJob.start(
+                context = injectContext(),
+                trainIds = trainIds,
+                finishDelay = 500
+            )
+        }
+    }
+
+    private fun fetchSchedule() {
+        screenModelScope.launch(Dispatchers.IO) {
+            SyncScheduleJob.start(
+                context = injectContext(),
+                stationId = originStationId,
+                finishDelay = 1000L
+            )
+        }
     }
 
 }

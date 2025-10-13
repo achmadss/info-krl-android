@@ -74,6 +74,22 @@ class HomeScreenModel(
             initialValue = LocalDateTime.now()
         )
 
+    init {
+        // Automatically fetch schedules when a new day starts
+        screenModelScope.launch {
+            var lastDate = LocalDateTime.now().toLocalDate()
+            tick.collect { currentDateTime ->
+                currentDateTime?.let {
+                    val currentDate = currentDateTime.toLocalDate()
+                    if (currentDate.isAfter(lastDate)) {
+                        lastDate = currentDate
+                        fetchSchedules(true)
+                    }
+                }
+            }
+        }
+    }
+
     private val stations = stationRepository.stations
         .stateIn(
             scope = screenModelScope,
