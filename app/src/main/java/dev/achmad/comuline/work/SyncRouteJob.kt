@@ -2,6 +2,7 @@ package dev.achmad.comuline.work
 
 import android.content.Context
 import android.content.res.Resources.NotFoundException
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -15,12 +16,18 @@ import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.RouteRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -34,30 +41,40 @@ class SyncRouteJob(
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
-        var trainId: String? = null
-        val zone = ZoneId.systemDefault()
-        val now = LocalDateTime.ofInstant(Instant.now(), zone)
+        return withContext(Dispatchers.IO) {
+            val zone = ZoneId.systemDefault()
+            val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
-        return try {
-            trainId = inputData.getString(KEY_TRAIN_ID)
-                ?: throw IllegalArgumentException("Station ID cannot be null")
-            val delay = inputData.getLong(KEY_DELAY, 0)
-            val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
+            try {
+                val trainIds = inputData.getStringArray(KEY_TRAIN_ID)
+                    ?: throw IllegalArgumentException("Station ID cannot be null")
+                val delay = inputData.getLong(KEY_DELAY, 0)
 
-            routeRepository.fetchAndStoreByTrainId(trainId)
-            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                trainIds.map { trainId ->
+                    async {
+                        maxRoutePermits.withPermit {
+                            try {
+                                val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
+                                routeRepository.fetchAndStoreByTrainId(trainId)
+                                lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                if (e is NotFoundException) {
+                                    trainId.let {
+                                        val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
+                                        lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }.awaitAll()
 
-            delay(delay)
-            Result.success()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (e is NotFoundException) {
-                trainId?.let {
-                    val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
-                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-                }
+                delay(delay)
+                Result.success()
+            } catch (e: Exception) {
+                Result.failure()
             }
-            Result.failure()
         }
     }
 
@@ -66,6 +83,8 @@ class SyncRouteJob(
         private const val TAG = "RefreshRoute"
         private const val KEY_TRAIN_ID = "KEY_TRAIN_ID"
         private const val KEY_DELAY = "KEY_DELAY"
+
+        val maxRoutePermits = Semaphore(5)
 
         fun shouldSync(
             trainId: String,
@@ -103,35 +122,50 @@ class SyncRouteJob(
 
         fun start(
             context: Context,
-            trainId: String,
+            trainIds: List<String>,
             finishDelay: Long = 0
         ): Boolean {
-            if (!shouldSync(trainId)) {
-                return false
+            val trainIdsToStart = trainIds.toMutableList()
+            trainIds.forEach {
+                if (!shouldSync(it)) {
+                    trainIdsToStart.remove(it)
+                }
             }
-            return startNow(context, trainId, finishDelay)
+            if (trainIdsToStart.isEmpty()) return false
+            return startNow(context, trainIdsToStart, finishDelay)
         }
+
 
         fun startNow(
             context: Context,
-            trainId: String,
+            trainIds: List<String>,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
-            if (workManager.isRunning(trainId)) {
-                return false
+            val trainIdsToEnqueue = trainIds.toMutableList()
+
+            trainIds.forEach { trainId ->
+                if (workManager.isRunning(trainId)) {
+                    trainIdsToEnqueue.remove(trainId)
+                }
             }
+            if (trainIdsToEnqueue.isEmpty()) return false
 
             val inputData = workDataOf(
-                KEY_TRAIN_ID to trainId,
+                KEY_TRAIN_ID to trainIds.toTypedArray(),
                 KEY_DELAY to finishDelay,
             )
             val request = OneTimeWorkRequestBuilder<SyncRouteJob>()
                 .addTag(TAG)
-                .addTag(trainId)
                 .setInputData(inputData)
-                .build()
-            workManager.enqueueUniqueWork(trainId, ExistingWorkPolicy.KEEP, request)
+
+            trainIdsToEnqueue.forEach {
+                request.addTag(it)
+            }
+
+            workManager.enqueue(
+                request = request.build()
+            )
             return true
         }
 

@@ -54,4 +54,5 @@ dependencies {
     api(libs.serialization.json.okio)
 
     debugImplementation(libs.chucker)
+    releaseImplementation(libs.chucker.release)
 }

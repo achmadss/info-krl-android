@@ -14,12 +14,16 @@ import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.ScheduleRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -33,22 +37,26 @@ class SyncScheduleJob(
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
-        return try {
-            val stationId = inputData.getString(KEY_STATION_ID)
-                ?: throw IllegalArgumentException("Station ID cannot be null")
-            val delay = inputData.getLong(KEY_DELAY, 0)
-            val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
-            val zone = ZoneId.systemDefault()
-            val now = LocalDateTime.ofInstant(Instant.now(), zone)
+        return withContext(Dispatchers.IO) {
+            try {
+                val stationId = inputData.getString(KEY_STATION_ID)
+                    ?: throw IllegalArgumentException("Station ID cannot be null")
+                val delay = inputData.getLong(KEY_DELAY, 0)
+                val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
+                val zone = ZoneId.systemDefault()
+                val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
-            scheduleRepository.fetchAndStoreByStationId(stationId)
-            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                maxSchedulePermits.withPermit {
+                    scheduleRepository.fetchAndStoreByStationId(stationId)
+                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                }
 
-            delay(delay)
-            Result.success()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure()
+                delay(delay)
+                Result.success()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Result.failure()
+            }
         }
     }
 
@@ -57,6 +65,8 @@ class SyncScheduleJob(
         private const val TAG = "RefreshSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
+
+        val maxSchedulePermits =  Semaphore(1)
 
         fun shouldSync(
             stationId: String,

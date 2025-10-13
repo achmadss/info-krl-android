@@ -13,10 +13,12 @@ import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 
 class SyncStationJob(
     context: Context,
@@ -27,13 +29,15 @@ class SyncStationJob(
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
-        return try {
-            stationRepository.fetchAndStore()
-            applicationPreference.hasFetchedStations().set(true)
-            Result.success()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure()
+        return withContext(Dispatchers.IO) {
+            try {
+                stationRepository.fetchAndStore()
+                applicationPreference.hasFetchedStations().set(true)
+                Result.success()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Result.failure()
+            }
         }
     }
 
