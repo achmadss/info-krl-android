@@ -2,8 +2,10 @@ package dev.achmad.comuline.work
 
 import android.content.Context
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
@@ -13,6 +15,7 @@ import dev.achmad.comuline.util.isRunning
 import dev.achmad.comuline.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.ScheduleRepository
+import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -27,6 +30,7 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.concurrent.TimeUnit
 
 class SyncScheduleJob(
     context: Context,
@@ -34,21 +38,21 @@ class SyncScheduleJob(
 ): CoroutineWorker(context, workerParams) {
 
     private val scheduleRepository by injectLazy<ScheduleRepository>()
+    private val stationRepository by injectLazy<StationRepository>()
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
             try {
                 val stationId = inputData.getString(KEY_STATION_ID)
-                    ?: throw IllegalArgumentException("Station ID cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
-                val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
                 val zone = ZoneId.systemDefault()
                 val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
-                maxSchedulePermits.withPermit {
-                    scheduleRepository.fetchAndStoreByStationId(stationId)
-                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                if (stationId.isNullOrEmpty()) {
+                    syncAllFavoriteStations(now, zone)
+                } else {
+                    syncSingleStation(stationId, now, zone)
                 }
 
                 delay(delay)
@@ -60,6 +64,37 @@ class SyncScheduleJob(
         }
     }
 
+    /**
+     * Syncs all favorite stations for the daily periodic sync.
+     * Skips stations that already have a running worker to prevent duplicate work.
+     */
+    private suspend fun syncAllFavoriteStations(now: LocalDateTime, zone: ZoneId) {
+        val favoriteStations = stationRepository.awaitAllFavorites()
+        val workManager = applicationContext.workManager
+
+        favoriteStations.forEach { station ->
+            // Check if sync is needed AND no worker is already running for this station
+            if (shouldSync(station.id) && !workManager.isRunning(station.id)) {
+                val lastFetchSchedule = applicationPreference.lastFetchSchedule(station.id)
+                maxSchedulePermits.withPermit {
+                    scheduleRepository.fetchAndStoreByStationId(station.id)
+                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                }
+            }
+        }
+    }
+
+    /**
+     * Syncs a single station schedule.
+     */
+    private suspend fun syncSingleStation(stationId: String, now: LocalDateTime, zone: ZoneId) {
+        val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
+        maxSchedulePermits.withPermit {
+            scheduleRepository.fetchAndStoreByStationId(stationId)
+            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+        }
+    }
+
     companion object {
 
         private const val TAG = "RefreshSchedule"
@@ -68,7 +103,7 @@ class SyncScheduleJob(
 
         val maxSchedulePermits =  Semaphore(5)
 
-        fun shouldSync(
+        private fun shouldSync(
             stationId: String,
         ): Boolean {
             val applicationPreference by injectLazy<ApplicationPreference>()
@@ -161,6 +196,36 @@ class SyncScheduleJob(
             workManager
                 .getWorkInfos(workQuery).get()
                 .forEach { workManager.cancelWorkById(it.id) }
+        }
+
+        fun scheduleDailySync(context: Context) {
+            val workManager = context.workManager
+
+            // Calculate delay until next midnight
+            val now = LocalDateTime.now()
+            val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
+            val delayMillis = java.time.Duration.between(now, nextMidnight).toMillis()
+
+            val request = PeriodicWorkRequestBuilder<SyncScheduleJob>(
+                repeatInterval = 24,
+                repeatIntervalTimeUnit = TimeUnit.HOURS
+            )
+                .addTag(TAG)
+                .addTag("DAILY_SYNC")
+                .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+                .setInputData(
+                    workDataOf(
+                        KEY_STATION_ID to "",  // Empty string signals sync all favorites
+                        KEY_DELAY to 0L
+                    )
+                )
+                .build()
+
+            workManager.enqueueUniquePeriodicWork(
+                "DailyScheduleSync",
+                ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
         }
 
     }

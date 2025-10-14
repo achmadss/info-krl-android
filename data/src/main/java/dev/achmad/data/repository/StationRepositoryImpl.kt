@@ -73,6 +73,12 @@ class StationRepositoryImpl(
         }
     }
 
+    override suspend fun awaitAllFavorites(): List<Station> {
+        return withContext(Dispatchers.IO) {
+            stationDao.awaitAll(favorite = true).map { it.toDomain() }
+        }
+    }
+
     override suspend fun awaitSingle(id: String): Station? {
         return stationDao.awaitSingle(id)?.toDomain()
     }

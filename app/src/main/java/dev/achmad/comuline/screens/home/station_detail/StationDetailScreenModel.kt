@@ -55,19 +55,7 @@ class StationDetailScreenModel(
     )
 
     init {
-        // Automatically fetch schedules when a new day starts
-        screenModelScope.launch {
-            var lastDate = LocalDate.now()
-            tick.collect { currentDateTime ->
-                currentDateTime?.let {
-                    val currentDate = it.toLocalDate()
-                    if (currentDate.isAfter(lastDate)) {
-                        lastDate = currentDate
-                        fetchSchedule()
-                    }
-                }
-            }
-        }
+        fetchSchedule()
     }
 
     val scheduleGroup: StateFlow<ScheduleGroup?> = combine(

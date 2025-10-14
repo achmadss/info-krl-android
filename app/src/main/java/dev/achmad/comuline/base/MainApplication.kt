@@ -3,6 +3,7 @@ package dev.achmad.comuline.base
 import android.app.Application
 import android.util.Log
 import dev.achmad.comuline.di.appModule
+import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.core.di.coreModule
 import dev.achmad.data.di.dataModule
 import org.koin.android.ext.koin.androidContext
@@ -37,5 +38,6 @@ class MainApplication: Application() {
                 )
             )
         }
+        SyncScheduleJob.scheduleDailySync(this)
     }
 }

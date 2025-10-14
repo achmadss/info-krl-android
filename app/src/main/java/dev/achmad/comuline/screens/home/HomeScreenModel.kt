@@ -65,7 +65,6 @@ class HomeScreenModel(
     private val _filterFutureSchedulesOnly = MutableStateFlow(true)
     val filterFutureSchedulesOnly = _filterFutureSchedulesOnly.asStateFlow()
 
-    // Debounce ticker to reduce recomposition frequency
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .distinctUntilChanged()
         .stateIn(
@@ -73,22 +72,6 @@ class HomeScreenModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = LocalDateTime.now()
         )
-
-    init {
-        // Automatically fetch schedules when a new day starts
-        screenModelScope.launch {
-            var lastDate = LocalDateTime.now().toLocalDate()
-            tick.collect { currentDateTime ->
-                currentDateTime?.let {
-                    val currentDate = currentDateTime.toLocalDate()
-                    if (currentDate.isAfter(lastDate)) {
-                        lastDate = currentDate
-                        fetchSchedules(true)
-                    }
-                }
-            }
-        }
-    }
 
     private val stations = stationRepository.stations
         .stateIn(
@@ -104,10 +87,6 @@ class HomeScreenModel(
             initialValue = emptyList()
         )
 
-    /**
-     * Combines favorite stations with their schedules and routes to create destination groups.
-     * Updates reactively when stations, favorites, schedules, routes, or time changes.
-     */
     val destinationGroups = combine(
         stations,
         favoriteStations,
@@ -197,8 +176,6 @@ class HomeScreenModel(
     ): List<DestinationGroup.ScheduleGroup> {
         // Group all schedules by destination
         val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
-
-
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
             val station = stations.firstOrNull { it.id == destinationId }
             station?.let {
@@ -300,7 +277,7 @@ class HomeScreenModel(
         manualFetch: Boolean = false
     ) {
         screenModelScope.launch(Dispatchers.IO) {
-            favoriteStations.value.forEach { favorite ->
+            favoriteStations.value.map { favorite ->
                 val stationId = favorite.id
                 if (manualFetch) {
                     SyncScheduleJob.startNow(
@@ -318,7 +295,7 @@ class HomeScreenModel(
             }
 
             // Fetch routes after schedules are loaded
-            favoriteStations.value.forEach { favorite ->
+            favoriteStations.value.map { favorite ->
                 launch {
                     val scheduleFlow = getScheduleFlow(favorite.id)
                     scheduleFlow

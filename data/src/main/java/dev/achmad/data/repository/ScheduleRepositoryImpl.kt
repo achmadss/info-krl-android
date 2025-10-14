@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
 
 class ScheduleRepositoryImpl(
@@ -48,7 +49,7 @@ class ScheduleRepositoryImpl(
 
     override fun subscribeSingle(stationId: String): Flow<List<Schedule>> {
         return scheduleDao.subscribeAllByStationId(stationId)
-            .map { it.toDomain() }
+            .mapNotNull { it.toDomain().filter { !it.trainId.contains("/") } }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
     }
