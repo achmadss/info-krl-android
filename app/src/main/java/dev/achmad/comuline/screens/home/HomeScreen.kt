@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
@@ -304,13 +307,6 @@ private fun HomeScreen(
                                     icon = Icons.Outlined.Settings,
                                     onClick = { onNavigateToSettings() },
                                 ),
-                                AppBar.OverflowAction(
-                                    title = "About",
-                                    icon = Icons.Outlined.Info,
-                                    onClick = {
-                                        // TODO
-                                    },
-                                ),
                             ) + if (BuildConfig.DEBUG) {
                                 listOf(
                                     AppBar.OverflowAction(
@@ -472,31 +468,57 @@ private fun mapTabContents(
                                 }
                                 else -> schedules
                             }
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(contentPadding),
-                            ) {
-                                itemsIndexed(
-                                    items = filteredSchedules,
-                                    key = { _, item -> item.destinationStation.id }
-                                ) { index, schedule ->
-                                    ScheduleItem(index, schedules.lastIndex, schedule) {
-                                        onClickStationDetail(
-                                            group.station.id,
-                                            schedule.destinationStation.id,
-                                            schedule.schedules.first().schedule.id
-                                        )
+                            if (filteredSchedules.isNotEmpty()) {
+                                LazyColumn(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(contentPadding),
+                                ) {
+                                    itemsIndexed(
+                                        items = filteredSchedules,
+                                        key = { _, item -> item.destinationStation.id }
+                                    ) { index, schedule ->
+                                        ScheduleItem(index, schedules.lastIndex, schedule) {
+                                            onClickStationDetail(
+                                                group.station.id,
+                                                schedule.destinationStation.id,
+                                                schedule.schedules.first().schedule.id
+                                            )
+                                        }
+                                    }
+                                    item {
+                                        HorizontalDivider()
                                     }
                                 }
-                                item {
-                                    HorizontalDivider()
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(rememberScrollState()),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center,
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(36.dp),
+                                        imageVector = Icons.Default.SearchOff,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        text = "No schedule found for\n\"$searchQuery\"",
+                                        textAlign = TextAlign.Center,
+                                    )
                                 }
                             }
                         } else {
                             Column(
-                                modifier = Modifier.align(Alignment.Center),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
                                 horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
                             ) {
                                 Icon(
                                     modifier = Modifier.size(36.dp),
