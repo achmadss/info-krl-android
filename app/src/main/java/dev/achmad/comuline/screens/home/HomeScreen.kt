@@ -45,6 +45,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -456,7 +457,7 @@ private fun mapTabContents(
                 val isRefreshing = syncState?.isFinished?.not() == true
 
                 PullToRefreshBox(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = schedules == null || isRefreshing,
                     onRefresh = { onRefreshStation(group.station.id) },
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -510,11 +511,6 @@ private fun mapTabContents(
                                     textAlign = TextAlign.Center,
                                 )
                             }
-                        }
-                        if (schedules == null) {
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth()
-                            )
                         }
                     }
                 }

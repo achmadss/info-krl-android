@@ -32,8 +32,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
-private const val fetchScheduleFinishDelay = 1000L
-private const val fetchRouteFinishDelay = 1000L
+private const val fetchScheduleFinishDelay = 0L
+private const val fetchRouteFinishDelay = 0L
 
 data class DepartureGroup(
     val station: Station,
