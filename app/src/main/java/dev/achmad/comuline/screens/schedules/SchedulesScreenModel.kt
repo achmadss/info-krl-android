@@ -1,4 +1,4 @@
-package dev.achmad.comuline.screens.home.station_detail
+package dev.achmad.comuline.screens.schedules
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -36,7 +36,7 @@ data class ScheduleGroup(
     )
 }
 
-class StationDetailScreenModel(
+class SchedulesScreenModel(
     private val originStationId: String,
     private val destinationStationId: String,
     private val scheduleRepository: ScheduleRepository = inject(),
@@ -46,7 +46,6 @@ class StationDetailScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
-    private var shouldFetchRoute = true
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -85,7 +84,7 @@ class StationDetailScreenModel(
                         )
                     }
                     .also {
-                        if (shouldFetchRoute && it.isNotEmpty()) {
+                        if (it.isNotEmpty()) {
                             fetchRoute(it.map { it.schedule.trainId })
                         }
                     }
@@ -136,7 +135,6 @@ class StationDetailScreenModel(
 
     private fun fetchRoute(trainIds: List<String>) {
         screenModelScope.launch(Dispatchers.IO) {
-            shouldFetchRoute = false
             SyncRouteJob.start(
                 context = injectContext(),
                 trainIds = trainIds,

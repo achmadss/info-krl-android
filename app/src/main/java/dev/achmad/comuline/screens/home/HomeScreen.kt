@@ -81,7 +81,7 @@ import dev.achmad.comuline.components.AppBarActions
 import dev.achmad.comuline.components.AppBarTitle
 import dev.achmad.comuline.components.SearchToolbar
 import dev.achmad.comuline.components.TabText
-import dev.achmad.comuline.screens.home.station_detail.StationDetailScreen
+import dev.achmad.comuline.screens.schedules.SchedulesScreen
 import dev.achmad.comuline.screens.settings.SettingsScreen
 import dev.achmad.comuline.screens.stations.StationsScreen
 import dev.achmad.comuline.util.brighter
@@ -136,7 +136,7 @@ object HomeScreen: Screen {
             },
             onClickStationDetail = { originStationId, destinationStationId, scheduleId ->
                 navigator.push(
-                    StationDetailScreen(
+                    SchedulesScreen(
                         originStationId = originStationId,
                         destinationStationId = destinationStationId,
                         scheduleId = scheduleId
@@ -511,7 +511,7 @@ private fun mapTabContents(
                                 )
                             }
                         }
-                        if (schedules == null || isRefreshing) {
+                        if (schedules == null) {
                             LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth()
                             )

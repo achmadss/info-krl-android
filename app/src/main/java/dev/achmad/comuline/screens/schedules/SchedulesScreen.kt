@@ -1,4 +1,4 @@
-package dev.achmad.comuline.screens.home.station_detail
+package dev.achmad.comuline.screens.schedules
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -65,7 +65,7 @@ import java.time.format.DateTimeFormatter
 
 private const val BLINK_DELAY = 300L
 
-data class StationDetailScreen(
+data class SchedulesScreen(
     private val originStationId: String,
     private val destinationStationId: String,
     private val scheduleId: String? = null,
@@ -74,10 +74,10 @@ data class StationDetailScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { StationDetailScreenModel(originStationId, destinationStationId) }
+        val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
-        StationDetailScreen(
+        SchedulesScreen(
             onNavigateUp = {
                 navigator.pop()
             },
@@ -91,7 +91,7 @@ data class StationDetailScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StationDetailScreen(
+private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
     onClickSchedule: (String) -> Unit = {},
