@@ -35,7 +35,7 @@ import java.time.LocalDateTime
 private const val fetchScheduleFinishDelay = 1000L
 private const val fetchRouteFinishDelay = 1000L
 
-data class DestinationGroup(
+data class DepartureGroup(
     val station: Station,
     val scheduleGroup: StateFlow<List<ScheduleGroup>?>
 ) {
@@ -59,6 +59,7 @@ class HomeScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
+    private val _routeUpdateTrigger = MutableStateFlow(0L)
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
@@ -87,7 +88,7 @@ class HomeScreenModel(
             initialValue = emptyList()
         )
 
-    val destinationGroups = combine(
+    val departureGroups = combine(
         stations,
         favoriteStations,
         _filterFutureSchedulesOnly,
@@ -95,7 +96,7 @@ class HomeScreenModel(
         favorites
             .sortedBy { it.favoritePosition }
             .map { favorite ->
-                DestinationGroup(
+                DepartureGroup(
                     station = favorite,
                     scheduleGroup = createScheduleGroupFlow(favorite.id, stations)
                 )
@@ -115,7 +116,7 @@ class HomeScreenModel(
     private fun createScheduleGroupFlow(
         stationId: String,
         stations: List<Station>
-    ): StateFlow<List<DestinationGroup.ScheduleGroup>?> {
+    ): StateFlow<List<DepartureGroup.ScheduleGroup>?> {
         val scheduleFlow = getScheduleFlow(stationId)
 
         return scheduleFlow
@@ -124,42 +125,54 @@ class HomeScreenModel(
                     return@flatMapLatest flowOf(null)
                 }
 
-                // Get train IDs for routes we need
+                // Get train IDs for routes we need and ensure flows exist
                 val currentTime = LocalDateTime.now()
                 val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
+                trainIds.forEach { trainId -> getRouteFlow(trainId) }
 
-                // Trigger background fetch for routes (non-blocking)
-                if (trainIds.isNotEmpty()) {
-                    screenModelScope.launch(Dispatchers.IO) {
-                        fetchRoute(trainIds, manualFetch = false)
-                    }
-                }
-
-                // Create route flows for all needed trains
-                val routeFlows = trainIds.map { trainId -> getRouteFlow(trainId) }
-
-                // Combine schedules, all route flows, time ticker, and filter setting
+                // Combine schedules, tick, filter setting, and route update trigger
                 combine(
                     flowOf(schedules),
-                    *routeFlows.toTypedArray(),
                     tick,
-                    _filterFutureSchedulesOnly
-                ) { values ->
-                    @Suppress("UNCHECKED_CAST")
-                    val currentSchedules = values[0] as List<Schedule>
-                    val time = values[values.size - 2] as LocalDateTime
-                    val filterFutureOnly = values[values.size - 1] as Boolean
+                    _filterFutureSchedulesOnly,
+                    _routeUpdateTrigger
+                ) { currentSchedules, time, filterFutureOnly, _ ->
+                    // Recompute trainIds based on current time to handle trains that are now in the past
+                    val currentTrainIds = extractFirstTrainIds(
+                        schedules = currentSchedules,
+                        currentTime = time ?: LocalDateTime.now(),
+                        filterFutureOnly = filterFutureOnly
+                    )
+
+                    // Ensure route flows exist and check which routes are missing
+                    val missingRouteTrainIds = currentTrainIds.filter { trainId ->
+                        val flow = getRouteFlow(trainId)
+                        flow.value == null
+                    }
+
+                    // Fetch missing routes if needed
+                    if (missingRouteTrainIds.isNotEmpty()) {
+                        screenModelScope.launch(Dispatchers.IO) {
+                            fetchRoute(missingRouteTrainIds, stationId, manualFetch = false)
+                        }
+                    }
 
                     // Compute schedule groups off main thread
                     withContext(Dispatchers.Default) {
-                        computeScheduleGroups(currentSchedules, stations, time, filterFutureOnly)
+                        computeScheduleGroups(
+                            favoriteStationId = stationId,
+                            schedules = currentSchedules,
+                            stations = stations,
+                            currentTime = time ?: LocalDateTime.now(),
+                            filterFutureOnly = filterFutureOnly
+                        )
                     }
                 }
             }
             .distinctUntilChanged()
             .stateIn(
                 scope = screenModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.Eagerly,
                 initialValue = null
             )
     }
@@ -169,16 +182,17 @@ class HomeScreenModel(
      * Extracted to a separate function for better performance and testability.
      */
     private fun computeScheduleGroups(
+        favoriteStationId: String,
         schedules: List<Schedule>,
         stations: List<Station>,
         currentTime: LocalDateTime,
         filterFutureOnly: Boolean,
-    ): List<DestinationGroup.ScheduleGroup> {
+    ): List<DepartureGroup.ScheduleGroup> {
         // Group all schedules by destination
         val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
-            val station = stations.firstOrNull { it.id == destinationId }
-            station?.let {
+            val destinationStation = stations.firstOrNull { it.id == destinationId }
+            destinationStation?.let {
                 // Filter schedules based on time if needed
                 val filteredSchedules = if (filterFutureOnly) {
                     schedulesForDest.filter { it.departsAt.isAfter(currentTime) }
@@ -196,22 +210,36 @@ class HomeScreenModel(
                     routeFlowsCache[trainId]?.value
                 }
 
+                // Calculate stops count
+                val stopStationIds = route?.stops?.map { it.stationId }
+                val bstStationsIds = listOf("SUDB", "DU", "RW", "BPR")
+                val stopsCount = stopStationIds
+                    ?.indexOf(favoriteStationId)
+                    ?.takeIf { it != -1 }
+                    ?.let { index -> stopStationIds.drop(index + 1) }
+                    ?.let { remainingStops ->
+                        if (route.line.contains("BST")) {
+                            remainingStops.filter { stationId -> stationId in bstStationsIds }
+                        } else remainingStops
+                    }
+                    ?.size
+
                 // Map schedules to UI models
                 val uiSchedules = sortedSchedules.map { schedule ->
-                    DestinationGroup.ScheduleGroup.UISchedule(
+                    DepartureGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,
                         eta = etaString(
                             now = currentTime,
                             target = schedule.departsAt
                         ),
-                        stops = route?.stops?.size
+                        stops = stopsCount
                     )
                 }
 
                 // Return schedule group if there are schedules
                 if (uiSchedules.isNotEmpty()) {
-                    DestinationGroup.ScheduleGroup(
-                        destinationStation = station,
+                    DepartureGroup.ScheduleGroup(
+                        destinationStation = destinationStation,
                         schedules = uiSchedules
                     )
                 } else null
@@ -263,9 +291,18 @@ class HomeScreenModel(
                 trainId = trainId,
             ).stateIn(
                 scope = screenModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.Eagerly,
                 initialValue = null
-            )
+            ).also { flow ->
+                // Monitor this flow and trigger updates when route loads
+                screenModelScope.launch {
+                    flow.collect { route ->
+                        if (route != null) {
+                            _routeUpdateTrigger.value = System.currentTimeMillis()
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -277,7 +314,7 @@ class HomeScreenModel(
         manualFetch: Boolean = false
     ) {
         screenModelScope.launch(Dispatchers.IO) {
-            favoriteStations.value.map { favorite ->
+            favoriteStations.value.forEach { favorite ->
                 val stationId = favorite.id
                 if (manualFetch) {
                     SyncScheduleJob.startNow(
@@ -295,7 +332,7 @@ class HomeScreenModel(
             }
 
             // Fetch routes after schedules are loaded
-            favoriteStations.value.map { favorite ->
+            favoriteStations.value.forEach { favorite ->
                 launch {
                     val scheduleFlow = getScheduleFlow(favorite.id)
                     scheduleFlow
@@ -341,7 +378,7 @@ class HomeScreenModel(
 
     /**
      * Fetches routes for the first train to each destination from a station.
-     * Only fetches if routes need to be synced according to SyncRouteJob.
+     * Checks if routes are missing from cache and forces fetch if needed.
      */
     private fun fetchRoutesForStation(
         stationId: String,
@@ -352,8 +389,20 @@ class HomeScreenModel(
 
         val currentTime = LocalDateTime.now()
         val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
+
+        // Ensure route flows are created for all train IDs
+        trainIds.forEach { trainId -> getRouteFlow(trainId) }
+
+        // Check if any routes are missing from cache
+        val hasAnyMissingRoutes = trainIds.any { trainId ->
+            routeFlowsCache[trainId]?.value == null
+        }
+
+        // Force fetch if routes are missing, otherwise respect manualFetch flag
+        val shouldForceFetch = hasAnyMissingRoutes || manualFetch
+
         screenModelScope.launch(Dispatchers.IO) {
-            fetchRoute(trainIds, stationId, manualFetch)
+            fetchRoute(trainIds, stationId, shouldForceFetch)
         }
     }
 

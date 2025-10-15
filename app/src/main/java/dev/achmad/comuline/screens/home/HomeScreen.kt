@@ -111,16 +111,13 @@ object HomeScreen: Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { HomeScreenModel() }
-        val destinationGroups by screenModel.destinationGroups.collectAsState()
+        val destinationGroups by screenModel.departureGroups.collectAsState()
         val focusedStationId by screenModel.focusedStationId.collectAsState()
         val filterFutureSchedulesOnly by screenModel.filterFutureSchedulesOnly.collectAsState()
 
-        LaunchedEffect(Unit) {
-            screenModel.fetchSchedules()
-        }
-
         LaunchedEffect(destinationGroups) {
             if (destinationGroups.isNotEmpty()) {
+                screenModel.fetchSchedules()
                 val initialStationId = focusedStationId ?: destinationGroups.firstOrNull()?.station?.id
                 initialStationId?.let { screenModel.onTabFocused(it) }
             }
@@ -128,7 +125,7 @@ object HomeScreen: Screen {
 
         HomeScreen(
             syncScope = screenModel.screenModelScope,
-            destinationGroups = destinationGroups,
+            departureGroups = destinationGroups,
             focusedStationId = focusedStationId,
             filterFutureSchedulesOnly = filterFutureSchedulesOnly,
             onTabFocused = { stationId ->
@@ -167,7 +164,7 @@ object HomeScreen: Screen {
 @Composable
 private fun HomeScreen(
     syncScope: CoroutineScope,
-    destinationGroups: List<DestinationGroup>,
+    departureGroups: List<DepartureGroup>,
     focusedStationId: String?,
     filterFutureSchedulesOnly: Boolean,
     onTabFocused: (String) -> Unit,
@@ -183,7 +180,7 @@ private fun HomeScreen(
     var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
     // Combine both SyncScheduleJob and SyncRouteJob states for each station
-    val syncStates = destinationGroups.associate { group ->
+    val syncStates = departureGroups.associate { group ->
         group.station.id to remember(group.station.id) {
             val scheduleState = SyncScheduleJob.subscribeState(
                 context = applicationContext,
@@ -208,7 +205,7 @@ private fun HomeScreen(
     }
 
     val tabs = mapTabContents(
-        destinationGroups = destinationGroups,
+        departureGroups = departureGroups,
         syncStates = syncStates,
         searchQuery = searchQuery,
         searchResults = searchResults,
@@ -218,9 +215,9 @@ private fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val initialPage = remember(destinationGroups, focusedStationId) {
+    val initialPage = remember(departureGroups, focusedStationId) {
         if (focusedStationId != null) {
-            destinationGroups
+            departureGroups
                 .indexOfFirst { it.station.id == focusedStationId }
                 .takeIf { it >= 0 } ?: 0
         } else 0
@@ -232,12 +229,12 @@ private fun HomeScreen(
         )
     }
 
-    LaunchedEffect(searchQuery, destinationGroups) {
+    LaunchedEffect(searchQuery, departureGroups) {
         snapshotFlow { searchQuery?.uppercase() }
             .debounce(300)
             .collect { query ->
                 if (!query.isNullOrEmpty()) {
-                    val results = destinationGroups.associate { destinationGroup ->
+                    val results = departureGroups.associate { destinationGroup ->
                         val matchCount = destinationGroup.scheduleGroup.value
                             ?.count { scheduleGroup ->
                                 // Only count if destination matches AND has upcoming schedules
@@ -256,7 +253,7 @@ private fun HomeScreen(
     LaunchedEffect(Unit) {
         snapshotFlow { pagerState.targetPage }
             .collect {
-                destinationGroups.getOrNull(pagerState.targetPage)?.let {
+                departureGroups.getOrNull(pagerState.targetPage)?.let {
                     onTabFocused(it.station.id)
                 }
             }
@@ -334,7 +331,7 @@ private fun HomeScreen(
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { contentPadding ->
-        if (destinationGroups.isEmpty()) {
+        if (departureGroups.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -438,14 +435,14 @@ private fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun mapTabContents(
-    destinationGroups: List<DestinationGroup>,
+    departureGroups: List<DepartureGroup>,
     syncStates: Map<String, State<WorkInfo.State?>>,
     searchQuery: String?,
     searchResults: Map<String, Int>,
     onClickStationDetail: (String, String, String) -> Unit,
     onRefreshStation: (String) -> Unit,
 ): List<TabContent> {
-    return destinationGroups.map { group ->
+    return departureGroups.map { group ->
         val syncState = syncStates[group.station.id]?.value
         val badgeCount = searchResults[group.station.id]?.takeIf { it > 0 }
         TabContent(
@@ -530,7 +527,7 @@ private fun mapTabContents(
 private fun ScheduleItem(
     index: Int,
     lastIndex: Int,
-    scheduleGroup: DestinationGroup.ScheduleGroup,
+    scheduleGroup: DepartureGroup.ScheduleGroup,
     onClick: () -> Unit
 ) {
     val density = LocalDensity.current
