@@ -60,6 +60,7 @@ class HomeScreenModel(
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
     private val _routeUpdateTrigger = MutableStateFlow(0L)
+    private val inFlightRouteFetches = mutableSetOf<String>()
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
@@ -152,9 +153,7 @@ class HomeScreenModel(
 
                     // Fetch missing routes if needed
                     if (missingRouteTrainIds.isNotEmpty()) {
-                        screenModelScope.launch(Dispatchers.IO) {
-                            fetchRoute(missingRouteTrainIds, stationId, manualFetch = false)
-                        }
+                        fetchRoute(missingRouteTrainIds, stationId, manualFetch = false)
                     }
 
                     // Compute schedule groups off main thread
@@ -401,9 +400,7 @@ class HomeScreenModel(
         // Force fetch if routes are missing, otherwise respect manualFetch flag
         val shouldForceFetch = hasAnyMissingRoutes || manualFetch
 
-        screenModelScope.launch(Dispatchers.IO) {
-            fetchRoute(trainIds, stationId, shouldForceFetch)
-        }
+        fetchRoute(trainIds, stationId, shouldForceFetch)
     }
 
     /**
@@ -419,20 +416,44 @@ class HomeScreenModel(
         stationId: String? = null,
         manualFetch: Boolean = false,
     ) {
-        if (manualFetch) {
-            SyncRouteJob.startNow(
-                context = injectContext(),
-                trainIds = trainIds,
-                stationId = stationId,
-                finishDelay = fetchRouteFinishDelay
-            )
-        } else {
-            SyncRouteJob.start(
-                context = injectContext(),
-                trainIds = trainIds,
-                stationId = stationId,
-                finishDelay = fetchRouteFinishDelay
-            )
+        // Filter out trains that are already being fetched
+        val trainIdsToFetch = synchronized(inFlightRouteFetches) {
+            trainIds.filter { trainId ->
+                !inFlightRouteFetches.contains(trainId)
+            }.also { filtered ->
+                // Mark these trains as being fetched
+                inFlightRouteFetches.addAll(filtered)
+            }
+        }
+
+        if (trainIdsToFetch.isEmpty()) return
+
+        // Launch a coroutine to remove from in-flight set after fetch completes
+        screenModelScope.launch(Dispatchers.IO) {
+            try {
+                if (manualFetch) {
+                    SyncRouteJob.startNow(
+                        context = injectContext(),
+                        trainIds = trainIdsToFetch,
+                        stationId = stationId,
+                        finishDelay = fetchRouteFinishDelay
+                    )
+                } else {
+                    SyncRouteJob.start(
+                        context = injectContext(),
+                        trainIds = trainIdsToFetch,
+                        stationId = stationId,
+                        finishDelay = fetchRouteFinishDelay
+                    )
+                }
+                // Wait a bit for the job to complete (finishDelay + buffer)
+                kotlinx.coroutines.delay(fetchRouteFinishDelay + 500)
+            } finally {
+                // Remove from in-flight set
+                synchronized(inFlightRouteFetches) {
+                    inFlightRouteFetches.removeAll(trainIdsToFetch.toSet())
+                }
+            }
         }
     }
 
