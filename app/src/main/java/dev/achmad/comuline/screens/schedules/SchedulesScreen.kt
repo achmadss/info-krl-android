@@ -260,7 +260,7 @@ private fun ScheduleDetailItem(
 ) {
     val density = LocalDensity.current
     val schedule = uiSchedule.schedule
-    val route by uiSchedule.route.collectAsState()
+    val stops = uiSchedule.stops
     val color = schedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
     var blinkState by remember { mutableIntStateOf(0) }
@@ -341,10 +341,11 @@ private fun ScheduleDetailItem(
                     }
 
                 }
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                )
+                // TODO ROUTE DETAIL SCREEN
+//                Icon(
+//                    imageVector = Icons.Default.ChevronRight,
+//                    contentDescription = null,
+//                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -382,7 +383,11 @@ private fun ScheduleDetailItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text =  (if (route == null) "Unknown" else "${route!!.stops.size}") + " stops",
+                        text = when (stops) {
+                            null -> "Unknown"
+                            0 -> "Direct"
+                            else -> "$stops stops"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )

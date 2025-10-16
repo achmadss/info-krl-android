@@ -15,6 +15,7 @@ import dev.achmad.domain.repository.RouteRepository
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -31,8 +32,8 @@ data class ScheduleGroup(
 ) {
     data class UISchedule(
         val schedule: Schedule,
-        val route: StateFlow<Route?>,
         val eta: String,
+        val stops: Int?,
     )
 }
 
@@ -46,6 +47,7 @@ class SchedulesScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
+    private val _routeUpdateTrigger = MutableStateFlow(0L)
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -61,8 +63,9 @@ class SchedulesScreenModel(
         tick,
         getScheduleFlow(originStationId),
         getStationFlow(originStationId),
-        getStationFlow(destinationStationId)
-    ) { _, schedules, originStation, destinationStation ->
+        getStationFlow(destinationStationId),
+        _routeUpdateTrigger
+    ) { _, schedules, originStation, destinationStation, _ ->
         when {
             schedules == null -> null
             originStation == null -> null
@@ -73,6 +76,11 @@ class SchedulesScreenModel(
                     .filter { it.departsAt.toLocalDate() == LocalDate.now() }
                     .sortedBy { it.departsAt }
                     .map { schedule ->
+                        val routeFlow = getRouteFlow(schedule.trainId)
+                        val stopsCount = calculateStopsCount(
+                            route = routeFlow.value,
+                            originStationId = originStationId,
+                        )
                         ScheduleGroup.UISchedule(
                             schedule = schedule,
                             eta = etaString(
@@ -80,7 +88,7 @@ class SchedulesScreenModel(
                                 target = schedule.departsAt,
                                 compactMode = false
                             ),
-                            route = getRouteFlow(schedule.trainId),
+                            stops = stopsCount
                         )
                     }
                     .also {
@@ -100,6 +108,27 @@ class SchedulesScreenModel(
         started = SharingStarted.Eagerly,
         initialValue = null
     )
+
+    private fun calculateStopsCount(
+        route: Route?,
+        originStationId: String,
+    ): Int? {
+        if (route == null) return null
+
+        val stopStationIds = route.stops.map { it.stationId }
+        val bstStationsIds = listOf("SUDB", "DU", "RW", "BPR")
+
+        return stopStationIds
+            .indexOf(originStationId)
+            .takeIf { it != -1 }
+            ?.let { index -> stopStationIds.drop(index + 1) }
+            ?.let { remainingStops ->
+                if (route.line.contains("BST")) {
+                    remainingStops.filter { stationId -> stationId in bstStationsIds }
+                } else remainingStops
+            }
+            ?.size
+    }
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
         return scheduleFlowsCache.getOrPut(stationId) {
@@ -129,7 +158,15 @@ class SchedulesScreenModel(
                     scope = screenModelScope,
                     started = SharingStarted.Eagerly,
                     initialValue = null
-                )
+                ).also { flow ->
+                    screenModelScope.launch {
+                        flow.collect { route ->
+                            if (route != null) {
+                                _routeUpdateTrigger.value = System.currentTimeMillis()
+                            }
+                        }
+                    }
+                }
         }
     }
 
