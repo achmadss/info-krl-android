@@ -47,6 +47,7 @@ class SchedulesScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
+    private val _routeUpdateTrigger = MutableStateFlow(0L)
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -63,7 +64,8 @@ class SchedulesScreenModel(
         getScheduleFlow(originStationId),
         getStationFlow(originStationId),
         getStationFlow(destinationStationId),
-    ) { _, schedules, originStation, destinationStation ->
+        _routeUpdateTrigger,
+    ) { _, schedules, originStation, destinationStation, _ ->
         when {
             schedules == null -> null
             originStation == null -> null
@@ -157,7 +159,16 @@ class SchedulesScreenModel(
                     scope = screenModelScope,
                     started = SharingStarted.Eagerly,
                     initialValue = null
-                )
+                ).also { flow ->
+                    // Monitor this flow and trigger updates when route loads
+                    screenModelScope.launch {
+                        flow.collect { route ->
+                            if (route != null) {
+                                _routeUpdateTrigger.value = System.currentTimeMillis()
+                            }
+                        }
+                    }
+                }
         }
     }
 
