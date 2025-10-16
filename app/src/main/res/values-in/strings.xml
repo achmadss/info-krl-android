@@ -36,6 +36,10 @@
     <!-- SettingsScreen -->
     <string name="settings">Pengaturan</string>
     <string name="appearance">Tampilan</string>
+    <string name="theme">Tema</string>
+    <string name="theme_dark">Mode gelap</string>
+    <string name="theme_light">Mode terang</string>
+    <string name="theme_system">Mengikuti sistem</string>
     <string name="language">Bahasa</string>
     <string name="time_format_24h">Format 24 jam</string>
     <string name="about">Tentang</string>

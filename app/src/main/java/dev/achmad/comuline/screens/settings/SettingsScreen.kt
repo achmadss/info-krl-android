@@ -54,8 +54,8 @@ object SettingsScreen : Screen {
             title = stringResource(R.string.appearance),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
-                    title = "Theme",
-                    subtitle = "Dark", // TODO
+                    title = stringResource(R.string.theme),
+                    subtitle = "Dark", // TODO R.string.theme_dark, R.string.theme_light, R.string.theme_system
                     onClick = {
                         // TODO
                     }
