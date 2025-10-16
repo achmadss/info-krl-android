@@ -1,6 +1,5 @@
 package dev.achmad.comuline.screens.schedules
 
-import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -83,8 +82,6 @@ data class SchedulesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val locales = LocalContext.current.assets.locales.toList()
-        Log.e("ASD", "$locales")
         val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
@@ -278,7 +275,7 @@ private fun ScheduleDetailItem(
 ) {
     val density = LocalDensity.current
     val schedule = uiSchedule.schedule
-    val route by uiSchedule.route.collectAsState()
+    val stops = uiSchedule.stops
     val color = schedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
     var blinkState by remember { mutableIntStateOf(0) }
@@ -359,10 +356,11 @@ private fun ScheduleDetailItem(
                     }
 
                 }
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                )
+                // TODO ROUTE DETAIL SCREEN
+//                Icon(
+//                    imageVector = Icons.Default.ChevronRight,
+//                    contentDescription = null,
+//                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -400,10 +398,9 @@ private fun ScheduleDetailItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = if (route == null) {
-                            stringResource(R.string.stops_unknown)
-                        } else {
-                            stringResource(R.string.stops_count, route!!.stops.size)
+                        text = when(stops) {
+                            null -> stringResource(R.string.stops_unknown)
+                            else -> stringResource(R.string.stops_count, stops)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
