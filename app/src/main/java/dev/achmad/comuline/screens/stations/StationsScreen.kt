@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -137,7 +138,7 @@ private fun StationsScreen(
                 shadowElevation = 4.dp
             ) {
                 SearchToolbar(
-                    titleContent = { AppBarTitle("Stations") },
+                    titleContent = { AppBarTitle(stringResource(R.string.stations)) },
                     searchQuery = searchQuery,
                     onChangeSearchQuery = onChangeSearchQuery,
                     navigateUp = { onNavigateUp() },
@@ -172,7 +173,7 @@ private fun StationsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    text = "No station found",
+                    text = stringResource(R.string.no_station_found, searchQuery ?: ""),
                     textAlign = TextAlign.Center,
                 )
             }
@@ -196,7 +197,7 @@ private fun StationsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    text = "Something wrong happened",
+                    text = stringResource(R.string.error_something_wrong),
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -204,7 +205,7 @@ private fun StationsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "Try Again")
+                        Text(text = stringResource(R.string.action_try_again))
                     }
                 }
             }
@@ -252,7 +253,11 @@ private fun StationsScreen(
                 item {
                     Text(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        text = if (enableDragDrop) "Pinned (Hold to drag)" else "Pinned",
+                        text = if (enableDragDrop) {
+                            stringResource(R.string.pinned_hold_to_drag)
+                        } else {
+                            stringResource(R.string.pinned)
+                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -296,7 +301,7 @@ private fun StationsScreen(
                 item {
                     Text(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        text = "All",
+                        text = stringResource(R.string.all),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -349,7 +354,7 @@ private fun StationItem(
             if (showDragHandle) {
                 Icon(
                     imageVector = Icons.Default.DragHandle,
-                    contentDescription = "Drag handle",
+                    contentDescription = stringResource(R.string.content_desc_drag_handle),
                     tint = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(end = 8.dp)
                 )

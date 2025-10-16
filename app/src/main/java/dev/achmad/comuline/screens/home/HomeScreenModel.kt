@@ -228,6 +228,7 @@ class HomeScreenModel(
                     DepartureGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,
                         eta = etaString(
+                            context = injectContext(),
                             now = currentTime,
                             target = schedule.departsAt
                         ),

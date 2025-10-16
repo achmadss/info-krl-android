@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Comuline</string>
+
+    <!-- HomeScreen -->
+    <string name="action_add">Tambah</string>
+    <string name="action_sync_all">Sinkronkan Semua</string>
+    <string name="action_settings">Pengaturan</string>
+    <string name="debug_separator">----- DEBUG -----</string>
+    <string name="action_show_all_schedules">Tampilkan Semua Jadwal</string>
+    <string name="action_hide_past_schedules">Sembunyikan Jadwal Lewat</string>
+    <string name="no_pinned_stations">Tidak ada stasiun yang disematkan\n Sematkan stasiun untuk melacak jadwal</string>
+    <string name="action_add_station">Tambah Stasiun</string>
+    <string name="no_schedule_found_for_query">Tidak ada jadwal yang ditemukan untuk\n\"%1$s\"</string>
+    <string name="no_schedule_found">Tidak ada jadwal.\nCoba lagi besok.</string>
+    <string name="directions_to">Tujuan ke</string>
+    <string name="departs_at">Berangkat jam</string>
+    <string name="stops_count">%1$d perhentian</string>
+    <string name="stops_unknown">Tidak diketahui</string>
+    <string name="next_departures">Keberangkatan berikutnya</string>
+
+    <!-- SchedulesScreen -->
+    <string name="no_upcoming_schedules">Tidak ada jadwal yang akan datang</string>
+    <string name="action_refresh">Segarkan</string>
+
+    <!-- StationsScreen -->
+    <string name="stations">Stasiun</string>
+    <string name="no_station_found">Tidak ada stasiun yang ditemukan untuk\n\"%1$s\"</string>
+    <string name="error_something_wrong">Terjadi kesalahan</string>
+    <string name="action_try_again">Coba Lagi</string>
+    <string name="pinned_hold_to_drag">Disematkan (Tahan untuk menggeser)</string>
+    <string name="pinned">Disematkan</string>
+    <string name="all">Semua</string>
+    <string name="content_desc_drag_handle">Pegangan geser</string>
+
+    <!-- SettingsScreen -->
+    <string name="settings">Pengaturan</string>
+    <string name="appearance">Tampilan</string>
+    <string name="language">Bahasa</string>
+    <string name="time_format_24h">Format 24 jam</string>
+    <string name="about">Tentang</string>
+    <string name="version">Versi</string>
+    <string name="open_source_licenses">Lisensi sumber terbuka</string>
+
+    <!-- Time/ETA strings -->
+    <string name="time_now">sekarang</string>
+    <string name="time_now_capitalized">Sekarang</string>
+    <string name="time_hr">jam</string>
+    <string name="time_min">menit</string>
+    <string name="time_hour">jam</string>
+    <string name="time_hours">jam</string>
+    <string name="time_minute">menit</string>
+    <string name="time_minutes">menit</string>
+    <string name="time_ago">yang lalu</string>
+    <string name="time_in">dalam</string>
+
+    <!-- Languages -->
+    <string name="language_english">Inggris</string>
+    <string name="language_indonesian">Indonesia</string>
+</resources>

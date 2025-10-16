@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -293,29 +294,33 @@ private fun HomeScreen(
                         actions = if (searchQuery == null) {
                             listOf(
                                 AppBar.Action(
-                                    title = "Add",
+                                    title = stringResource(R.string.action_add),
                                     icon = Icons.Default.Add,
                                     onClick = onClickAddStation,
                                 ),
                                 AppBar.OverflowAction(
-                                    title = "Sync All",
+                                    title = stringResource(R.string.action_sync_all),
                                     icon = Icons.Default.Refresh,
                                     onClick = { onManualSync() },
                                 ),
                                 AppBar.OverflowAction(
-                                    title = "Settings",
+                                    title = stringResource(R.string.action_settings),
                                     icon = Icons.Outlined.Settings,
                                     onClick = { onNavigateToSettings() },
                                 ),
                             ) + if (BuildConfig.DEBUG) {
                                 listOf(
                                     AppBar.OverflowAction(
-                                        title = "----- DEBUG -----",
+                                        title = stringResource(R.string.debug_separator),
                                         enabled = false,
                                         onClick = {}
                                     ),
                                     AppBar.OverflowAction(
-                                        title = if (filterFutureSchedulesOnly) "Show All Schedules" else "Hide Past Schedules",
+                                        title = if (filterFutureSchedulesOnly) {
+                                            stringResource(R.string.action_show_all_schedules)
+                                        } else {
+                                            stringResource(R.string.action_hide_past_schedules)
+                                        },
                                         icon = Icons.Default.EventBusy,
                                         onClick = onToggleFilterFutureSchedules,
                                     )
@@ -345,7 +350,7 @@ private fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    text = "No pinned stations found\n Pin station to track station schedules",
+                    text = stringResource(R.string.no_pinned_stations),
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -361,7 +366,7 @@ private fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Add Station"
+                            text = stringResource(R.string.action_add_station)
                         )
                     }
                 }
@@ -507,7 +512,7 @@ private fun mapTabContents(
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Text(
                                         modifier = Modifier.padding(horizontal = 16.dp),
-                                        text = "No schedule found for\n\"$searchQuery\"",
+                                        text = stringResource(R.string.no_schedule_found_for_query, searchQuery ?: ""),
                                         textAlign = TextAlign.Center,
                                     )
                                 }
@@ -529,7 +534,7 @@ private fun mapTabContents(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     modifier = Modifier.padding(horizontal = 16.dp),
-                                    text = "No schedule found.\nCheck again tomorrow.",
+                                    text = stringResource(R.string.no_schedule_found),
                                     textAlign = TextAlign.Center,
                                 )
                             }
@@ -590,12 +595,12 @@ private fun ScheduleItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Directions to",
+                    text = stringResource(R.string.directions_to),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
                 Text(
-                    text = "Departs at",
+                    text = stringResource(R.string.departs_at),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
                 )
@@ -647,7 +652,11 @@ private fun ScheduleItem(
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
-                        text = if (stops != null) "$stops stops" else "Unknown",
+                        text = if (stops != null) {
+                            stringResource(R.string.stops_count, stops)
+                        } else {
+                            stringResource(R.string.stops_unknown)
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -660,7 +669,7 @@ private fun ScheduleItem(
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Next departures",
+                text = stringResource(R.string.next_departures),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )

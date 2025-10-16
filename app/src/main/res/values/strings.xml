@@ -1,3 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Comuline</string>
+
+    <!-- HomeScreen -->
+    <string name="action_add">Add</string>
+    <string name="action_sync_all">Sync All</string>
+    <string name="action_settings">Settings</string>
+    <string name="debug_separator">----- DEBUG -----</string>
+    <string name="action_show_all_schedules">Show All Schedules</string>
+    <string name="action_hide_past_schedules">Hide Past Schedules</string>
+    <string name="no_pinned_stations">No pinned stations found\n Pin station to track station schedules</string>
+    <string name="action_add_station">Add Station</string>
+    <string name="no_schedule_found_for_query">No schedule found for\n\"%1$s\"</string>
+    <string name="no_schedule_found">No schedule found.\nCheck again tomorrow.</string>
+    <string name="directions_to">Directions to</string>
+    <string name="departs_at">Departs at</string>
+    <string name="stops_count">%1$d stops</string>
+    <string name="stops_unknown">Unknown</string>
+    <string name="next_departures">Next departures</string>
+
+    <!-- SchedulesScreen -->
+    <string name="no_upcoming_schedules">No upcoming schedules found</string>
+    <string name="action_refresh">Refresh</string>
+
+    <!-- StationsScreen -->
+    <string name="stations">Stations</string>
+    <string name="no_station_found">No station found for\n\"%1$s\"</string>
+    <string name="error_something_wrong">Something wrong happened</string>
+    <string name="action_try_again">Try Again</string>
+    <string name="pinned_hold_to_drag">Pinned (Hold to drag)</string>
+    <string name="pinned">Pinned</string>
+    <string name="all">All</string>
+    <string name="content_desc_drag_handle">Drag handle</string>
+
+    <!-- SettingsScreen -->
+    <string name="settings">Settings</string>
+    <string name="appearance">Appearance</string>
+    <string name="language">Language</string>
+    <string name="time_format_24h">24-hour format</string>
+    <string name="about">About</string>
+    <string name="version">Version</string>
+    <string name="open_source_licenses">Open source licenses</string>
+
+    <!-- Time/ETA strings -->
+    <string name="time_now">now</string>
+    <string name="time_now_capitalized">Now</string>
+    <string name="time_hr">hr</string>
+    <string name="time_min">min</string>
+    <string name="time_hour">hour</string>
+    <string name="time_hours">hours</string>
+    <string name="time_minute">minute</string>
+    <string name="time_minutes">minutes</string>
+    <string name="time_ago">ago</string>
+    <string name="time_in">in</string>
+
+    <!-- Languages -->
+    <string name="language_english">English</string>
+    <string name="language_indonesian">Indonesian</string>
 </resources>

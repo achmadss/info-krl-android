@@ -1,9 +1,12 @@
 package dev.achmad.comuline.util
 
+import android.content.Context
+import dev.achmad.comuline.R
 import java.time.Duration
 import java.time.LocalDateTime
 
 fun etaString(
+    context: Context,
     now: LocalDateTime,
     target: LocalDateTime,
     compactMode: Boolean = true
@@ -16,25 +19,39 @@ fun etaString(
     val hours = minutes / 60
 
     if (compactMode) {
-        if (isPast || duration.isZero) return "now"
+        if (isPast || duration.isZero) return context.getString(R.string.time_now)
 
         return when {
-            hours > 0 -> "$hours hr"
-            minutes > 0 -> "$minutes min"
-            else -> "Now"
+            hours > 0 -> "$hours ${context.getString(R.string.time_hr)}"
+            minutes > 0 -> "$minutes ${context.getString(R.string.time_min)}"
+            else -> context.getString(R.string.time_now_capitalized)
         }
     } else {
-        if (duration.isZero) return "now"
+        if (duration.isZero) return context.getString(R.string.time_now)
 
         val timeStr = when {
             hours > 0 -> {
-                "$hours hour${if (hours > 1) "s" else ""}"
+                val hourStr = if (hours > 1) {
+                    context.getString(R.string.time_hours)
+                } else {
+                    context.getString(R.string.time_hour)
+                }
+                "$hours $hourStr"
             }
             minutes > 0 -> {
-                "$minutes minute${if (minutes > 1) "s" else ""}"
+                val minuteStr = if (minutes > 1) {
+                    context.getString(R.string.time_minutes)
+                } else {
+                    context.getString(R.string.time_minute)
+                }
+                "$minutes $minuteStr"
             }
-            else -> return "now"
+            else -> return context.getString(R.string.time_now)
         }
-        return if (isPast) "$timeStr ago" else "in $timeStr"
+        return if (isPast) {
+            "$timeStr ${context.getString(R.string.time_ago)}"
+        } else {
+            "${context.getString(R.string.time_in)} $timeStr"
+        }
     }
 }

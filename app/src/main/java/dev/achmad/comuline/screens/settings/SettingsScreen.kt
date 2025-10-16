@@ -2,13 +2,18 @@ package dev.achmad.comuline.screens.settings
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.comuline.R
 import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.components.preference.Preference
 import dev.achmad.comuline.components.preference.PreferenceScreen
+import dev.achmad.comuline.screens.settings.language.SettingsLanguageScreen
+import dev.achmad.comuline.screens.settings.language.localeOptions
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
 
@@ -23,14 +28,14 @@ object SettingsScreen : Screen {
         val appPreference by injectLazy<ApplicationPreference>()
 
         PreferenceScreen(
-            title = "Settings",
+            title = stringResource(R.string.settings),
             shadowElevation = 4.dp,
             onBackPressed = {
                 navigator.pop()
             },
             itemsProvider = {
                 listOf(
-                    appearanceGroup(appPreference),
+                    appearanceGroup(appPreference, navigator),
                     aboutGroup()
                 )
             },
@@ -40,10 +45,13 @@ object SettingsScreen : Screen {
     @Composable
     private fun appearanceGroup(
         applicationPreference: ApplicationPreference,
+        navigator: Navigator,
     ): Preference {
         val timeFormatPreference = applicationPreference.timeFormat()
+        val languagePreference = applicationPreference.language()
+        val localeOptions = localeOptions()
         return Preference.PreferenceGroup(
-            title = "Appearance",
+            title = stringResource(R.string.appearance),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = "Theme",
@@ -53,15 +61,17 @@ object SettingsScreen : Screen {
                     }
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = "Language",
-                    subtitle = "English", // TODO
+                    title = stringResource(R.string.language),
+                    subtitle = localeOptions.filter {
+                        it.value == languagePreference.get()
+                    }.keys.firstOrNull(),
                     onClick = {
-                        // TODO
+                        navigator.push(SettingsLanguageScreen)
                     }
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = timeFormatPreference,
-                    title = "24-hour format",
+                    title = stringResource(R.string.time_format_24h),
                     onValueChanged = { timeFormatPreference.toggle() }
                 )
             )
@@ -73,14 +83,14 @@ object SettingsScreen : Screen {
 
     ): Preference {
         return Preference.PreferenceGroup(
-            title = "About",
+            title = stringResource(R.string.about),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
-                    title = "Version",
+                    title = stringResource(R.string.version),
                     subtitle = "1.0.0", // TODO
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = "Open source licenses",
+                    title = stringResource(R.string.open_source_licenses),
                     onClick = {
                         // TODO
                     }

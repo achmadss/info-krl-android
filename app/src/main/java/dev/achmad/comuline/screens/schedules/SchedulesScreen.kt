@@ -1,5 +1,6 @@
 package dev.achmad.comuline.screens.schedules
 
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -47,7 +48,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +59,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.comuline.R
 import dev.achmad.comuline.components.AppBar
 import dev.achmad.comuline.util.brighter
 import dev.achmad.comuline.util.darken
@@ -74,6 +78,8 @@ data class SchedulesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val locales = LocalContext.current.assets.locales.toList()
+        Log.e("ASD", "$locales")
         val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
@@ -180,7 +186,7 @@ private fun SchedulesScreen(
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             modifier = Modifier.padding(horizontal = 16.dp),
-                            text = "No upcoming schedules found",
+                            text = stringResource(R.string.no_upcoming_schedules),
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                         )
@@ -191,7 +197,7 @@ private fun SchedulesScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Refresh"
+                                contentDescription = stringResource(R.string.action_refresh)
                             )
                         }
                     }
@@ -315,7 +321,7 @@ private fun ScheduleDetailItem(
             ) {
                 Column {
                     Text(
-                        text = "Departs at",
+                        text = stringResource(R.string.departs_at),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )
@@ -382,7 +388,11 @@ private fun ScheduleDetailItem(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text =  (if (route == null) "Unknown" else "${route!!.stops.size}") + " stops",
+                        text = if (route == null) {
+                            stringResource(R.string.stops_unknown)
+                        } else {
+                            stringResource(R.string.stops_count, route!!.stops.size)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )

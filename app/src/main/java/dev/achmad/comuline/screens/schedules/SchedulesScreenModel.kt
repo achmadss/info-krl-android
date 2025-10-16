@@ -76,6 +76,7 @@ class SchedulesScreenModel(
                         ScheduleGroup.UISchedule(
                             schedule = schedule,
                             eta = etaString(
+                                context = injectContext(),
                                 now = LocalDateTime.now(),
                                 target = schedule.departsAt,
                                 compactMode = false

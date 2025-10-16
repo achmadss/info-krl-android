@@ -17,6 +17,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.unit.dp
 import dev.achmad.comuline.components.preference.widget.AlertDialogPreferenceWidget
 import dev.achmad.comuline.components.preference.widget.BasicMultiSelectListPreferenceWidget
+import dev.achmad.comuline.components.preference.widget.CheckPreferenceWidget
 import dev.achmad.comuline.components.preference.widget.EditTextPreferenceWidget
 import dev.achmad.comuline.components.preference.widget.InfoWidget
 import dev.achmad.comuline.components.preference.widget.ListPreferenceWidget
@@ -244,6 +245,15 @@ internal fun PreferenceItem(
                     onRequestPermission = {
                         item.permissionState.requestPermission()
                     }
+                )
+            }
+            is Preference.PreferenceItem.CheckPreference -> {
+                CheckPreferenceWidget(
+                    value = item.value,
+                    title = item.title,
+                    subtitle = item.subtitle,
+                    checked = item.checked,
+                    onClick = item.onClick
                 )
             }
             is Preference.PreferenceItem.CustomPreference -> {

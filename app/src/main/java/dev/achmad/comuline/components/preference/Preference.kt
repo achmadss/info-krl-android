@@ -228,6 +228,21 @@ sealed class Preference {
             override val onValueChanged: suspend (value: Unit) -> Boolean = { true }
         }
 
+        data class CheckPreference(
+            override val title: String,
+            override val subtitle: CharSequence? = null,
+            override val visible: Boolean = true,
+            override val enabled: Boolean = true,
+            val value: String,
+            val checked: Boolean,
+            val onClick: (String) -> Unit,
+            val titleColor: Color = Color.Unspecified,
+            val subtitleColor: Color = Color.Unspecified,
+        ): PreferenceItem<Unit>() {
+            override val icon: ImageVector? = null
+            override val onValueChanged: suspend (value: Unit) -> Boolean = { true }
+        }
+
         data class CustomPreference(
             val content: @Composable () -> Unit,
         ) : PreferenceItem<Unit>() {

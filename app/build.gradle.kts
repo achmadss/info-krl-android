@@ -38,6 +38,11 @@ android {
         compose = true
         buildConfig = true
     }
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
 }
 
 dependencies {
@@ -72,6 +77,8 @@ dependencies {
     implementation(libs.koin.android)
 
     implementation(libs.androidx.work.runtime.ktx)
+
+    implementation(libs.androidx.appcompat)
 
     implementation(project(":core"))
     implementation(project(":domain"))
