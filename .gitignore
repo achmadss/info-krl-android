@@ -9,3 +9,7 @@
 .cxx
 local.properties
 .kotlin
+*.apk
+*.dm
+keystore
+output-metadata.json
