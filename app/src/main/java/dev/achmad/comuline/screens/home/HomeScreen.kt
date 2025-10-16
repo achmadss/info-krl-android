@@ -81,6 +81,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.comuline.BuildConfig
 import dev.achmad.comuline.R
+import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.components.AppBar
 import dev.achmad.comuline.components.AppBarActions
 import dev.achmad.comuline.components.AppBarTitle
@@ -90,16 +91,19 @@ import dev.achmad.comuline.screens.schedules.SchedulesScreen
 import dev.achmad.comuline.screens.settings.SettingsScreen
 import dev.achmad.comuline.screens.stations.StationsScreen
 import dev.achmad.comuline.util.brighter
+import dev.achmad.comuline.util.collectAsState
 import dev.achmad.comuline.util.darken
+import dev.achmad.comuline.util.timeFormatter
 import dev.achmad.comuline.util.toColor
 import dev.achmad.comuline.work.SyncRouteJob
 import dev.achmad.comuline.work.SyncScheduleJob
+import dev.achmad.core.di.util.inject
+import dev.achmad.core.di.util.injectLazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import java.time.format.DateTimeFormatter
 
 data class TabContent(
     val title: String,
@@ -120,6 +124,9 @@ object HomeScreen: Screen {
         val focusedStationId by screenModel.focusedStationId.collectAsState()
         val filterFutureSchedulesOnly by screenModel.filterFutureSchedulesOnly.collectAsState()
 
+        val applicationPreference by injectLazy<ApplicationPreference>()
+        val is24Hour by applicationPreference.is24HourFormat().collectAsState()
+
         LaunchedEffect(destinationGroups) {
             if (destinationGroups.isNotEmpty()) {
                 screenModel.fetchSchedules()
@@ -133,6 +140,7 @@ object HomeScreen: Screen {
             departureGroups = destinationGroups,
             focusedStationId = focusedStationId,
             filterFutureSchedulesOnly = filterFutureSchedulesOnly,
+            is24Hour = is24Hour,
             onTabFocused = { stationId ->
                 screenModel.onTabFocused(stationId)
             },
@@ -179,6 +187,7 @@ private fun HomeScreen(
     onRefreshStation: (String) -> Unit,
     onToggleFilterFutureSchedules: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    is24Hour: Boolean,
 ) {
     val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
@@ -214,6 +223,7 @@ private fun HomeScreen(
         syncStates = syncStates,
         searchQuery = searchQuery,
         searchResults = searchResults,
+        is24Hour = is24Hour,
         onClickStationDetail = onClickStationDetail,
         onRefreshStation = onRefreshStation
     )
@@ -441,6 +451,7 @@ private fun mapTabContents(
     syncStates: Map<String, State<WorkInfo.State?>>,
     searchQuery: String?,
     searchResults: Map<String, Int>,
+    is24Hour: Boolean,
     onClickStationDetail: (String, String, String) -> Unit,
     onRefreshStation: (String) -> Unit,
 ): List<TabContent> {
@@ -483,7 +494,7 @@ private fun mapTabContents(
                                         items = filteredSchedules,
                                         key = { _, item -> item.destinationStation.id }
                                     ) { index, schedule ->
-                                        ScheduleItem(index, schedules.lastIndex, schedule) {
+                                        ScheduleItem(index, schedules.lastIndex, schedule, is24Hour) {
                                             onClickStationDetail(
                                                 group.station.id,
                                                 schedule.destinationStation.id,
@@ -551,6 +562,7 @@ private fun ScheduleItem(
     index: Int,
     lastIndex: Int,
     scheduleGroup: DepartureGroup.ScheduleGroup,
+    is24Hour: Boolean,
     onClick: () -> Unit
 ) {
     val density = LocalDensity.current
@@ -618,7 +630,7 @@ private fun ScheduleItem(
                 )
                 Text(
                     text = firstSchedule.departsAt.format(
-                        DateTimeFormatter.ofPattern("HH:mm")
+                        timeFormatter(is24Hour)
                     ),
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold
@@ -692,7 +704,7 @@ private fun ScheduleItem(
                         ) {
                             Text(
                                 text = schedule.schedule.departsAt.format(
-                                    DateTimeFormatter.ofPattern("HH:mm")
+                                    timeFormatter(is24Hour)
                                 ),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,

@@ -1,6 +1,9 @@
 package dev.achmad.comuline.base
 
+import androidx.annotation.StringRes
+import dev.achmad.comuline.R
 import dev.achmad.core.preference.PreferenceStore
+import dev.achmad.core.preference.getEnum
 
 class ApplicationPreference(
     private val preferenceStore: PreferenceStore
@@ -20,8 +23,8 @@ class ApplicationPreference(
         defaultValue = 0L
     )
 
-    fun timeFormat() = preferenceStore.getBoolean(
-        key = "time_format",
+    fun is24HourFormat() = preferenceStore.getBoolean(
+        key = "is_24_hour_format",
         defaultValue = true
     )
 
@@ -29,4 +32,15 @@ class ApplicationPreference(
         key = "language",
         defaultValue = "en"
     )
+
+    fun appTheme() = preferenceStore.getEnum(
+        key = "app_theme",
+        defaultValue = Themes.SYSTEM,
+    )
+
+    enum class Themes(@param:StringRes val stringRes: Int) {
+        LIGHT(R.string.theme_light),
+        DARK(R.string.theme_dark),
+        SYSTEM(R.string.theme_system);
+    }
 }

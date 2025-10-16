@@ -60,12 +60,17 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.comuline.R
+import dev.achmad.comuline.base.ApplicationPreference
 import dev.achmad.comuline.components.AppBar
 import dev.achmad.comuline.util.brighter
+import dev.achmad.comuline.util.collectAsState
 import dev.achmad.comuline.util.darken
+import dev.achmad.comuline.util.timeFormatter
 import dev.achmad.comuline.util.toColor
+import dev.achmad.core.di.util.injectLazy
 import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
+import kotlin.getValue
 
 private const val BLINK_DELAY = 300L
 
@@ -83,6 +88,9 @@ data class SchedulesScreen(
         val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
+        val applicationPreference by injectLazy<ApplicationPreference>()
+        val is24Hour by applicationPreference.is24HourFormat().collectAsState()
+
         SchedulesScreen(
             onNavigateUp = {
                 navigator.pop()
@@ -90,6 +98,7 @@ data class SchedulesScreen(
             onClickSchedule = {},
             focusedScheduleId = scheduleId,
             schedules = schedules,
+            is24Hour = is24Hour,
         )
     }
 
@@ -103,6 +112,7 @@ private fun SchedulesScreen(
     onClickSchedule: (String) -> Unit = {},
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
+    is24Hour: Boolean,
 ) {
     Scaffold(
         topBar = {
@@ -215,6 +225,7 @@ private fun SchedulesScreen(
                                 ScheduleDetailItem(
                                     index = index,
                                     lastIndex = schedules.schedules.lastIndex,
+                                    is24Hour = is24Hour,
                                     uiSchedule = uiSchedule,
                                     onClick = { onClickSchedule(uiSchedule.schedule.id) },
                                     shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
@@ -259,6 +270,7 @@ private fun SchedulesScreen(
 private fun ScheduleDetailItem(
     index: Int,
     lastIndex: Int,
+    is24Hour: Boolean,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
     shouldBlink: Boolean = false,
@@ -332,7 +344,7 @@ private fun ScheduleDetailItem(
                     ) {
                         Text(
                             text = schedule.departsAt.format(
-                                DateTimeFormatter.ofPattern("HH:mm")
+                                timeFormatter(is24Hour)
                             ),
                             style = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold

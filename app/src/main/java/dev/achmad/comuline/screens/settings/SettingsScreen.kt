@@ -14,6 +14,7 @@ import dev.achmad.comuline.components.preference.Preference
 import dev.achmad.comuline.components.preference.PreferenceScreen
 import dev.achmad.comuline.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.comuline.screens.settings.language.localeOptions
+import dev.achmad.comuline.screens.settings.theme.themeOptions
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
 
@@ -47,18 +48,18 @@ object SettingsScreen : Screen {
         applicationPreference: ApplicationPreference,
         navigator: Navigator,
     ): Preference {
-        val timeFormatPreference = applicationPreference.timeFormat()
+        val themePreference = applicationPreference.appTheme()
+        val timeFormatPreference = applicationPreference.is24HourFormat()
         val languagePreference = applicationPreference.language()
+        val themeOptions = themeOptions()
         val localeOptions = localeOptions()
         return Preference.PreferenceGroup(
             title = stringResource(R.string.appearance),
             preferenceItems = listOf(
-                Preference.PreferenceItem.TextPreference(
+                Preference.PreferenceItem.ListPreference(
                     title = stringResource(R.string.theme),
-                    subtitle = "Dark", // TODO R.string.theme_dark, R.string.theme_light, R.string.theme_system
-                    onClick = {
-                        // TODO
-                    }
+                    preference = themePreference,
+                    entries = themeOptions,
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.language),

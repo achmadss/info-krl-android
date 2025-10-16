@@ -4,6 +4,7 @@ import android.content.Context
 import dev.achmad.comuline.R
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 fun etaString(
     context: Context,
@@ -53,5 +54,13 @@ fun etaString(
         } else {
             "${context.getString(R.string.time_in)} $timeStr"
         }
+    }
+}
+
+fun timeFormatter(is24Hour: Boolean): DateTimeFormatter {
+    return if (is24Hour) {
+        DateTimeFormatter.ofPattern("HH:mm")
+    } else {
+        DateTimeFormatter.ofPattern("h:mm a")
     }
 }
