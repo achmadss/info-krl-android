@@ -2,10 +2,10 @@ package dev.achmad.infokrl.screens.stations
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.core.di.util.inject
 import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.StationRepository
+import dev.achmad.infokrl.base.ApplicationPreference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow

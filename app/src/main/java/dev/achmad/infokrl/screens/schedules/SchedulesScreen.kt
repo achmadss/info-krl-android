@@ -56,6 +56,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
@@ -64,9 +65,7 @@ import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.core.di.util.injectLazy
 import kotlinx.coroutines.delay
-import kotlin.getValue
 
 private const val BLINK_DELAY = 300L
 

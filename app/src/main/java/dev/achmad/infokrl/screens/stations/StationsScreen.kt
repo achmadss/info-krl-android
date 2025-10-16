@@ -50,6 +50,8 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.core.di.util.injectLazy
+import dev.achmad.domain.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBarTitle
@@ -58,8 +60,6 @@ import dev.achmad.infokrl.components.SearchToolbar
 import dev.achmad.infokrl.components.dragContainer
 import dev.achmad.infokrl.components.rememberDragDropState
 import dev.achmad.infokrl.work.SyncStationJob
-import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.model.Station
 
 object StationsScreen: Screen {
     private fun readResolve(): Any = StationsScreen
