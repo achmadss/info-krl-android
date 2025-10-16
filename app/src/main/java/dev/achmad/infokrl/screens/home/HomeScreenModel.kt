@@ -2,9 +2,6 @@ package dev.achmad.infokrl.screens.home
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.infokrl.util.etaString
-import dev.achmad.infokrl.work.SyncRouteJob
-import dev.achmad.infokrl.work.SyncScheduleJob
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
@@ -14,6 +11,9 @@ import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.RouteRepository
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
+import dev.achmad.infokrl.util.etaString
+import dev.achmad.infokrl.work.SyncRouteJob
+import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow

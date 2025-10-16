@@ -9,6 +9,8 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.core.di.util.injectLazy
+import dev.achmad.core.preference.toggle
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.preference.Preference
@@ -16,8 +18,6 @@ import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.infokrl.screens.settings.language.localeOptions
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
-import dev.achmad.core.di.util.injectLazy
-import dev.achmad.core.preference.toggle
 
 object SettingsScreen : Screen {
     private fun readResolve(): Any = SettingsScreen

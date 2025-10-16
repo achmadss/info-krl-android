@@ -2,10 +2,10 @@ package dev.achmad.infokrl.base
 
 import android.app.Application
 import android.util.Log
-import dev.achmad.infokrl.di.appModule
-import dev.achmad.infokrl.work.SyncScheduleJob
 import dev.achmad.core.di.coreModule
 import dev.achmad.data.di.dataModule
+import dev.achmad.infokrl.di.appModule
+import dev.achmad.infokrl.work.SyncScheduleJob
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level

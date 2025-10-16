@@ -10,12 +10,12 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import dev.achmad.infokrl.base.ApplicationPreference
-import dev.achmad.infokrl.util.isRunning
-import dev.achmad.infokrl.util.workManager
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
+import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.infokrl.util.isRunning
+import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

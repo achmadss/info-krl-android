@@ -1,9 +1,9 @@
 package dev.achmad.infokrl.base
 
 import androidx.annotation.StringRes
-import dev.achmad.infokrl.R
 import dev.achmad.core.preference.PreferenceStore
 import dev.achmad.core.preference.getEnum
+import dev.achmad.infokrl.R
 
 class ApplicationPreference(
     private val preferenceStore: PreferenceStore

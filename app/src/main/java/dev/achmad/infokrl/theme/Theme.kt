@@ -16,9 +16,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import dev.achmad.core.di.util.inject
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.util.collectAsState
-import dev.achmad.core.di.util.inject
 
 @Composable
 fun AppTheme(
