@@ -28,11 +28,6 @@ class ApplicationPreference(
         defaultValue = true
     )
 
-    fun language() = preferenceStore.getString(
-        key = "language",
-        defaultValue = "en"
-    )
-
     fun appTheme() = preferenceStore.getEnum(
         key = "app_theme",
         defaultValue = Themes.SYSTEM,
