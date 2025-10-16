@@ -1,10 +1,10 @@
 package dev.achmad.data.repository
 
 import dev.achmad.core.network.parseAs
-import dev.achmad.data.local.ComulineDatabase
+import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.ScheduleDao
 import dev.achmad.data.local.entity.schedule.toDomain
-import dev.achmad.data.remote.ComulineApi
+import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.schedule.ScheduleResponse
 import dev.achmad.data.remote.model.schedule.toEntity
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
 
 class ScheduleRepositoryImpl(
-    private val api: ComulineApi,
-    private val database: ComulineDatabase,
+    private val api: InfoKRLApi,
+    private val database: InfoKRLDatabase,
 ): ScheduleRepository {
 
     private val scheduleDao: ScheduleDao = database.scheduleDao()

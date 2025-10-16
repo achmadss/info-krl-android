@@ -1,9 +1,9 @@
 package dev.achmad.data.di
 
 import androidx.room.Room
-import dev.achmad.data.local.ComulineDatabase
-import dev.achmad.data.remote.ComulineApi
-import dev.achmad.data.remote.ComulineApiPreference
+import dev.achmad.data.local.InfoKRLDatabase
+import dev.achmad.data.remote.InfoKRLApi
+import dev.achmad.data.remote.InfoKRLApiPreference
 import dev.achmad.data.repository.RouteRepositoryImpl
 import dev.achmad.data.repository.ScheduleRepositoryImpl
 import dev.achmad.data.repository.StationRepositoryImpl
@@ -15,16 +15,16 @@ import org.koin.dsl.module
 
 val dataModule = module {
     // api
-    single<ComulineApi> { ComulineApi(get(), get()) }
-    single<ComulineApiPreference> { ComulineApiPreference(get()) }
+    single<InfoKRLApi> { InfoKRLApi(get(), get()) }
+    single<InfoKRLApiPreference> { InfoKRLApiPreference(get()) }
 
     // database
-    single<ComulineDatabase> {
+    single<InfoKRLDatabase> {
         Room
             .databaseBuilder(
                 androidContext(),
-                ComulineDatabase::class.java,
-                "comuline_db"
+                InfoKRLDatabase::class.java,
+                "infokrl_db"
             )
             .fallbackToDestructiveMigration(true)
             .build()

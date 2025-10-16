@@ -19,7 +19,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Comuline"
+rootProject.name = "InfoKRL"
 include(":app")
 include(":core")
 include(":data")

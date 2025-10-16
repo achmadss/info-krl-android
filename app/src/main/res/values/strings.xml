@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Comuline</string>
+    <string name="app_name">Info KRL</string>
 
     <!-- HomeScreen -->
     <string name="action_add">Add</string>
@@ -59,6 +59,6 @@
     <string name="time_in">in</string>
 
     <!-- Languages -->
-    <string name="language_english">English</string>
-    <string name="language_indonesian">Indonesian</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_indonesian" translatable="false">Indonesia</string>
 </resources>

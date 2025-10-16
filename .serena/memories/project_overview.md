@@ -1,7 +1,7 @@
-# Comuline - Android Project
+# Info KRL - Android Project
 
 ## Purpose
-Comuline is an Android application for tracking train station schedules. Users can:
+Info KRL is an Android application for tracking train station schedules. Users can:
 - Pin favorite stations
 - View schedules for different destinations from each station
 - Sync schedule data for their favorited stations
