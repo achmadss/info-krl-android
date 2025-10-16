@@ -2,6 +2,7 @@ package dev.achmad.comuline.screens.settings
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
@@ -48,7 +49,7 @@ object SettingsScreen : Screen {
         navigator: Navigator,
     ): Preference {
         val timeFormatPreference = applicationPreference.timeFormat()
-        val languagePreference = applicationPreference.language()
+        val locale = LocalConfiguration.current.locales[0]
         val localeOptions = localeOptions()
         return Preference.PreferenceGroup(
             title = stringResource(R.string.appearance),
@@ -63,7 +64,7 @@ object SettingsScreen : Screen {
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.language),
                     subtitle = localeOptions.filter {
-                        it.value == languagePreference.get()
+                        it.value == locale.language
                     }.keys.firstOrNull(),
                     onClick = {
                         navigator.push(SettingsLanguageScreen)

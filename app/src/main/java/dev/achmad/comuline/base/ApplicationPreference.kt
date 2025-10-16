@@ -25,8 +25,4 @@ class ApplicationPreference(
         defaultValue = true
     )
 
-    fun language() = preferenceStore.getString(
-        key = "language",
-        defaultValue = "en"
-    )
 }
