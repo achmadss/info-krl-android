@@ -50,6 +50,21 @@
     <string name="credits_train_icon">Ikon Kereta</string>
     <string name="credits_train_icon_attribution">Ikon dibuat oleh Freepik dari www.flaticon.com</string>
 
+    <!-- OnboardingScreen -->
+    <string name="onboarding_skip">Lewati</string>
+    <string name="onboarding_next">Selanjutnya</string>
+    <string name="onboarding_get_started">Mulai</string>
+
+    <string name="onboarding_welcome_title">Info KRL</string>
+    <string name="onboarding_welcome_subtitle">Aplikasi Jadwal KRL Anda</string>
+    <string name="onboarding_welcome_description">Lacak jadwal kereta untuk stasiun KRL favorit Anda secara real-time. Jangan pernah ketinggalan kereta lagi.</string>
+
+    <string name="onboarding_pin_stations_title">Sematkan Stasiun</string>
+    <string name="onboarding_pin_stations_description">Tambahkan stasiun yang sering Anda gunakan ke layar utama. Seret dan atur ulang tab untuk akses cepat ke jadwal.</string>
+
+    <string name="onboarding_view_schedules_title">Tetap Terkini</string>
+    <string name="onboarding_view_schedules_description">Lihat waktu keberangkatan kereta, lacak ETA, dan tarik untuk menyegarkan jadwal terbaru. Cari berdasarkan tujuan untuk merencanakan perjalanan Anda.</string>
+
     <!-- Time/ETA strings -->
     <string name="time_now">sekarang</string>
     <string name="time_now_capitalized">Sekarang</string>

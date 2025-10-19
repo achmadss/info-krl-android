@@ -8,6 +8,11 @@ import dev.achmad.infokrl.R
 class ApplicationPreference(
     private val preferenceStore: PreferenceStore
 ) {
+    fun hasCompletedOnboarding() = preferenceStore.getBoolean(
+        key = "has_completed_onboarding",
+        defaultValue = false
+    )
+
     fun hasFetchedStations() = preferenceStore.getBoolean(
         key = "first_run",
         defaultValue = false
