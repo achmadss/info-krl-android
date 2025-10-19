@@ -33,6 +33,11 @@ fun AppTheme(
 ) {
     val applicationPreference = inject<ApplicationPreference>()
     val theme by applicationPreference.appTheme().collectAsState()
+    val systemBarColor = when (theme) {
+        ApplicationPreference.Themes.DARK -> Color.Transparent
+        ApplicationPreference.Themes.LIGHT -> Color.White
+        else -> if (isDarkTheme) Color.Transparent else Color.White
+    }
 
     val colorScheme = when (theme) {
         ApplicationPreference.Themes.DARK -> darkTheme
@@ -52,6 +57,8 @@ fun AppTheme(
                 typography = Typography,
                 content = content,
             )
+            StatusBarColor(systemBarColor)
+            NavigationBarColor(systemBarColor)
         }
     }
 }

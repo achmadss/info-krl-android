@@ -2,6 +2,7 @@ package dev.achmad.infokrl.screens.home
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import dev.achmad.infokrl.util.calculateStopsCount
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
@@ -210,18 +211,7 @@ class HomeScreenModel(
                 }
 
                 // Calculate stops count
-                val stopStationIds = route?.stops?.map { it.stationId }
-                val bstStationsIds = listOf("SUDB", "DU", "RW", "BPR")
-                val stopsCount = stopStationIds
-                    ?.indexOf(favoriteStationId)
-                    ?.takeIf { it != -1 }
-                    ?.let { index -> stopStationIds.drop(index + 1) }
-                    ?.let { remainingStops ->
-                        if (route.line.contains("BST")) {
-                            remainingStops.filter { stationId -> stationId in bstStationsIds }
-                        } else remainingStops
-                    }
-                    ?.size
+                val stopsCount = calculateStopsCount(route, favoriteStationId)
 
                 // Map schedules to UI models
                 val uiSchedules = sortedSchedules.map { schedule ->

@@ -225,6 +225,7 @@ private fun SchedulesScreen(
                                     index = index,
                                     lastIndex = schedules.schedules.lastIndex,
                                     is24Hour = is24Hour,
+                                    maxStops = schedules.maxStops,
                                     uiSchedule = uiSchedule,
                                     onClick = { onClickSchedule(uiSchedule.schedule.id) },
                                     shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
@@ -270,6 +271,7 @@ private fun ScheduleDetailItem(
     index: Int,
     lastIndex: Int,
     is24Hour: Boolean,
+    maxStops: Int?,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
     shouldBlink: Boolean = false,
@@ -402,7 +404,11 @@ private fun ScheduleDetailItem(
                     Text(
                         text = when(stops) {
                             null -> stringResource(R.string.stops_unknown)
-                            else -> stringResource(R.string.stops_count, stops)
+                            else -> if (stops != maxStops) {
+                                stringResource(R.string.stops_count, stops)
+                            } else {
+                                stringResource(R.string.stops_count, stops)
+                            }
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
