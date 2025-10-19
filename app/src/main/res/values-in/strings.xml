@@ -44,7 +44,11 @@
     <string name="time_format_24h">Format 24 jam</string>
     <string name="about">Tentang</string>
     <string name="version">Versi</string>
-    <string name="open_source_licenses">Lisensi sumber terbuka</string>
+    <string name="credits">Kredit &amp; Lisensi</string>
+
+    <!-- CreditsScreen -->
+    <string name="credits_train_icon">Ikon Kereta</string>
+    <string name="credits_train_icon_attribution">Ikon dibuat oleh Freepik dari www.flaticon.com</string>
 
     <!-- Time/ETA strings -->
     <string name="time_now">sekarang</string>

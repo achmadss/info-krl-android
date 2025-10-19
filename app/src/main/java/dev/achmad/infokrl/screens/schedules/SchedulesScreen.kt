@@ -3,8 +3,8 @@ package dev.achmad.infokrl.screens.schedules
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +60,8 @@ import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
+import dev.achmad.infokrl.theme.LocalColorScheme
+import dev.achmad.infokrl.theme.darkTheme
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
@@ -107,11 +109,13 @@ private fun SchedulesScreen(
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
 ) {
+    val colorScheme = LocalColorScheme.current
     Scaffold(
         topBar = {
             Surface(
                 shadowElevation = 4.dp
             ) {
+                val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
                 AppBar(
                     titleContent = {
                         Column {
@@ -145,16 +149,18 @@ private fun SchedulesScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
                             if (firstSchedule != null) {
                                 val color = firstSchedule.color.toColor()
                                 Text(
                                     text = firstSchedule.line,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = if (isSystemInDarkTheme()) {
+                                    color = if (colorScheme == darkTheme) {
                                         color.brighter(.35f)
                                     } else color.darken(.15f),
                                     overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.basicMarquee(
+                                        repeatDelayMillis = 2_000
+                                    )
                                 )
                             }
                         }

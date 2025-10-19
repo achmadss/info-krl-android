@@ -3,7 +3,6 @@ package dev.achmad.infokrl.screens.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,7 +62,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -87,6 +85,8 @@ import dev.achmad.infokrl.components.TabText
 import dev.achmad.infokrl.screens.schedules.SchedulesScreen
 import dev.achmad.infokrl.screens.settings.SettingsScreen
 import dev.achmad.infokrl.screens.stations.StationsScreen
+import dev.achmad.infokrl.theme.LocalColorScheme
+import dev.achmad.infokrl.theme.darkTheme
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
@@ -280,16 +280,7 @@ private fun HomeScreen(
 
             SearchToolbar(
                 titleContent = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.icon),
-                            contentDescription = null,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        AppBarTitle(stringResource(R.string.app_name))
-                    }
+                    AppBarTitle(stringResource(R.string.app_name))
                 },
                 searchEnabled = searchEnabled ?: true,
                 searchQuery = searchQuery,
@@ -560,6 +551,7 @@ private fun ScheduleItem(
     is24Hour: Boolean,
     onClick: () -> Unit
 ) {
+    val colorScheme = LocalColorScheme.current
     val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
     val schedules = scheduleGroup.schedules.ifEmpty { return }
@@ -591,7 +583,7 @@ private fun ScheduleItem(
             Text(
                 text = firstSchedule.line,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (isSystemInDarkTheme()) {
+                color = if (colorScheme == darkTheme) {
                     color.brighter(.35f)
                 } else color.darken(.15f),
                 overflow = TextOverflow.Ellipsis,

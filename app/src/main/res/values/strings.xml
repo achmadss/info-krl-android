@@ -44,7 +44,11 @@
     <string name="time_format_24h">24-hour format</string>
     <string name="about">About</string>
     <string name="version">Version</string>
-    <string name="open_source_licenses">Open source licenses</string>
+    <string name="credits">Credits &amp; Licenses</string>
+
+    <!-- CreditsScreen -->
+    <string name="credits_train_icon">Train Icon</string>
+    <string name="credits_train_icon_attribution">Icon made by Freepik from www.flaticon.com</string>
 
     <!-- Time/ETA strings -->
     <string name="time_now">now</string>

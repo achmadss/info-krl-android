@@ -29,13 +29,19 @@ object SettingsLanguageScreen: Screen {
 
     @Composable
     private fun languages(): List<Preference> {
-        val locale = LocalConfiguration.current.locales[0]
+        val systemLocale = LocalConfiguration.current
+            .locales[0]
+            .language
+            .replace(Regex("-[A-Z]{2}$"), "")
+
+        // Default to English if system locale is not Indonesian
+        val locale = if (systemLocale == "id") "id" else "en"
         val localeOptions = localeOptions()
 
         return localeOptions.map { option ->
             Preference.PreferenceItem.CheckPreference(
                 value = option.value,
-                checked = option.value == locale.language,
+                checked = option.value == locale,
                 title = option.key,
                 onClick = { value ->
                     AppCompatDelegate.setApplicationLocales(
