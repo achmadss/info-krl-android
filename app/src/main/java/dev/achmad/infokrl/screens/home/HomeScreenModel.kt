@@ -3,9 +3,6 @@ package dev.achmad.infokrl.screens.home
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.infokrl.util.calculateStopsCount
-import dev.achmad.comuline.util.etaString
-import dev.achmad.comuline.work.SyncRouteJob
-import dev.achmad.comuline.work.SyncScheduleJob
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker

@@ -1,4 +1,4 @@
-package dev.achmad.comuline.util
+package dev.achmad.infokrl.util
 
 import dev.achmad.domain.model.Route
 
