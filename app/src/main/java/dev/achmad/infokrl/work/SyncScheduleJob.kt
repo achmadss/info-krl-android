@@ -79,10 +79,10 @@ class SyncScheduleJob(
                     if (shouldSync(station.id) && !workManager.isRunning(station.id)) {
                         val lastFetchSchedule = applicationPreference.lastFetchSchedule(station.id)
                         try {
-                            maxSchedulePermits.withPermit {
+//                            maxSchedulePermits.withPermit {
                                 scheduleRepository.fetchAndStoreByStationId(station.id)
                                 lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-                            }
+//                            }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -97,10 +97,10 @@ class SyncScheduleJob(
      */
     private suspend fun syncSingleStation(stationId: String, now: LocalDateTime, zone: ZoneId) {
         val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
-        maxSchedulePermits.withPermit {
+//        maxSchedulePermits.withPermit {
             scheduleRepository.fetchAndStoreByStationId(stationId)
             lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-        }
+//        }
     }
 
     companion object {
@@ -109,7 +109,7 @@ class SyncScheduleJob(
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 
-        val maxSchedulePermits =  Semaphore(5)
+//        val maxSchedulePermits =  Semaphore(5)
 
         private fun shouldSync(
             stationId: String,

@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -50,6 +52,11 @@ class SchedulesScreenModel(
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
     private val _routeUpdateTrigger = MutableStateFlow(0L)
+
+    // Track which train IDs have been requested to avoid duplicate fetches
+    // Use Mutex to prevent race conditions when multiple scroll events occur
+    private val requestedTrainIds = mutableSetOf<String>()
+    private val requestedTrainIdsMutex = Mutex()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -93,11 +100,6 @@ class SchedulesScreenModel(
                             ),
                             stops = stopsCount
                         )
-                    }
-                    .also {
-                        if (it.isNotEmpty()) {
-                            fetchRoute(it.map { it.schedule.trainId })
-                        }
                     }
                 val maxStops = filteredSchedules.mapNotNull { it.stops }.maxOrNull()
 
@@ -156,13 +158,36 @@ class SchedulesScreenModel(
         }
     }
 
-    private fun fetchRoute(trainIds: List<String>) {
+    /**
+     * Fetches routes for specific schedules. Only fetches if not already requested.
+     * Called by the UI layer when schedules become visible.
+     * Thread-safe with mutex to prevent race conditions from rapid scroll events.
+     */
+    fun fetchRoutesForSchedules(scheduleIds: List<String>) {
         screenModelScope.launch(Dispatchers.IO) {
-            SyncRouteJob.start(
-                context = injectContext(),
-                trainIds = trainIds,
-                finishDelay = 500
-            )
+            val schedules = scheduleGroup.value?.schedules ?: return@launch
+
+            // Get train IDs for the requested schedule IDs
+            val candidateTrainIds = schedules
+                .filter { it.schedule.id in scheduleIds }
+                .map { it.schedule.trainId }
+                .distinct()
+
+            // Thread-safe filtering and marking
+            val trainIdsToFetch = requestedTrainIdsMutex.withLock {
+                val newTrainIds = candidateTrainIds.filter { it !in requestedTrainIds }
+                // Mark as requested before releasing lock to prevent race conditions
+                requestedTrainIds.addAll(newTrainIds)
+                newTrainIds
+            }
+
+            if (trainIdsToFetch.isNotEmpty()) {
+                SyncRouteJob.start(
+                    context = injectContext(),
+                    trainIds = trainIdsToFetch,
+                    finishDelay = 500
+                )
+            }
         }
     }
 

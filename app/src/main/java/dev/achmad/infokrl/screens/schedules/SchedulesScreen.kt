@@ -43,6 +43,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -80,7 +81,12 @@ data class SchedulesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
+        val screenModel = rememberScreenModel {
+            SchedulesScreenModel(
+                originStationId = originStationId,
+                destinationStationId = destinationStationId,
+            )
+        }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
         val applicationPreference by injectLazy<ApplicationPreference>()
@@ -94,6 +100,9 @@ data class SchedulesScreen(
             focusedScheduleId = scheduleId,
             schedules = schedules,
             is24Hour = is24Hour,
+            onVisibleSchedulesChanged = { visibleScheduleIds ->
+                screenModel.fetchRoutesForSchedules(visibleScheduleIds)
+            }
         )
     }
 
@@ -108,6 +117,7 @@ private fun SchedulesScreen(
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
+    onVisibleSchedulesChanged: (List<String>) -> Unit = {},
 ) {
     val colorScheme = LocalColorScheme.current
     Scaffold(
@@ -236,6 +246,21 @@ private fun SchedulesScreen(
                                 HorizontalDivider()
                             }
                         }
+
+                        // Monitor visible items and fetch routes for them
+                        LaunchedEffect(schedules.schedules) {
+                            snapshotFlow {
+                                lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
+                                    // Get schedule ID from the visible item index
+                                    schedules.schedules.getOrNull(itemInfo.index)?.schedule?.id
+                                }
+                            }.collect { visibleScheduleIds ->
+                                if (visibleScheduleIds.isNotEmpty()) {
+                                    onVisibleSchedulesChanged(visibleScheduleIds)
+                                }
+                            }
+                        }
+
                         if (focusedScheduleId != null) {
                             LaunchedEffect(focusedScheduleId) {
                                 val index = schedules.schedules.indexOfFirst {
