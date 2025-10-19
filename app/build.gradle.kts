@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "dev.achmad.comuline"
+    namespace = "dev.achmad.infokrl"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.achmad.comuline"
+        applicationId = "dev.achmad.infokrl"
         minSdk = 26
         targetSdk = 36
         versionCode = 1

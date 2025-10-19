@@ -1,4 +1,4 @@
-# Comuline Android
+# Info KRL Android
 
 An Android application for tracking Indonesian commuter train (KRL) schedules in real-time. Pin your favorite stations and get instant access to departure times, train information, and route details.
 
@@ -55,8 +55,8 @@ The app features:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/comuline-android.git
-cd comuline-android
+git clone https://github.com/yourusername/info-krl-android.git
+cd info-krl-android
 
 # Build the project
 ./gradlew build
@@ -68,7 +68,7 @@ cd comuline-android
 ## 📁 Project Structure
 
 ```
-comuline-android/
+info-krl-android/
 ├── app/                          # Main application module
 │   ├── screens/                  # Screen composables and view models
 │   ├── components/               # Reusable UI components

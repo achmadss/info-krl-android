@@ -1,11 +1,11 @@
 package dev.achmad.data.repository
 
 import dev.achmad.core.network.parseAs
-import dev.achmad.data.local.ComulineDatabase
+import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.station.toDomain
 import dev.achmad.data.local.entity.station.toEntity
-import dev.achmad.data.remote.ComulineApi
+import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.station.StationResponse
 import dev.achmad.data.remote.model.station.toStationUpdate
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class StationRepositoryImpl(
-    private val api: ComulineApi,
-    private val database: ComulineDatabase,
+    private val api: InfoKRLApi,
+    private val database: InfoKRLDatabase,
 ): StationRepository {
 
     private val stationDao: StationDao = database.stationDao()

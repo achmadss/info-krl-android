@@ -2,10 +2,10 @@ package dev.achmad.data.repository
 
 import android.content.res.Resources.NotFoundException
 import dev.achmad.core.network.parseAs
-import dev.achmad.data.local.ComulineDatabase
+import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.RouteDao
 import dev.achmad.data.local.entity.route.toDomain
-import dev.achmad.data.remote.ComulineApi
+import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.route.RouteResponse
 import dev.achmad.data.remote.model.route.toEntity
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class RouteRepositoryImpl(
-    private val api: ComulineApi,
-    private val database: ComulineDatabase
+    private val api: InfoKRLApi,
+    private val database: InfoKRLDatabase
 ): RouteRepository {
 
     private val routeDao: RouteDao = database.routeDao()

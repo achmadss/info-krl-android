@@ -13,12 +13,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Comuline"
+        android:theme="@style/Theme.InfoKRL"
         tools:targetApi="33">
         <activity
             android:name=".base.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.Comuline">
+            android:theme="@style/Theme.InfoKRL">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
