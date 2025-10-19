@@ -2,6 +2,7 @@ package dev.achmad.comuline.screens.home
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import dev.achmad.comuline.util.calculateStopsCount
 import dev.achmad.comuline.util.etaString
 import dev.achmad.comuline.work.SyncRouteJob
 import dev.achmad.comuline.work.SyncScheduleJob
@@ -210,18 +211,7 @@ class HomeScreenModel(
                 }
 
                 // Calculate stops count
-                val stopStationIds = route?.stops?.map { it.stationId }
-                val bstStationsIds = listOf("SUDB", "DU", "RW", "BPR")
-                val stopsCount = stopStationIds
-                    ?.indexOf(favoriteStationId)
-                    ?.takeIf { it != -1 }
-                    ?.let { index -> stopStationIds.drop(index + 1) }
-                    ?.let { remainingStops ->
-                        if (route.line.contains("BST")) {
-                            remainingStops.filter { stationId -> stationId in bstStationsIds }
-                        } else remainingStops
-                    }
-                    ?.size
+                val stopsCount = calculateStopsCount(route, favoriteStationId)
 
                 // Map schedules to UI models
                 val uiSchedules = sortedSchedules.map { schedule ->

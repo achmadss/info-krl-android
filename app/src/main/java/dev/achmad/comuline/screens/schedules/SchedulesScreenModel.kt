@@ -2,6 +2,7 @@ package dev.achmad.comuline.screens.schedules
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import dev.achmad.comuline.util.calculateStopsCount
 import dev.achmad.comuline.util.etaString
 import dev.achmad.comuline.work.SyncRouteJob
 import dev.achmad.comuline.work.SyncScheduleJob
@@ -28,7 +29,8 @@ import java.time.LocalDateTime
 data class ScheduleGroup(
     val originStation: Station,
     val destinationStation: Station,
-    val schedules: List<UISchedule>
+    val schedules: List<UISchedule>,
+    val maxStops: Int?
 ) {
     data class UISchedule(
         val schedule: Schedule,
@@ -97,10 +99,13 @@ class SchedulesScreenModel(
                             fetchRoute(it.map { it.schedule.trainId })
                         }
                     }
+                val maxStops = filteredSchedules.mapNotNull { it.stops }.maxOrNull()
+
                 ScheduleGroup(
                     originStation = originStation,
                     destinationStation = destinationStation,
-                    schedules = filteredSchedules
+                    schedules = filteredSchedules,
+                    maxStops = maxStops
                 )
             }
         }
@@ -109,27 +114,6 @@ class SchedulesScreenModel(
         started = SharingStarted.Eagerly,
         initialValue = null
     )
-
-    private fun calculateStopsCount(
-        route: Route?,
-        originStationId: String,
-    ): Int? {
-        if (route == null) return null
-
-        val stopStationIds = route.stops.map { it.stationId }
-        val bstStationsIds = listOf("SUDB", "DU", "RW", "BPR")
-
-        return stopStationIds
-            .indexOf(originStationId)
-            .takeIf { it != -1 }
-            ?.let { index -> stopStationIds.drop(index + 1) }
-            ?.let { remainingStops ->
-                if (route.line.contains("BST")) {
-                    remainingStops.filter { stationId -> stationId in bstStationsIds }
-                } else remainingStops
-            }
-            ?.size
-    }
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
         return scheduleFlowsCache.getOrPut(stationId) {

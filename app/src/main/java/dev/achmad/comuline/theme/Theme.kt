@@ -1,6 +1,7 @@
 package dev.achmad.comuline.theme
 
 import android.app.Activity
+import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,11 @@ fun AppTheme(
 ) {
     val applicationPreference = inject<ApplicationPreference>()
     val theme by applicationPreference.appTheme().collectAsState()
+    val systemBarColor = when (theme) {
+        ApplicationPreference.Themes.DARK -> Color.Transparent
+        ApplicationPreference.Themes.LIGHT -> Color.White
+        else -> if (darkTheme) Color.Transparent else Color.White
+    }
 
     val colorScheme = when (theme) {
         ApplicationPreference.Themes.DARK -> darkColorScheme()
@@ -43,6 +49,8 @@ fun AppTheme(
             typography = Typography,
             content = content,
         )
+        StatusBarColor(systemBarColor)
+        NavigationBarColor(systemBarColor)
     }
 }
 
