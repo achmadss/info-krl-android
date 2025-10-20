@@ -126,6 +126,11 @@ class SyncScheduleJob(
         ): StateFlow<WorkInfo.State?> {
             val workQuery = WorkQuery.Builder
                 .fromTags(listOf(stationId))
+                .addStates(listOf(
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.RUNNING,
+                    WorkInfo.State.BLOCKED
+                ))
                 .build()
 
             return context.workManager

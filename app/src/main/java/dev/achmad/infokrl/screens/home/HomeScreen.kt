@@ -27,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Train
@@ -92,11 +91,9 @@ import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.infokrl.work.SyncRouteJob
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
@@ -152,10 +149,10 @@ object HomeScreen: Screen {
                 )
             },
             onManualSync = {
-                screenModel.fetchSchedules()
+                screenModel.fetchSchedules(true)
             },
             onRefreshStation = { stationId ->
-                screenModel.fetchScheduleForStation(stationId)
+                screenModel.fetchScheduleForStation(stationId, true)
             },
             onToggleFilterFutureSchedules = {
                 screenModel.toggleFilterFutureSchedules()
@@ -188,28 +185,14 @@ private fun HomeScreen(
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
     var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
-    // Combine both SyncScheduleJob and SyncRouteJob states for each station
+    // Track schedule sync state for each station
     val syncStates = departureGroups.associate { group ->
         group.station.id to remember(group.station.id) {
-            val scheduleState = SyncScheduleJob.subscribeState(
+            SyncScheduleJob.subscribeState(
                 context = applicationContext,
                 scope = syncScope,
                 stationId = group.station.id
             )
-            val routeState = SyncRouteJob.subscribeStateByStation(
-                context = applicationContext,
-                scope = syncScope,
-                stationId = group.station.id
-            )
-
-            // Combine both states - if either is running, show as refreshing
-            combine(scheduleState, routeState) { schedule, route ->
-                when {
-                    schedule?.isFinished == false -> schedule
-                    route?.isFinished == false -> route
-                    else -> schedule
-                }
-            }
         }.collectAsState(initial = null)
     }
 
@@ -559,7 +542,6 @@ private fun ScheduleItem(
     val firstScheduleEta = schedules.first().eta
     val color = firstSchedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
-    val stops = schedules.first().stops
 
     Row(
         modifier = Modifier
@@ -640,22 +622,6 @@ private fun ScheduleItem(
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = firstSchedule.trainId,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        modifier = Modifier.size(12.dp),
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = if (stops != null) {
-                            stringResource(R.string.stops_count, stops)
-                        } else {
-                            stringResource(R.string.stops_unknown)
-                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )

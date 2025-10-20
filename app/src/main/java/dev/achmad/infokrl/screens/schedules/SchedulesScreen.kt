@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.CircularProgressIndicator
@@ -43,7 +42,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
@@ -100,9 +98,6 @@ data class SchedulesScreen(
             focusedScheduleId = scheduleId,
             schedules = schedules,
             is24Hour = is24Hour,
-            onVisibleSchedulesChanged = { visibleScheduleIds ->
-                screenModel.fetchRoutesForSchedules(visibleScheduleIds)
-            }
         )
     }
 
@@ -117,7 +112,6 @@ private fun SchedulesScreen(
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
-    onVisibleSchedulesChanged: (List<String>) -> Unit = {},
 ) {
     val colorScheme = LocalColorScheme.current
     Scaffold(
@@ -235,7 +229,6 @@ private fun SchedulesScreen(
                                     index = index,
                                     lastIndex = schedules.schedules.lastIndex,
                                     is24Hour = is24Hour,
-                                    maxStops = schedules.maxStops,
                                     uiSchedule = uiSchedule,
                                     onClick = { onClickSchedule(uiSchedule.schedule.id) },
                                     shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
@@ -244,20 +237,6 @@ private fun SchedulesScreen(
                             }
                             item {
                                 HorizontalDivider()
-                            }
-                        }
-
-                        // Monitor visible items and fetch routes for them
-                        LaunchedEffect(schedules.schedules) {
-                            snapshotFlow {
-                                lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
-                                    // Get schedule ID from the visible item index
-                                    schedules.schedules.getOrNull(itemInfo.index)?.schedule?.id
-                                }
-                            }.collect { visibleScheduleIds ->
-                                if (visibleScheduleIds.isNotEmpty()) {
-                                    onVisibleSchedulesChanged(visibleScheduleIds)
-                                }
                             }
                         }
 
@@ -296,7 +275,6 @@ private fun ScheduleDetailItem(
     index: Int,
     lastIndex: Int,
     is24Hour: Boolean,
-    maxStops: Int?,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
     shouldBlink: Boolean = false,
@@ -304,7 +282,6 @@ private fun ScheduleDetailItem(
 ) {
     val density = LocalDensity.current
     val schedule = uiSchedule.schedule
-    val stops = uiSchedule.stops
     val color = schedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
     var blinkState by remember { mutableIntStateOf(0) }
@@ -412,29 +389,6 @@ private fun ScheduleDetailItem(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = schedule.trainId,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        modifier = Modifier.size(16.dp),
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = when(stops) {
-                            null -> stringResource(R.string.stops_unknown)
-                            else -> if (stops != maxStops) {
-                                stringResource(R.string.stops_count, stops)
-                            } else {
-                                stringResource(R.string.stops_count, stops)
-                            }
-                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )
