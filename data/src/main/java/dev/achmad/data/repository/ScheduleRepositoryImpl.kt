@@ -25,11 +25,18 @@ class ScheduleRepositoryImpl(
 
     private val scheduleDao: ScheduleDao = database.scheduleDao()
 
-    override val schedules: Flow<List<Schedule>> =
+    override fun subscribeAll(): Flow<List<Schedule>> =
         scheduleDao.subscribeAll()
             .map { it.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
+
+    override fun subscribeSingle(stationId: String): Flow<List<Schedule>> {
+        return scheduleDao.subscribeAllByStationId(stationId)
+            .mapNotNull { it.toDomain().filter { !it.trainId.contains("/") } }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+    }
 
     override suspend fun fetchAndStoreByStationId(stationId: String) {
         withContext(Dispatchers.IO) {
@@ -44,14 +51,6 @@ class ScheduleRepositoryImpl(
             }
             scheduleDao.insert(schedules)
         }
-    }
-
-
-    override fun subscribeSingle(stationId: String): Flow<List<Schedule>> {
-        return scheduleDao.subscribeAllByStationId(stationId)
-            .mapNotNull { it.toDomain().filter { !it.trainId.contains("/") } }
-            .distinctUntilChanged()
-            .flowOn(Dispatchers.IO)
     }
 
 }

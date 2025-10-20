@@ -25,17 +25,28 @@ class StationRepositoryImpl(
 
     private val stationDao: StationDao = database.stationDao()
 
-    override val stations: Flow<List<Station>> =
-        stationDao.subscribeAll()
+    override fun subscribeAll(favorite: Boolean?): Flow<List<Station>> =
+        stationDao.subscribeAll(favorite = favorite)
             .map { it.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
 
-    override val favoriteStations: Flow<List<Station>> =
-        stationDao.subscribeAll(favorite = true)
-            .map { it.toDomain() }
+    override fun subscribeSingle(id: String): Flow<Station?> {
+        return stationDao.subscribeSingle(id)
+            .map { it?.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun awaitAllFavorites(): List<Station> {
+        return withContext(Dispatchers.IO) {
+            stationDao.awaitAll(favorite = true).map { it.toDomain() }
+        }
+    }
+
+    override suspend fun awaitSingle(id: String): Station? {
+        return stationDao.awaitSingle(id)?.toDomain()
+    }
 
     override suspend fun fetchAndStore() {
         withContext(Dispatchers.IO) {
@@ -49,11 +60,15 @@ class StationRepositoryImpl(
 
     override suspend fun toggleFavorite(station: Station) {
         withContext(Dispatchers.IO) {
-            val updated = station.copy(
-                favorite = !station.favorite,
-                favoritePosition = if (!station.favorite) null else station.favoritePosition
-            ).toEntity()
-            stationDao.update(updated)
+            if (station.favorite) {
+                stationDao.unfavorite(station.id)
+            } else {
+                val updated = station.copy(
+                    favorite = true,
+                    favoritePosition = station.favoritePosition
+                ).toEntity()
+                stationDao.update(updated)
+            }
         }
     }
 
@@ -71,23 +86,6 @@ class StationRepositoryImpl(
             }
             stationDao.update(updates)
         }
-    }
-
-    override suspend fun awaitAllFavorites(): List<Station> {
-        return withContext(Dispatchers.IO) {
-            stationDao.awaitAll(favorite = true).map { it.toDomain() }
-        }
-    }
-
-    override suspend fun awaitSingle(id: String): Station? {
-        return stationDao.awaitSingle(id)?.toDomain()
-    }
-
-    override fun subscribeSingle(id: String): Flow<Station?> {
-        return stationDao.subscribeSingle(id)
-            .map { it?.toDomain() }
-            .distinctUntilChanged()
-            .flowOn(Dispatchers.IO)
     }
 
 }

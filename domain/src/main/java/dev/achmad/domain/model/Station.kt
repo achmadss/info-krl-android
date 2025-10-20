@@ -17,7 +17,7 @@ data class Station(
     val updatedAt: LocalDateTime,
 ) {
     enum class Type {
-        KRL;
+        KRL, LOCAL;
         companion object {
             operator fun invoke(value: String?) = enumValueOfOrDefault(value, KRL)
         }

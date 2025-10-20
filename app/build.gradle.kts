@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.material.motion.compose.core)
     implementation(libs.coil.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.reorderable)
 
     implementation(libs.voyager.navigator)
     implementation(libs.voyager.tabNavigator)

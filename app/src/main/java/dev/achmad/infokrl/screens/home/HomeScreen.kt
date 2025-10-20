@@ -152,10 +152,10 @@ object HomeScreen: Screen {
                 )
             },
             onManualSync = {
-                screenModel.fetchSchedules(true)
+                screenModel.fetchSchedules()
             },
             onRefreshStation = { stationId ->
-                screenModel.fetchScheduleForStation(stationId, true)
+                screenModel.fetchScheduleForStation(stationId)
             },
             onToggleFilterFutureSchedules = {
                 screenModel.toggleFilterFutureSchedules()

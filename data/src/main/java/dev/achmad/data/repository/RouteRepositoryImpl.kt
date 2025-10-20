@@ -25,11 +25,18 @@ class RouteRepositoryImpl(
 
     private val routeDao: RouteDao = database.routeDao()
 
-    override val routes: Flow<List<Route>> =
+    override fun subscribeAll(): Flow<List<Route>> =
         routeDao.subscribeAll()
             .map { it.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
+
+    override fun subscribeSingle(trainId: String): Flow<Route?> {
+        return routeDao.subscribeSingle(trainId)
+            .map { it?.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+    }
 
     override suspend fun fetchAndStoreByTrainId(trainId: String) {
         withContext(Dispatchers.IO) {
@@ -43,13 +50,6 @@ class RouteRepositoryImpl(
             }
             routeDao.insert(data.data.toEntity())
         }
-    }
-
-    override fun subscribeSingle(trainId: String): Flow<Route?> {
-        return routeDao.subscribeSingle(trainId)
-            .map { it?.toDomain() }
-            .distinctUntilChanged()
-            .flowOn(Dispatchers.IO)
     }
 
 }

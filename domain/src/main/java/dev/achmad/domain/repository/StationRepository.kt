@@ -5,16 +5,16 @@ import kotlinx.coroutines.flow.Flow
 
 interface StationRepository {
 
-    val stations: Flow<List<Station>>
-    val favoriteStations: Flow<List<Station>>
+    fun subscribeAll(favorite: Boolean? = null): Flow<List<Station>>
+    fun subscribeSingle(id: String): Flow<Station?>
+
+    suspend fun awaitAllFavorites(): List<Station>
+    suspend fun awaitSingle(id: String): Station?
 
     suspend fun fetchAndStore()
     suspend fun toggleFavorite(station: Station)
     suspend fun updateFavorite(station: Station)
-    suspend fun reorderFavorites(stations: List<Station>)
 
-    suspend fun awaitAllFavorites(): List<Station>
-    suspend fun awaitSingle(id: String): Station?
-    fun subscribeSingle(id: String): Flow<Station?>
+    suspend fun reorderFavorites(stations: List<Station>)
 
 }

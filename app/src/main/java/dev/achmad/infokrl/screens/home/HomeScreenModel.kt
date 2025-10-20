@@ -76,14 +76,14 @@ class HomeScreenModel(
             initialValue = LocalDateTime.now()
         )
 
-    private val stations = stationRepository.stations
+    private val stations = stationRepository.subscribeAll()
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    private val favoriteStations = stationRepository.favoriteStations
+    private val favoriteStations = stationRepository.subscribeAll(favorite = true)
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -340,7 +340,7 @@ class HomeScreenModel(
      */
     fun fetchScheduleForStation(
         stationId: String,
-        manualFetch: Boolean = true
+        manualFetch: Boolean = false
     ) {
         screenModelScope.launch(Dispatchers.IO) {
             if (manualFetch) {
