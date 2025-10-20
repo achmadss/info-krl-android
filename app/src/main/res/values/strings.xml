@@ -47,7 +47,26 @@
     <string name="time_format_24h">24-hour format</string>
     <string name="about">About</string>
     <string name="version">Version</string>
-    <string name="open_source_licenses">Open source licenses</string>
+    <string name="credits">Credits &amp; Licenses</string>
+
+    <!-- CreditsScreen -->
+    <string name="credits_train_icon">Train Icon</string>
+    <string name="credits_train_icon_attribution">Icon made by Freepik from www.flaticon.com</string>
+
+    <!-- OnboardingScreen -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get Started</string>
+
+    <string name="onboarding_welcome_title">Info KRL</string>
+    <string name="onboarding_welcome_subtitle">Your KRL Train Schedule Companion</string>
+    <string name="onboarding_welcome_description">Track train schedules for your favorite KRL stations in real-time. Never miss your train again.</string>
+
+    <string name="onboarding_pin_stations_title">Pin Your Stations</string>
+    <string name="onboarding_pin_stations_description">Add your frequently used stations to the home screen. Drag and reorder tabs for quick access to schedules.</string>
+
+    <string name="onboarding_view_schedules_title">Stay Updated</string>
+    <string name="onboarding_view_schedules_description">View train departure times, track ETAs, and pull to refresh for the latest schedules. Search by destination to plan your journey.</string>
 
     <!-- Time/ETA strings -->
     <string name="time_now">now</string>

@@ -3,8 +3,8 @@ package dev.achmad.infokrl.screens.schedules
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material3.CircularProgressIndicator
@@ -61,6 +60,8 @@ import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
+import dev.achmad.infokrl.theme.LocalColorScheme
+import dev.achmad.infokrl.theme.darkTheme
 import dev.achmad.infokrl.screens.schedules.timelinescreen.TimelineScreen
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
@@ -80,7 +81,12 @@ data class SchedulesScreen(
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { SchedulesScreenModel(originStationId, destinationStationId) }
+        val screenModel = rememberScreenModel {
+            SchedulesScreenModel(
+                originStationId = originStationId,
+                destinationStationId = destinationStationId,
+            )
+        }
         val schedules by screenModel.scheduleGroup.collectAsState()
 
         val applicationPreference by injectLazy<ApplicationPreference>()
@@ -117,11 +123,13 @@ private fun SchedulesScreen(
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
 ) {
+    val colorScheme = LocalColorScheme.current
     Scaffold(
         topBar = {
             Surface(
                 shadowElevation = 4.dp
             ) {
+                val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
                 AppBar(
                     titleContent = {
                         Column {
@@ -155,16 +163,18 @@ private fun SchedulesScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
                             if (firstSchedule != null) {
                                 val color = firstSchedule.color.toColor()
                                 Text(
                                     text = firstSchedule.line,
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = if (isSystemInDarkTheme()) {
+                                    color = if (colorScheme == darkTheme) {
                                         color.brighter(.35f)
                                     } else color.darken(.15f),
                                     overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.basicMarquee(
+                                        repeatDelayMillis = 2_000
+                                    )
                                 )
                             }
                         }
@@ -229,7 +239,6 @@ private fun SchedulesScreen(
                                     index = index,
                                     lastIndex = schedules.schedules.lastIndex,
                                     is24Hour = is24Hour,
-                                    maxStops = schedules.maxStops,
                                     uiSchedule = uiSchedule,
                                     onClick = {
                                         onClickSchedule(
@@ -246,6 +255,7 @@ private fun SchedulesScreen(
                                 HorizontalDivider()
                             }
                         }
+
                         if (focusedScheduleId != null) {
                             LaunchedEffect(focusedScheduleId) {
                                 val index = schedules.schedules.indexOfFirst {
@@ -281,7 +291,6 @@ private fun ScheduleDetailItem(
     index: Int,
     lastIndex: Int,
     is24Hour: Boolean,
-    maxStops: Int?,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
     shouldBlink: Boolean = false,
@@ -289,7 +298,6 @@ private fun ScheduleDetailItem(
 ) {
     val density = LocalDensity.current
     val schedule = uiSchedule.schedule
-    val stops = uiSchedule.stops
     val color = schedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
     var blinkState by remember { mutableIntStateOf(0) }
@@ -398,30 +406,6 @@ private fun ScheduleDetailItem(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = schedule.trainId,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        modifier = Modifier.size(16.dp),
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = when(stops) {
-                            null -> stringResource(R.string.stops_unknown)
-                            // TODO Show different when final stop isn't destination due to time
-                            else -> if (stops != maxStops) {
-                                stringResource(R.string.stops_count, stops)
-                            } else {
-                                stringResource(R.string.stops_count, stops)
-                            }
-                        },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.outline,
                     )

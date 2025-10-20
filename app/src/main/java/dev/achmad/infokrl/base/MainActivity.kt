@@ -20,7 +20,9 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.ScreenTransition
 import dev.achmad.infokrl.screens.home.HomeScreen
+import dev.achmad.infokrl.screens.onboarding.OnboardingScreen
 import dev.achmad.infokrl.theme.AppTheme
+import org.koin.android.ext.android.inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -28,6 +30,8 @@ import soup.compose.material.motion.animation.materialSharedAxisX
 import soup.compose.material.motion.animation.rememberSlideDistance
 
 class MainActivity : AppCompatActivity() {
+
+    private val applicationPreference: ApplicationPreference by inject()
 
     private var isReady = false
     private var initialScreen: Screen = HomeScreen
@@ -80,6 +84,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun handlePreDraw() {
         // Handle pre draw here (e.g. Splash Screen, fetch data, etc)
+
+        // Check if user has completed onboarding
+        val hasCompletedOnboarding = applicationPreference.hasCompletedOnboarding().get()
+        initialScreen = if (hasCompletedOnboarding) {
+            HomeScreen
+        } else {
+            OnboardingScreen
+        }
+
         isReady = true
     }
 

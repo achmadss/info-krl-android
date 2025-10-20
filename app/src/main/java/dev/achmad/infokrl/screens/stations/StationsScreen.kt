@@ -1,5 +1,6 @@
 package dev.achmad.infokrl.screens.stations
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -55,11 +57,10 @@ import dev.achmad.domain.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBarTitle
-import dev.achmad.infokrl.components.DraggableItem
 import dev.achmad.infokrl.components.SearchToolbar
-import dev.achmad.infokrl.components.dragContainer
-import dev.achmad.infokrl.components.rememberDragDropState
 import dev.achmad.infokrl.work.SyncStationJob
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 object StationsScreen: Screen {
     private fun readResolve(): Any = StationsScreen
@@ -70,7 +71,7 @@ object StationsScreen: Screen {
         val appContext = LocalContext.current.applicationContext
         val screenModel = rememberScreenModel { StationsScreenModel() }
         val searchQuery by screenModel.searchQuery.collectAsState()
-        val filteredStations by screenModel.filteredStations.collectAsState()
+        val stations by screenModel.stations.collectAsState()
         val applicationPreference by remember { injectLazy<ApplicationPreference>() }
         val syncState by SyncStationJob.subscribeState(
             context = appContext,
@@ -83,6 +84,10 @@ object StationsScreen: Screen {
             }
         }
 
+        BackHandler(searchQuery != null) {
+            screenModel.search(null)
+        }
+
         StationsScreen(
             loading = when {
                 syncState == WorkInfo.State.ENQUEUED ||
@@ -93,7 +98,7 @@ object StationsScreen: Screen {
                 WorkInfo.State.FAILED, WorkInfo.State.BLOCKED, WorkInfo.State.CANCELLED -> true
                 else -> false
             },
-            stations = filteredStations,
+            stations = stations,
             searchQuery = searchQuery,
             onChangeSearchQuery = { query ->
                 screenModel.search(query)
@@ -107,11 +112,8 @@ object StationsScreen: Screen {
             onTryAgain = {
                 SyncStationJob.start(appContext)
             },
-            onClickStation = { station ->
-                screenModel.toggleFavorite(station)
-            },
-            onReorderFavorites = { fromIndex, toIndex ->
-                screenModel.reorderFavorites(fromIndex, toIndex)
+            onReorder = { station, newPosition ->
+                screenModel.reorderFavorite(station, newPosition)
             }
         )
     }
@@ -128,8 +130,7 @@ private fun StationsScreen(
     onTogglePin: (Station) -> Unit,
     onNavigateUp: () -> Unit,
     onTryAgain: () -> Unit,
-    onClickStation: (Station) -> Unit,
-    onReorderFavorites: (Int, Int) -> Unit,
+    onReorder: (Station, Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -212,7 +213,7 @@ private fun StationsScreen(
             return@Scaffold
         }
 
-        val pinnedStations = stations
+        val pinnedStationsFromDb = stations
             ?.filter { it.favorite }
             ?.sortedBy { it.favoritePosition }
             ?: emptyList()
@@ -222,25 +223,34 @@ private fun StationsScreen(
             ?: emptyList()
 
         val listState = rememberLazyListState()
+        val enableDragDrop = searchQuery.isNullOrBlank() && pinnedStationsFromDb.isNotEmpty()
 
-        val enableDragDrop = searchQuery.isNullOrBlank() && pinnedStations.isNotEmpty()
-        val dragDropState = if (enableDragDrop) {
-            rememberDragDropState(
-                lazyListState = listState,
-                onMove = { fromIndex, toIndex ->
-                    val fromListIndex = fromIndex - 1
-                    val toListIndex = toIndex - 1
+        // Mutable state list for drag reordering
+        val pinnedStations = remember { pinnedStationsFromDb.toMutableStateList() }
 
-                    if (fromListIndex >= 0 && fromListIndex < pinnedStations.size &&
-                        toListIndex >= 0 && toListIndex < pinnedStations.size) {
-                        onReorderFavorites(fromListIndex, toListIndex)
-                    }
-                }
-            ).apply {
-                minDraggableIndex = 1 // first draggable item index (after header)
-                maxDraggableIndex = pinnedStations.size
+        val reorderableLazyListState = rememberReorderableLazyListState(listState) { from, to ->
+            // Account for header (index 0), so pinned items are indices 1 to pinnedStations.size
+            if (from.index > 0 && from.index <= pinnedStations.size &&
+                to.index > 0 && to.index <= pinnedStations.size) {
+                val fromIndex = from.index - 1
+                val toIndex = to.index - 1
+
+                // Reorder in UI list immediately
+                val item = pinnedStations.removeAt(fromIndex)
+                pinnedStations.add(toIndex, item)
+
+                // Update database
+                onReorder(item, toIndex)
             }
-        } else null
+        }
+
+        // Sync pinnedStations with database when not dragging
+        LaunchedEffect(pinnedStationsFromDb) {
+            if (!reorderableLazyListState.isAnyItemDragging) {
+                pinnedStations.clear()
+                pinnedStations.addAll(pinnedStationsFromDb)
+            }
+        }
 
         LazyColumn(
             modifier = modifier
@@ -265,34 +275,66 @@ private fun StationsScreen(
 
                 itemsIndexed(
                     items = pinnedStations,
-                    key = { _, item -> item.id.plus("_pinned") }
+                    key = { _, item -> "pinned_${item.id}" }
                 ) { index, station ->
-                    if (enableDragDrop && dragDropState != null) {
-                        DraggableItem(
-                            dragDropState = dragDropState,
-                            index = index + 1 // + 1 to take into account header, not ideal but works for now
-                        ) { isDragging ->
-                            StationItem(
-                                station = station,
-                                onTogglePin = { onTogglePin(station) },
-                                onClick = { onClickStation(station) },
+                    ReorderableItem(reorderableLazyListState, key = "pinned_${station.id}") { isDragging ->
+                        val icon = if (station.favorite) R.drawable.push_pin else R.drawable.push_pin_outline
+                        val backgroundColor = if (isDragging) {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        }
+                        Column(modifier = Modifier.fillMaxWidth().animateItem()) {
+                            Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .dragContainer(dragDropState, station.id.plus("_pinned")),
-                                isDragging = isDragging,
-                                showDragHandle = true
-                            )
+                                    .then(
+                                        if (enableDragDrop) {
+                                            Modifier.longPressDraggableHandle()
+                                        } else Modifier
+                                    ),
+                                color = backgroundColor,
+                                shadowElevation = if (isDragging) 4.dp else 0.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .clickable(enabled = !reorderableLazyListState.isAnyItemDragging) {
+                                            onTogglePin(station)
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (enableDragDrop) {
+                                        Icon(
+                                            imageVector = Icons.Default.DragHandle,
+                                            contentDescription = stringResource(R.string.content_desc_drag_handle),
+                                            tint = MaterialTheme.colorScheme.outline,
+                                            modifier = Modifier.padding(end = 8.dp)
+                                        )
+                                    }
+                                    Text(
+                                        modifier = Modifier.weight(1f),
+                                        text = station.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    IconButton(
+                                        onClick = { onTogglePin(station) },
+                                        enabled = !reorderableLazyListState.isAnyItemDragging
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(icon),
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                            if (index != pinnedStations.lastIndex) {
+                                HorizontalDivider()
+                            }
                         }
-                    } else {
-                        StationItem(
-                            station = station,
-                            onTogglePin = { onTogglePin(station) },
-                            onClick = { onClickStation(station) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    if (index != pinnedStations.lastIndex) {
-                        HorizontalDivider()
                     }
                 }
             }
@@ -310,13 +352,14 @@ private fun StationsScreen(
 
             itemsIndexed(
                 items = unpinnedStations,
-                key = { _, item -> item.id }
+                key = { _, item -> "unpinned_${item.id}" }
             ) { index, station ->
                 StationItem(
                     station = station,
                     onTogglePin = { onTogglePin(station) },
-                    onClick = { onClickStation(station) },
-                    modifier = Modifier.fillMaxWidth().animateItem()
+                    onClick = { onTogglePin(station) },
+                    modifier = Modifier.fillMaxWidth().animateItem(),
+                    enabled = !reorderableLazyListState.isAnyItemDragging
                 )
                 if (index != unpinnedStations.lastIndex) {
                     HorizontalDivider()
@@ -333,7 +376,8 @@ private fun StationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isDragging: Boolean = false,
-    showDragHandle: Boolean = false
+    showDragHandle: Boolean = false,
+    enabled: Boolean = true
 ) {
     val icon = if (station.favorite) R.drawable.push_pin else R.drawable.push_pin_outline
     val backgroundColor = if (isDragging) {
@@ -347,7 +391,8 @@ private fun StationItem(
         shadowElevation = if (isDragging) 4.dp else 0.dp
     ) {
         Row(
-            modifier = Modifier.clickable { onClick() }
+            modifier = Modifier
+                .clickable(enabled = enabled) { onClick() }
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -366,7 +411,10 @@ private fun StationItem(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.width(12.dp))
-            IconButton(onClick = onTogglePin) {
+            IconButton(
+                onClick = onTogglePin,
+                enabled = enabled
+            ) {
                 Icon(
                     painter = painterResource(icon),
                     contentDescription = null,

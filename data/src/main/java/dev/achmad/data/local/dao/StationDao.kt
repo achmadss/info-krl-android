@@ -80,4 +80,7 @@ interface StationDao {
     @Upsert(entity = StationEntity::class)
     suspend fun upsert(stationUpdates: List<StationUpdate>)
 
+    @Query("UPDATE stations SET favorite = 0, favorite_position = NULL WHERE id = :stationId")
+    suspend fun unfavorite(stationId: String)
+
 }

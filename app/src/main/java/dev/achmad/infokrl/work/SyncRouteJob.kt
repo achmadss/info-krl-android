@@ -50,7 +50,7 @@ class SyncRouteJob(
 
                 trainIds.map { trainId ->
                     async {
-                        maxRoutePermits.withPermit {
+//                        maxRoutePermits.withPermit {
                             try {
                                 val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
                                 routeRepository.fetchAndStoreByTrainId(trainId)
@@ -64,7 +64,7 @@ class SyncRouteJob(
                                     }
                                 }
                             }
-                        }
+//                        }
                     }
                 }.awaitAll()
 
@@ -82,7 +82,7 @@ class SyncRouteJob(
         private const val KEY_TRAIN_ID = "KEY_TRAIN_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 
-        val maxRoutePermits = Semaphore(10)
+//        val maxRoutePermits = Semaphore(10)
 
         fun shouldSync(
             trainId: String,
@@ -181,8 +181,9 @@ class SyncRouteJob(
             }
             if (trainIdsToEnqueue.isEmpty()) return false
 
+            // FIXED: Use trainIdsToEnqueue instead of trainIds to prevent duplicate requests
             val inputData = workDataOf(
-                KEY_TRAIN_ID to trainIds.toTypedArray(),
+                KEY_TRAIN_ID to trainIdsToEnqueue.toTypedArray(),
                 KEY_DELAY to finishDelay,
             )
             val request = OneTimeWorkRequestBuilder<SyncRouteJob>()
@@ -192,7 +193,7 @@ class SyncRouteJob(
             trainIdsToEnqueue.forEach {
                 request.addTag(it)
             }
-            
+
             // Add stationId as a tag if provided
             if (stationId != null) {
                 request.addTag(stationId)

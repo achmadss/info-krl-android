@@ -11,12 +11,14 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
+import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.preference.Preference
 import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.infokrl.screens.settings.language.localeOptions
+import dev.achmad.infokrl.screens.settings.licenses.CreditsScreen
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
 
 object SettingsScreen : Screen {
@@ -38,7 +40,7 @@ object SettingsScreen : Screen {
             itemsProvider = {
                 listOf(
                     appearanceGroup(appPreference, navigator),
-                    aboutGroup()
+                    aboutGroup(navigator)
                 )
             },
         )
@@ -82,19 +84,19 @@ object SettingsScreen : Screen {
 
     @Composable
     private fun aboutGroup(
-
+        navigator: Navigator,
     ): Preference {
         return Preference.PreferenceGroup(
             title = stringResource(R.string.about),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.version),
-                    subtitle = "1.0.0", // TODO
+                    subtitle = BuildConfig.VERSION_NAME,
                 ),
                 Preference.PreferenceItem.TextPreference(
-                    title = stringResource(R.string.open_source_licenses),
+                    title = stringResource(R.string.credits),
                     onClick = {
-                        // TODO
+                        navigator.push(CreditsScreen)
                     }
                 ),
             )

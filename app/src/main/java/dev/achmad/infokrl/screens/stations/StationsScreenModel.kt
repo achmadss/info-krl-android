@@ -8,22 +8,28 @@ import dev.achmad.domain.repository.StationRepository
 import dev.achmad.infokrl.base.ApplicationPreference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class StationsScreenModel(
     private val stationRepository: StationRepository = inject(),
     private val applicationPreference: ApplicationPreference = inject(),
 ): ScreenModel {
 
+    // Mutex to prevent race conditions between reorder and toggle operations
+    private val favoritesMutex = Mutex()
+
     private val _searchQuery = MutableStateFlow<String?>(null)
     val searchQuery = _searchQuery.asStateFlow()
 
-    private val stations = stationRepository.stations
+    private val dbStations = stationRepository.subscribeAll()
         .let {
             if (!applicationPreference.hasFetchedStations().get()) it.drop(1)
             else it
@@ -34,13 +40,14 @@ class StationsScreenModel(
             initialValue = null
         )
 
-    val filteredStations = combine(
-        searchQuery,
-        stations
-    ) { query, stations ->
+    val stations: StateFlow<List<Station>?> = combine(
+        _searchQuery,
+        dbStations
+    ) { query, dbList ->
+        val krlStations = dbList?.filter { it.type == Station.Type.KRL }
         when {
-            query.isNullOrBlank() -> stations
-            else -> stations?.filter { it.name.contains(query, ignoreCase = true) }
+            query.isNullOrBlank() -> krlStations
+            else -> krlStations?.filter { it.name.contains(query, ignoreCase = true) }
         }
     }.stateIn(
         scope = screenModelScope,
@@ -52,36 +59,44 @@ class StationsScreenModel(
 
     fun toggleFavorite(station: Station) {
         screenModelScope.launch {
-            if (!station.favorite) {
-                val currentFavorites = stations.value?.filter { it.favorite } ?: emptyList()
-                val updatedStation = station.copy(
-                    favorite = true,
-                    favoritePosition = currentFavorites.size
-                )
-                stationRepository.updateFavorite(updatedStation)
-            } else {
-                stationRepository.toggleFavorite(station)
-                val remainingFavorites = stations.value
-                    ?.filter { it.favorite && it.id != station.id }
-                    ?.sortedBy { it.favoritePosition }
-                    ?: emptyList()
-                if (remainingFavorites.isNotEmpty()) {
-                    stationRepository.reorderFavorites(remainingFavorites)
+            favoritesMutex.withLock {
+                if (!station.favorite) {
+                    val currentFavorites = stationRepository.awaitAllFavorites()
+                    val updatedStation = station.copy(
+                        favorite = true,
+                        favoritePosition = currentFavorites.size
+                    )
+                    stationRepository.updateFavorite(updatedStation)
+                } else {
+                    stationRepository.toggleFavorite(station)
+                    val remainingFavorites = stationRepository
+                        .awaitAllFavorites()
+                        .sortedBy { it.favoritePosition }
+                    if (remainingFavorites.isNotEmpty()) {
+                        stationRepository.reorderFavorites(remainingFavorites)
+                    }
                 }
             }
         }
     }
 
-    fun reorderFavorites(fromIndex: Int, toIndex: Int) {
-        val current = stations.value
-            ?.filter { it.favorite }
-            ?.sortedBy { it.favoritePosition }
-            ?.toMutableList() ?: return
+    fun reorderFavorite(station: Station, newPosition: Int) {
+        screenModelScope.launch {
+            favoritesMutex.withLock {
+                // Get fresh data directly from database
+                val favorites = stationRepository.awaitAllFavorites()
+                    .sortedBy { it.favoritePosition }
+                    .toMutableList()
 
-        if (fromIndex < current.size && toIndex < current.size) {
-            val movedItem = current.removeAt(fromIndex)
-            current.add(toIndex, movedItem)
-            screenModelScope.launch { stationRepository.reorderFavorites(current) }
+                val currentIndex = favorites.indexOfFirst { it.id == station.id }
+                if (currentIndex == -1) return@withLock
+
+                // Reorder in memory
+                favorites.add(newPosition, favorites.removeAt(currentIndex))
+
+                // Update positions in database
+                stationRepository.reorderFavorites(favorites)
+            }
         }
     }
 }

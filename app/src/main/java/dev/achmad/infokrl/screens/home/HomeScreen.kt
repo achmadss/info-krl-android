@@ -3,7 +3,6 @@ package dev.achmad.infokrl.screens.home
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Train
@@ -63,7 +61,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -87,16 +84,16 @@ import dev.achmad.infokrl.components.TabText
 import dev.achmad.infokrl.screens.schedules.SchedulesScreen
 import dev.achmad.infokrl.screens.settings.SettingsScreen
 import dev.achmad.infokrl.screens.stations.StationsScreen
+import dev.achmad.infokrl.theme.LocalColorScheme
+import dev.achmad.infokrl.theme.darkTheme
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.infokrl.work.SyncRouteJob
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
@@ -188,28 +185,14 @@ private fun HomeScreen(
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
     var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
-    // Combine both SyncScheduleJob and SyncRouteJob states for each station
+    // Track schedule sync state for each station
     val syncStates = departureGroups.associate { group ->
         group.station.id to remember(group.station.id) {
-            val scheduleState = SyncScheduleJob.subscribeState(
+            SyncScheduleJob.subscribeState(
                 context = applicationContext,
                 scope = syncScope,
                 stationId = group.station.id
             )
-            val routeState = SyncRouteJob.subscribeStateByStation(
-                context = applicationContext,
-                scope = syncScope,
-                stationId = group.station.id
-            )
-
-            // Combine both states - if either is running, show as refreshing
-            combine(scheduleState, routeState) { schedule, route ->
-                when {
-                    schedule?.isFinished == false -> schedule
-                    route?.isFinished == false -> route
-                    else -> schedule
-                }
-            }
         }.collectAsState(initial = null)
     }
 
@@ -280,16 +263,7 @@ private fun HomeScreen(
 
             SearchToolbar(
                 titleContent = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.icon),
-                            contentDescription = null,
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        AppBarTitle(stringResource(R.string.app_name))
-                    }
+                    AppBarTitle(stringResource(R.string.app_name))
                 },
                 searchEnabled = searchEnabled ?: true,
                 searchQuery = searchQuery,
@@ -560,6 +534,7 @@ private fun ScheduleItem(
     is24Hour: Boolean,
     onClick: () -> Unit
 ) {
+    val colorScheme = LocalColorScheme.current
     val density = LocalDensity.current
     val station = scheduleGroup.destinationStation
     val schedules = scheduleGroup.schedules.ifEmpty { return }
@@ -567,7 +542,6 @@ private fun ScheduleItem(
     val firstScheduleEta = schedules.first().eta
     val color = firstSchedule.color.toColor()
     var height by remember { mutableStateOf(0.dp) }
-    val stops = schedules.first().stops
 
     Row(
         modifier = Modifier
@@ -591,7 +565,7 @@ private fun ScheduleItem(
             Text(
                 text = firstSchedule.line,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (isSystemInDarkTheme()) {
+                color = if (colorScheme == darkTheme) {
                     color.brighter(.35f)
                 } else color.darken(.15f),
                 overflow = TextOverflow.Ellipsis,
@@ -648,22 +622,6 @@ private fun ScheduleItem(
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = firstSchedule.trainId,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        modifier = Modifier.size(12.dp),
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                    )
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = if (stops != null) {
-                            stringResource(R.string.stops_count, stops)
-                        } else {
-                            stringResource(R.string.stops_unknown)
-                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline,
                     )

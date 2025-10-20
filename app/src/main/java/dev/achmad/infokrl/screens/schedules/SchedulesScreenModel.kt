@@ -2,21 +2,16 @@ package dev.achmad.infokrl.screens.schedules
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.infokrl.util.calculateStopsCount
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.model.Route
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.RouteRepository
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
 import dev.achmad.infokrl.util.etaString
-import dev.achmad.infokrl.work.SyncRouteJob
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,7 +29,6 @@ data class ScheduleGroup(
     data class UISchedule(
         val schedule: Schedule,
         val eta: String,
-        val stops: Int?,
     )
 }
 
@@ -43,12 +37,9 @@ class SchedulesScreenModel(
     private val destinationStationId: String,
     private val scheduleRepository: ScheduleRepository = inject(),
     private val stationRepository: StationRepository = inject(),
-    private val routeRepository: RouteRepository = inject()
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
-    private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
-    private val _routeUpdateTrigger = MutableStateFlow(0L)
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -65,8 +56,7 @@ class SchedulesScreenModel(
         getScheduleFlow(originStationId),
         getStationFlow(originStationId),
         getStationFlow(destinationStationId),
-        _routeUpdateTrigger,
-    ) { _, schedules, originStation, destinationStation, _ ->
+    ) { _, schedules, originStation, destinationStation ->
         when {
             schedules == null -> null
             originStation == null -> null
@@ -77,11 +67,6 @@ class SchedulesScreenModel(
                     .filter { it.departsAt.toLocalDate() == LocalDate.now() }
                     .sortedBy { it.departsAt }
                     .map { schedule ->
-                        val routeFlow = getRouteFlow(schedule.trainId)
-                        val stopsCount = calculateStopsCount(
-                            route = routeFlow.value,
-                            originStationId = originStationId,
-                        )
                         ScheduleGroup.UISchedule(
                             schedule = schedule,
                             eta = etaString(
@@ -90,13 +75,7 @@ class SchedulesScreenModel(
                                 target = schedule.departsAt,
                                 compactMode = false
                             ),
-                            stops = stopsCount
                         )
-                    }
-                    .also {
-                        if (it.isNotEmpty()) {
-                            fetchRoute(it.map { it.schedule.trainId })
-                        }
                     }
 
                 ScheduleGroup(
@@ -131,27 +110,6 @@ class SchedulesScreenModel(
                 started = SharingStarted.Eagerly,
                 initialValue = null
             )
-    }
-
-    private fun getRouteFlow(trainId: String): StateFlow<Route?> {
-        return routeFlowsCache.getOrPut(trainId) {
-            routeRepository.subscribeSingle(trainId)
-                .stateIn(
-                    scope = screenModelScope,
-                    started = SharingStarted.Eagerly,
-                    initialValue = null
-                )
-        }
-    }
-
-    private fun fetchRoute(trainIds: List<String>) {
-        screenModelScope.launch(Dispatchers.IO) {
-            SyncRouteJob.start(
-                context = injectContext(),
-                trainIds = trainIds,
-                finishDelay = 500
-            )
-        }
     }
 
     private fun fetchSchedule() {

@@ -1,7 +1,6 @@
 package dev.achmad.infokrl.theme
 
 import android.app.Activity
-import androidx.activity.SystemBarStyle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -10,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,9 +22,13 @@ import dev.achmad.core.di.util.inject
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.util.collectAsState
 
+val LocalColorScheme = compositionLocalOf { lightColorScheme() }
+val darkTheme = darkColorScheme()
+val lightTheme = lightColorScheme()
+
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    isDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
     val applicationPreference = inject<ApplicationPreference>()
@@ -31,26 +36,30 @@ fun AppTheme(
     val systemBarColor = when (theme) {
         ApplicationPreference.Themes.DARK -> Color.Transparent
         ApplicationPreference.Themes.LIGHT -> Color.White
-        else -> if (darkTheme) Color.Transparent else Color.White
+        else -> if (isDarkTheme) Color.Transparent else Color.White
     }
 
     val colorScheme = when (theme) {
-        ApplicationPreference.Themes.DARK -> darkColorScheme()
-        ApplicationPreference.Themes.LIGHT -> lightColorScheme()
-        else -> if (darkTheme) darkColorScheme() else lightColorScheme()
+        ApplicationPreference.Themes.DARK -> darkTheme
+        ApplicationPreference.Themes.LIGHT -> lightTheme
+        else -> if (isDarkTheme) darkTheme else lightTheme
     }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(colorScheme.background),
+    CompositionLocalProvider(
+        LocalColorScheme provides colorScheme
     ) {
-        MaterialTheme(
-            colorScheme = colorScheme,
-            typography = Typography,
-            content = content,
-        )
-        StatusBarColor(systemBarColor)
-        NavigationBarColor(systemBarColor)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(colorScheme.background),
+        ) {
+            MaterialTheme(
+                colorScheme = colorScheme,
+                typography = Typography,
+                content = content,
+            )
+            StatusBarColor(systemBarColor)
+            NavigationBarColor(systemBarColor)
+        }
     }
 }
 

@@ -18,6 +18,8 @@ import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -69,18 +71,22 @@ class SyncScheduleJob(
      * Skips stations that already have a running worker to prevent duplicate work.
      */
     private suspend fun syncAllFavoriteStations(now: LocalDateTime, zone: ZoneId) {
-        val favoriteStations = stationRepository.awaitAllFavorites()
-        val workManager = applicationContext.workManager
-
-        favoriteStations.forEach { station ->
-            // Check if sync is needed AND no worker is already running for this station
-            if (shouldSync(station.id) && !workManager.isRunning(station.id)) {
-                val lastFetchSchedule = applicationPreference.lastFetchSchedule(station.id)
-                maxSchedulePermits.withPermit {
-                    scheduleRepository.fetchAndStoreByStationId(station.id)
-                    lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+        withContext(Dispatchers.IO) {
+            val favoriteStations = stationRepository.awaitAllFavorites()
+            val workManager = applicationContext.workManager
+            favoriteStations.map { station ->
+                async {
+                    if (shouldSync(station.id) && !workManager.isRunning(station.id)) {
+                        val lastFetchSchedule = applicationPreference.lastFetchSchedule(station.id)
+                        try {
+                            scheduleRepository.fetchAndStoreByStationId(station.id)
+                            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                 }
-            }
+            }.awaitAll()
         }
     }
 
@@ -89,10 +95,8 @@ class SyncScheduleJob(
      */
     private suspend fun syncSingleStation(stationId: String, now: LocalDateTime, zone: ZoneId) {
         val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
-        maxSchedulePermits.withPermit {
-            scheduleRepository.fetchAndStoreByStationId(stationId)
-            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-        }
+        scheduleRepository.fetchAndStoreByStationId(stationId)
+        lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
     }
 
     companion object {
@@ -100,8 +104,6 @@ class SyncScheduleJob(
         private const val TAG = "RefreshSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
-
-        val maxSchedulePermits =  Semaphore(5)
 
         private fun shouldSync(
             stationId: String,
@@ -124,6 +126,11 @@ class SyncScheduleJob(
         ): StateFlow<WorkInfo.State?> {
             val workQuery = WorkQuery.Builder
                 .fromTags(listOf(stationId))
+                .addStates(listOf(
+                    WorkInfo.State.ENQUEUED,
+                    WorkInfo.State.RUNNING,
+                    WorkInfo.State.BLOCKED
+                ))
                 .build()
 
             return context.workManager

@@ -2,18 +2,14 @@ package dev.achmad.infokrl.screens.home
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.infokrl.util.calculateStopsCount
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.model.Route
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.RouteRepository
 import dev.achmad.domain.repository.ScheduleRepository
 import dev.achmad.domain.repository.StationRepository
 import dev.achmad.infokrl.util.etaString
-import dev.achmad.infokrl.work.SyncRouteJob
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -23,8 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -34,7 +28,6 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
 private const val fetchScheduleFinishDelay = 0L
-private const val fetchRouteFinishDelay = 0L
 
 data class DepartureGroup(
     val station: Station,
@@ -47,7 +40,6 @@ data class DepartureGroup(
         data class UISchedule(
             val schedule: Schedule,
             val eta: String,
-            val stops: Int?,
         )
     }
 }
@@ -55,13 +47,9 @@ data class DepartureGroup(
 class HomeScreenModel(
     stationRepository: StationRepository = inject(),
     private val scheduleRepository: ScheduleRepository = inject(),
-    private val routeRepository: RouteRepository = inject(),
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
-    private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
-    private val _routeUpdateTrigger = MutableStateFlow(0L)
-    private val inFlightRouteFetches = mutableSetOf<String>()
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
@@ -76,14 +64,14 @@ class HomeScreenModel(
             initialValue = LocalDateTime.now()
         )
 
-    private val stations = stationRepository.stations
+    private val stations = stationRepository.subscribeAll()
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    private val favoriteStations = stationRepository.favoriteStations
+    private val favoriteStations = stationRepository.subscribeAll(favorite = true)
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -110,9 +98,8 @@ class HomeScreenModel(
     )
 
     /**
-     * Creates a reactive flow that combines schedules, routes, and time ticker for a station.
-     * Emits updated schedule groups whenever schedules, routes, or time changes.
-     * Optimized to reduce recomposition overhead.
+     * Creates a reactive flow that combines schedules and time ticker for a station.
+     * Emits updated schedule groups whenever schedules or time changes.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun createScheduleGroupFlow(
@@ -127,40 +114,15 @@ class HomeScreenModel(
                     return@flatMapLatest flowOf(null)
                 }
 
-                // Get train IDs for routes we need and ensure flows exist
-                val currentTime = LocalDateTime.now()
-                val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
-                trainIds.forEach { trainId -> getRouteFlow(trainId) }
-
-                // Combine schedules, tick, filter setting, and route update trigger
+                // Combine schedules, tick, and filter setting
                 combine(
                     flowOf(schedules),
                     tick,
                     _filterFutureSchedulesOnly,
-                    _routeUpdateTrigger
-                ) { currentSchedules, time, filterFutureOnly, _ ->
-                    // Recompute trainIds based on current time to handle trains that are now in the past
-                    val currentTrainIds = extractFirstTrainIds(
-                        schedules = currentSchedules,
-                        currentTime = time ?: LocalDateTime.now(),
-                        filterFutureOnly = filterFutureOnly
-                    )
-
-                    // Ensure route flows exist and check which routes are missing
-                    val missingRouteTrainIds = currentTrainIds.filter { trainId ->
-                        val flow = getRouteFlow(trainId)
-                        flow.value == null
-                    }
-
-                    // Fetch missing routes if needed
-                    if (missingRouteTrainIds.isNotEmpty()) {
-                        fetchRoute(missingRouteTrainIds, stationId, manualFetch = false)
-                    }
-
+                ) { currentSchedules, time, filterFutureOnly ->
                     // Compute schedule groups off main thread
                     withContext(Dispatchers.Default) {
                         computeScheduleGroups(
-                            favoriteStationId = stationId,
                             schedules = currentSchedules,
                             stations = stations,
                             currentTime = time ?: LocalDateTime.now(),
@@ -182,7 +144,6 @@ class HomeScreenModel(
      * Extracted to a separate function for better performance and testability.
      */
     private fun computeScheduleGroups(
-        favoriteStationId: String,
         schedules: List<Schedule>,
         stations: List<Station>,
         currentTime: LocalDateTime,
@@ -199,19 +160,8 @@ class HomeScreenModel(
                 } else {
                     schedulesForDest
                 }
-                
+
                 val sortedSchedules = filteredSchedules.sortedBy { it.departsAt }
-
-                // Get the first train's ID to fetch route
-                val firstTrainId = sortedSchedules.firstOrNull()?.trainId
-
-                // Get route if available (non-blocking)
-                val route = firstTrainId?.let { trainId ->
-                    routeFlowsCache[trainId]?.value
-                }
-
-                // Calculate stops count
-                val stopsCount = calculateStopsCount(route, favoriteStationId)
 
                 // Map schedules to UI models
                 val uiSchedules = sortedSchedules.map { schedule ->
@@ -222,7 +172,6 @@ class HomeScreenModel(
                             now = currentTime,
                             target = schedule.departsAt
                         ),
-                        stops = stopsCount
                     )
                 }
 
@@ -240,29 +189,6 @@ class HomeScreenModel(
         }
     }
 
-    /**
-     * Extracts the earliest train ID for each destination from schedules.
-     * This ensures we fetch route data for the first train to each destination.
-     */
-    private fun extractFirstTrainIds(
-        schedules: List<Schedule>,
-        currentTime: LocalDateTime,
-        filterFutureOnly: Boolean
-    ): List<String> {
-        val filtered = if (filterFutureOnly) {
-            schedules.filter { it.departsAt.isAfter(currentTime) }
-        } else {
-            schedules
-        }
-        
-        return filtered
-            .groupBy { it.stationDestinationId }
-            .mapNotNull { (_, schedulesForDestination) ->
-                schedulesForDestination.minByOrNull { it.departsAt }?.trainId
-            }
-            .distinct()
-    }
-
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
         return scheduleFlowsCache.getOrPut(stationId) {
             scheduleRepository.subscribeSingle(
@@ -272,27 +198,6 @@ class HomeScreenModel(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = null
             )
-        }
-    }
-
-    private fun getRouteFlow(trainId: String): StateFlow<Route?> {
-        return routeFlowsCache.getOrPut(trainId) {
-            routeRepository.subscribeSingle(
-                trainId = trainId,
-            ).stateIn(
-                scope = screenModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = null
-            ).also { flow ->
-                // Monitor this flow and trigger updates when route loads
-                screenModelScope.launch {
-                    flow.collect { route ->
-                        if (route != null) {
-                            _routeUpdateTrigger.value = System.currentTimeMillis()
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -320,17 +225,6 @@ class HomeScreenModel(
                     )
                 }
             }
-
-            // Fetch routes after schedules are loaded
-            favoriteStations.value.forEach { favorite ->
-                launch {
-                    val scheduleFlow = getScheduleFlow(favorite.id)
-                    scheduleFlow
-                        .filterNotNull()
-                        .first { it.isNotEmpty() }
-                    fetchRoutesForStation(favorite.id, manualFetch)
-                }
-            }
         }
     }
 
@@ -340,7 +234,7 @@ class HomeScreenModel(
      */
     fun fetchScheduleForStation(
         stationId: String,
-        manualFetch: Boolean = true
+        manualFetch: Boolean = false
     ) {
         screenModelScope.launch(Dispatchers.IO) {
             if (manualFetch) {
@@ -356,42 +250,7 @@ class HomeScreenModel(
                     finishDelay = fetchScheduleFinishDelay
                 )
             }
-
-            // Also fetch routes for this station after schedules are available
-            val scheduleFlow = getScheduleFlow(stationId)
-            scheduleFlow
-                .filterNotNull()
-                .first { it.isNotEmpty() }
-            fetchRoutesForStation(stationId, manualFetch)
         }
-    }
-
-    /**
-     * Fetches routes for the first train to each destination from a station.
-     * Checks if routes are missing from cache and forces fetch if needed.
-     */
-    private fun fetchRoutesForStation(
-        stationId: String,
-        manualFetch: Boolean = false,
-    ) {
-        val schedules = scheduleFlowsCache[stationId]?.value ?: return
-        if (schedules.isEmpty()) return
-
-        val currentTime = LocalDateTime.now()
-        val trainIds = extractFirstTrainIds(schedules, currentTime, _filterFutureSchedulesOnly.value)
-
-        // Ensure route flows are created for all train IDs
-        trainIds.forEach { trainId -> getRouteFlow(trainId) }
-
-        // Check if any routes are missing from cache
-        val hasAnyMissingRoutes = trainIds.any { trainId ->
-            routeFlowsCache[trainId]?.value == null
-        }
-
-        // Force fetch if routes are missing, otherwise respect manualFetch flag
-        val shouldForceFetch = hasAnyMissingRoutes || manualFetch
-
-        fetchRoute(trainIds, stationId, shouldForceFetch)
     }
 
     /**
@@ -402,71 +261,12 @@ class HomeScreenModel(
         _filterFutureSchedulesOnly.update { !it }
     }
 
-    private fun fetchRoute(
-        trainIds: List<String>,
-        stationId: String? = null,
-        manualFetch: Boolean = false,
-    ) {
-        // Filter out trains that are already being fetched
-        val trainIdsToFetch = synchronized(inFlightRouteFetches) {
-            trainIds.filter { trainId ->
-                !inFlightRouteFetches.contains(trainId)
-            }.also { filtered ->
-                // Mark these trains as being fetched
-                inFlightRouteFetches.addAll(filtered)
-            }
-        }
-
-        if (trainIdsToFetch.isEmpty()) return
-
-        // Launch a coroutine to remove from in-flight set after fetch completes
-        screenModelScope.launch(Dispatchers.IO) {
-            try {
-                if (manualFetch) {
-                    SyncRouteJob.startNow(
-                        context = injectContext(),
-                        trainIds = trainIdsToFetch,
-                        stationId = stationId,
-                        finishDelay = fetchRouteFinishDelay
-                    )
-                } else {
-                    SyncRouteJob.start(
-                        context = injectContext(),
-                        trainIds = trainIdsToFetch,
-                        stationId = stationId,
-                        finishDelay = fetchRouteFinishDelay
-                    )
-                }
-                // Wait a bit for the job to complete (finishDelay + buffer)
-                kotlinx.coroutines.delay(fetchRouteFinishDelay + 500)
-            } finally {
-                // Remove from in-flight set
-                synchronized(inFlightRouteFetches) {
-                    inFlightRouteFetches.removeAll(trainIdsToFetch.toSet())
-                }
-            }
-        }
-    }
-
     /**
      * Called when a station tab is focused.
-     * Updates the focused station ID and triggers route fetching for that station.
-     * If schedules aren't loaded yet, waits for them before fetching routes.
+     * Updates the focused station ID.
      */
     fun onTabFocused(stationId: String) {
         _focusedStationId.update { stationId }
-        screenModelScope.launch(Dispatchers.IO) {
-            fetchRoutesForStation(stationId)
-
-            // If schedules aren't available yet, wait for them to load then fetch routes
-            val scheduleFlow = getScheduleFlow(stationId)
-            if (scheduleFlow.value.isNullOrEmpty()) {
-                scheduleFlow
-                    .filterNotNull()
-                    .first { it.isNotEmpty() }
-                fetchRoutesForStation(stationId)
-            }
-        }
     }
 
 }

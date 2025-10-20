@@ -5,9 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 interface RouteRepository {
 
-    val routes: Flow<List<Route>>
-
-    suspend fun fetchAndStoreByTrainId(trainId: String)
+    fun subscribeAll(): Flow<List<Route>>
     fun subscribeSingle(trainId: String): Flow<Route?>
+    suspend fun fetchAndStoreByTrainId(trainId: String)
 
 }
