@@ -30,7 +30,6 @@ data class ScheduleGroup(
     val originStation: Station,
     val destinationStation: Station,
     val schedules: List<UISchedule>,
-    val maxStops: Int?
 ) {
     data class UISchedule(
         val schedule: Schedule,
@@ -99,13 +98,11 @@ class SchedulesScreenModel(
                             fetchRoute(it.map { it.schedule.trainId })
                         }
                     }
-                val maxStops = filteredSchedules.mapNotNull { it.stops }.maxOrNull()
 
                 ScheduleGroup(
                     originStation = originStation,
                     destinationStation = destinationStation,
                     schedules = filteredSchedules,
-                    maxStops = maxStops
                 )
             }
         }
@@ -143,16 +140,7 @@ class SchedulesScreenModel(
                     scope = screenModelScope,
                     started = SharingStarted.Eagerly,
                     initialValue = null
-                ).also { flow ->
-                    // Monitor this flow and trigger updates when route loads
-                    screenModelScope.launch {
-                        flow.collect { route ->
-                            if (route != null) {
-                                _routeUpdateTrigger.value = System.currentTimeMillis()
-                            }
-                        }
-                    }
-                }
+                )
         }
     }
 

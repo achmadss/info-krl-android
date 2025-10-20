@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
@@ -60,6 +61,7 @@ import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
+import dev.achmad.infokrl.screens.schedules.timelinescreen.TimelineScreen
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
@@ -88,7 +90,15 @@ data class SchedulesScreen(
             onNavigateUp = {
                 navigator.pop()
             },
-            onClickSchedule = {},
+            onClickSchedule = { originStationId, destinationStationId, trainId ->
+                navigator.push(
+                    TimelineScreen(
+                        originStationId = originStationId,
+                        destinationStationId = destinationStationId,
+                        trainId = trainId,
+                    )
+                )
+            },
             focusedScheduleId = scheduleId,
             schedules = schedules,
             is24Hour = is24Hour,
@@ -102,7 +112,7 @@ data class SchedulesScreen(
 private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
-    onClickSchedule: (String) -> Unit = {},
+    onClickSchedule: (String, String, String) -> Unit = { _, _, _ -> },
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
@@ -221,7 +231,13 @@ private fun SchedulesScreen(
                                     is24Hour = is24Hour,
                                     maxStops = schedules.maxStops,
                                     uiSchedule = uiSchedule,
-                                    onClick = { onClickSchedule(uiSchedule.schedule.id) },
+                                    onClick = {
+                                        onClickSchedule(
+                                            schedules.originStation.id,
+                                            schedules.destinationStation.id,
+                                            uiSchedule.schedule.trainId
+                                        )
+                                    },
                                     shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
                                     onBlinkComplete = { blinkScheduleId = null }
                                 )
@@ -304,7 +320,9 @@ private fun ScheduleDetailItem(
     Row(
         modifier = Modifier
             .background(backgroundColor)
-            .clickable { onClick() }
+            .clickable(
+                onClick = onClick
+            )
     ) {
         Box(
             modifier = Modifier
@@ -354,11 +372,10 @@ private fun ScheduleDetailItem(
                     }
 
                 }
-                // TODO ROUTE DETAIL SCREEN
-//                Icon(
-//                    imageVector = Icons.Default.ChevronRight,
-//                    contentDescription = null,
-//                )
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -398,6 +415,7 @@ private fun ScheduleDetailItem(
                     Text(
                         text = when(stops) {
                             null -> stringResource(R.string.stops_unknown)
+                            // TODO Show different when final stop isn't destination due to time
                             else -> if (stops != maxStops) {
                                 stringResource(R.string.stops_count, stops)
                             } else {

@@ -23,6 +23,9 @@
     <string name="no_upcoming_schedules">No upcoming schedules found</string>
     <string name="action_refresh">Refresh</string>
 
+    <!-- TimelineScreen -->
+    <string name="train">Train</string>
+
     <!-- StationsScreen -->
     <string name="stations">Stations</string>
     <string name="no_station_found">No station found for\n\"%1$s\"</string>

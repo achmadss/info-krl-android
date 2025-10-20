@@ -23,6 +23,9 @@
     <string name="no_upcoming_schedules">Tidak ada jadwal yang akan datang</string>
     <string name="action_refresh">Segarkan</string>
 
+    <!-- TimelineScreen -->
+    <string name="train">Kereta</string>
+
     <!-- StationsScreen -->
     <string name="stations">Stasiun</string>
     <string name="no_station_found">Tidak ada stasiun yang ditemukan untuk\n\"%1$s\"</string>
