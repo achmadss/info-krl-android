@@ -298,7 +298,9 @@ private fun StationsScreen(
                             ) {
                                 Row(
                                     modifier = Modifier
-                                        .clickable { onTogglePin(station) }
+                                        .clickable(enabled = !reorderableLazyListState.isAnyItemDragging) {
+                                            onTogglePin(station)
+                                        }
                                         .padding(horizontal = 16.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
@@ -317,7 +319,10 @@ private fun StationsScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))
-                                    IconButton(onClick = { onTogglePin(station) }) {
+                                    IconButton(
+                                        onClick = { onTogglePin(station) },
+                                        enabled = !reorderableLazyListState.isAnyItemDragging
+                                    ) {
                                         Icon(
                                             painter = painterResource(icon),
                                             contentDescription = null,
@@ -353,7 +358,8 @@ private fun StationsScreen(
                     station = station,
                     onTogglePin = { onTogglePin(station) },
                     onClick = { onTogglePin(station) },
-                    modifier = Modifier.fillMaxWidth().animateItem()
+                    modifier = Modifier.fillMaxWidth().animateItem(),
+                    enabled = !reorderableLazyListState.isAnyItemDragging
                 )
                 if (index != unpinnedStations.lastIndex) {
                     HorizontalDivider()
@@ -370,7 +376,8 @@ private fun StationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isDragging: Boolean = false,
-    showDragHandle: Boolean = false
+    showDragHandle: Boolean = false,
+    enabled: Boolean = true
 ) {
     val icon = if (station.favorite) R.drawable.push_pin else R.drawable.push_pin_outline
     val backgroundColor = if (isDragging) {
@@ -384,7 +391,8 @@ private fun StationItem(
         shadowElevation = if (isDragging) 4.dp else 0.dp
     ) {
         Row(
-            modifier = Modifier.clickable { onClick() }
+            modifier = Modifier
+                .clickable(enabled = enabled) { onClick() }
                 .padding(horizontal = 16.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -403,7 +411,10 @@ private fun StationItem(
                 overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.width(12.dp))
-            IconButton(onClick = onTogglePin) {
+            IconButton(
+                onClick = onTogglePin,
+                enabled = enabled
+            ) {
                 Icon(
                     painter = painterResource(icon),
                     contentDescription = null,
