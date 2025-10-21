@@ -10,7 +10,6 @@ data class RouteResponse(
 ) {
     @Serializable
     data class StopResponse(
-        @SerialName("id") val id: String,
         @SerialName("station_id") val stationId: String,
         @SerialName("station_name") val stationName: String,
         @SerialName("departs_at") val departsAt: String,
@@ -30,4 +29,3 @@ data class RouteResponse(
         @SerialName("arrives_at") val arrivesAt: String
     )
 }
-

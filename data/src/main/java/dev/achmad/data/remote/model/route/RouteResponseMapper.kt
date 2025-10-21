@@ -18,12 +18,10 @@ fun RouteResponse.toEntity(): RouteEntity {
 
 private fun RouteResponse.StopResponse.toEntity(): RouteEntity.Stops {
     return RouteEntity.Stops(
-        id = id,
         stationId = stationId,
         stationName = stationName,
         departsAt = departsAt,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
-
 }

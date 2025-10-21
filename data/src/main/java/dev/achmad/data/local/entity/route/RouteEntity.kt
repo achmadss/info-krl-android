@@ -25,7 +25,6 @@ data class RouteEntity(
 ) {
     @Serializable
     data class Stops(
-        @ColumnInfo(name = "id") val id: String,
         @ColumnInfo(name = "station_id") val stationId: String,
         @ColumnInfo(name = "station_name") val stationName: String,
         @ColumnInfo(name = "departs_at") val departsAt: String,
