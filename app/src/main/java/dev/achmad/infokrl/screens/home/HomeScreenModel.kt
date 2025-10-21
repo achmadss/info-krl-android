@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
 private const val fetchScheduleFinishDelay = 0L
+private const val sharingStartedStopTimeout = 5_000L
 
 data class DepartureGroup(
     val station: Station,
@@ -60,21 +61,21 @@ class HomeScreenModel(
         .distinctUntilChanged()
         .stateIn(
             scope = screenModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
             initialValue = LocalDateTime.now()
         )
 
     private val stations = getStation.subscribe()
         .stateIn(
             scope = screenModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
             initialValue = emptyList()
         )
 
     private val favoriteStations = getStation.subscribe(favorite = true)
         .stateIn(
             scope = screenModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
             initialValue = emptyList()
         )
 
@@ -93,14 +94,10 @@ class HomeScreenModel(
             }
     }.distinctUntilChanged().stateIn(
         scope = screenModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
+        started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
         initialValue = emptyList()
     )
 
-    /**
-     * Creates a reactive flow that combines schedules and time ticker for a station.
-     * Emits updated schedule groups whenever schedules or time changes.
-     */
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun createScheduleGroupFlow(
         stationId: String,
@@ -113,14 +110,11 @@ class HomeScreenModel(
                 if (schedules.isNullOrEmpty()) {
                     return@flatMapLatest flowOf(null)
                 }
-
-                // Combine schedules, tick, and filter setting
                 combine(
                     flowOf(schedules),
                     tick,
                     _filterFutureSchedulesOnly,
                 ) { currentSchedules, time, filterFutureOnly ->
-                    // Compute schedule groups off main thread
                     withContext(Dispatchers.Default) {
                         computeScheduleGroups(
                             schedules = currentSchedules,
@@ -149,21 +143,16 @@ class HomeScreenModel(
         currentTime: LocalDateTime,
         filterFutureOnly: Boolean,
     ): List<DepartureGroup.ScheduleGroup> {
-        // Group all schedules by destination
         val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
             val destinationStation = stations.firstOrNull { it.id == destinationId }
             destinationStation?.let {
-                // Filter schedules based on time if needed
-                val filteredSchedules = if (filterFutureOnly) {
-                    schedulesForDest.filter { it.departsAt.isAfter(currentTime) }
-                } else {
-                    schedulesForDest
+                val filteredSchedules = when {
+                    filterFutureOnly -> schedulesForDest.filter { it.departsAt.isAfter(currentTime) }
+                    else -> schedulesForDest
                 }
 
                 val sortedSchedules = filteredSchedules.sortedBy { it.departsAt }
-
-                // Map schedules to UI models
                 val uiSchedules = sortedSchedules.map { schedule ->
                     DepartureGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,
@@ -175,7 +164,6 @@ class HomeScreenModel(
                     )
                 }
 
-                // Return schedule group if there are schedules
                 if (uiSchedules.isNotEmpty()) {
                     DepartureGroup.ScheduleGroup(
                         destinationStation = destinationStation,
@@ -184,7 +172,6 @@ class HomeScreenModel(
                 } else null
             }
         }.sortedBy { scheduleGroup ->
-            // Sort by the line of the first schedule
             scheduleGroup.schedules.firstOrNull()?.schedule?.line
         }
     }
@@ -193,76 +180,38 @@ class HomeScreenModel(
         return scheduleFlowsCache.getOrPut(stationId) {
             getSchedule.subscribe(stationId).stateIn(
                 scope = screenModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
                 initialValue = null
             )
         }
     }
 
-    /**
-     * Fetches schedules for all favorite stations that need syncing.
-     * Typically called on app start or when returning to the home screen.
-     */
-    fun fetchSchedules(
-        manualFetch: Boolean = false
-    ) {
+    fun fetchSchedules() {
         screenModelScope.launch(Dispatchers.IO) {
             favoriteStations.value.forEach { favorite ->
-                val stationId = favorite.id
-                if (manualFetch) {
-                    SyncScheduleJob.startNow(
-                        context = injectContext(),
-                        stationId = stationId,
-                        finishDelay = fetchScheduleFinishDelay
-                    )
-                } else {
-                    SyncScheduleJob.start(
-                        context = injectContext(),
-                        stationId = stationId,
-                        finishDelay = fetchScheduleFinishDelay
-                    )
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetches schedule for a specific station.
-     * Used for pull-to-refresh functionality on individual tabs.
-     */
-    fun fetchScheduleForStation(
-        stationId: String,
-        manualFetch: Boolean = false
-    ) {
-        screenModelScope.launch(Dispatchers.IO) {
-            if (manualFetch) {
-                SyncScheduleJob.startNow(
-                    context = injectContext(),
-                    stationId = stationId,
-                    finishDelay = fetchScheduleFinishDelay
-                )
-            } else {
                 SyncScheduleJob.start(
                     context = injectContext(),
-                    stationId = stationId,
+                    stationId = favorite.id,
                     finishDelay = fetchScheduleFinishDelay
                 )
             }
         }
     }
 
-    /**
-     * Toggles the filter for showing only future schedules.
-     * When false, shows all schedules including past ones (useful for testing).
-     */
+    fun fetchScheduleForStation(stationId: String) {
+        screenModelScope.launch(Dispatchers.IO) {
+            SyncScheduleJob.start(
+                context = injectContext(),
+                stationId = stationId,
+                finishDelay = fetchScheduleFinishDelay
+            )
+        }
+    }
+
     fun toggleFilterFutureSchedules() {
         _filterFutureSchedulesOnly.update { !it }
     }
 
-    /**
-     * Called when a station tab is focused.
-     * Updates the focused station ID.
-     */
     fun onTabFocused(stationId: String) {
         _focusedStationId.update { stationId }
     }

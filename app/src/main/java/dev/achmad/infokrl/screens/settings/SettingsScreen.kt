@@ -18,7 +18,7 @@ import dev.achmad.infokrl.components.preference.Preference
 import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.infokrl.screens.settings.language.localeOptions
-import dev.achmad.infokrl.screens.settings.licenses.CreditsScreen
+import dev.achmad.infokrl.screens.settings.credits.CreditsScreen
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
 
 object SettingsScreen : Screen {

@@ -52,10 +52,8 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
-import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.AppBarTitle
 import dev.achmad.infokrl.components.SearchToolbar
 import dev.achmad.infokrl.work.SyncStationJob
@@ -72,17 +70,10 @@ object StationsScreen: Screen {
         val screenModel = rememberScreenModel { StationsScreenModel() }
         val searchQuery by screenModel.searchQuery.collectAsState()
         val stations by screenModel.stations.collectAsState()
-        val applicationPreference by remember { injectLazy<ApplicationPreference>() }
         val syncState by SyncStationJob.subscribeState(
             context = appContext,
             scope = screenModel.screenModelScope
         ).collectAsState()
-
-        LaunchedEffect(Unit) {
-            if (!applicationPreference.hasFetchedStations().get()) {
-                SyncStationJob.start(appContext)
-            }
-        }
 
         BackHandler(searchQuery != null) {
             screenModel.search(null)

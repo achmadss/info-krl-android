@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
@@ -180,11 +181,9 @@ class SyncScheduleJob(
 
         fun scheduleDailySync(context: Context) {
             val workManager = context.workManager
-
-            // Calculate delay until next midnight
             val now = LocalDateTime.now()
             val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay()
-            val delayMillis = java.time.Duration.between(now, nextMidnight).toMillis()
+            val delayMillis = Duration.between(now, nextMidnight).toMillis()
 
             val request = PeriodicWorkRequestBuilder<SyncScheduleJob>(
                 repeatInterval = 24,

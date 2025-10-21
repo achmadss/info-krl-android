@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+private const val fetchScheduleFinishDelay = 0L
+
 data class ScheduleGroup(
     val originStation: Station,
     val destinationStation: Station,
@@ -114,7 +116,7 @@ class SchedulesScreenModel(
             SyncScheduleJob.start(
                 context = injectContext(),
                 stationId = originStationId,
-                finishDelay = 1000L
+                finishDelay = fetchScheduleFinishDelay
             )
         }
     }

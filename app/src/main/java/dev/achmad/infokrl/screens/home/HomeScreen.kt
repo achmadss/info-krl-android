@@ -148,11 +148,11 @@ object HomeScreen: Screen {
                     )
                 )
             },
-            onManualSync = {
-                screenModel.fetchSchedules(true)
+            onRefreshAllStations = {
+                screenModel.fetchSchedules()
             },
             onRefreshStation = { stationId ->
-                screenModel.fetchScheduleForStation(stationId, true)
+                screenModel.fetchScheduleForStation(stationId)
             },
             onToggleFilterFutureSchedules = {
                 screenModel.toggleFilterFutureSchedules()
@@ -175,7 +175,7 @@ private fun HomeScreen(
     onTabFocused: (String) -> Unit,
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String, String) -> Unit,
-    onManualSync: () -> Unit,
+    onRefreshAllStations: () -> Unit,
     onRefreshStation: (String) -> Unit,
     onToggleFilterFutureSchedules: () -> Unit,
     onNavigateToSettings: () -> Unit,
@@ -280,7 +280,7 @@ private fun HomeScreen(
                                 AppBar.OverflowAction(
                                     title = stringResource(R.string.action_sync_all),
                                     icon = Icons.Default.Refresh,
-                                    onClick = { onManualSync() },
+                                    onClick = { onRefreshAllStations() },
                                 ),
                                 AppBar.OverflowAction(
                                     title = stringResource(R.string.action_settings),

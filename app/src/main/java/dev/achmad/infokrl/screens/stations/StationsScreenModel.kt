@@ -3,11 +3,14 @@ package dev.achmad.infokrl.screens.stations
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
+import dev.achmad.core.di.util.injectContext
 import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.station.interactor.ReorderFavoriteStations
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.domain.station.interactor.ToggleFavoriteStation
 import dev.achmad.domain.station.interactor.HasFetchedStations
+import dev.achmad.infokrl.work.SyncStationJob
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +56,10 @@ class StationsScreenModel(
         initialValue = null
     )
 
+    init {
+        fetchStations()
+    }
+
     fun search(query: String?) = _searchQuery.update { query }
 
     fun toggleFavorite(station: Station) {
@@ -94,16 +101,17 @@ class StationsScreenModel(
 
             // Update positions in database
             when (val result = reorderFavoriteStations.await(favorites)) {
-                is ReorderFavoriteStations.Result.Success -> {
-                    // Success
-                }
-                is ReorderFavoriteStations.Result.Unchanged -> {
-                    // Nothing changed
-                }
                 is ReorderFavoriteStations.Result.Error -> {
                     result.error.printStackTrace()
                 }
+                else -> Unit
             }
+        }
+    }
+
+    private fun fetchStations() {
+        screenModelScope.launch(Dispatchers.IO) {
+            SyncStationJob.start(injectContext())
         }
     }
 }

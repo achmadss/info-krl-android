@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.settings.licenses
+package dev.achmad.infokrl.screens.settings.credits
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
