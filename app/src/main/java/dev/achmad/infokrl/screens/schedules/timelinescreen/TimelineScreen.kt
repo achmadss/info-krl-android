@@ -233,7 +233,7 @@ fun TimelineNode(
             ),
             modifier = Modifier
                 .width(90.dp)
-                .offset(y = (-4).dp),
+                .offset( y = if (!isTrainAtStation) (-2).dp else 2.dp),
             color = textColor
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -284,7 +284,7 @@ fun TimelineNode(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .offset(y = (-4).dp)
+                .offset( y = if (!isTrainAtStation) (-2).dp else 2.dp)
         ) {
             Text(
                 text = stationName,
