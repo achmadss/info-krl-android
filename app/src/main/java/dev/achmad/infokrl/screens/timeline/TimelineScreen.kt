@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EventBusy
@@ -27,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -45,12 +47,18 @@ import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
+import dev.achmad.infokrl.theme.LocalColorScheme
+import dev.achmad.infokrl.theme.darkTheme
+import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
+import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.etaString
 import dev.achmad.infokrl.util.timeFormatter
+import dev.achmad.infokrl.util.toColor
 
 data class TimelineScreen(
     private val trainId: String,
+    private val lineColor: String? = null,
 ) : Screen {
 
     @Composable
@@ -67,6 +75,7 @@ data class TimelineScreen(
             onRefresh = { screenModel.refresh() },
             is24Hour = is24Hour,
             trainId = trainId,
+            lineColor = lineColor,
             timelines = timelines
         )
     }
@@ -80,6 +89,7 @@ private fun TimelineScreen(
     onRefresh: () -> Unit,
     is24Hour: Boolean,
     trainId: String,
+    lineColor: String? = null,
     timelines: TimelineGroup?
 ) {
     Scaffold(
@@ -94,6 +104,8 @@ private fun TimelineScreen(
             }
         }
     ) { contentPadding ->
+        val lazyListState = rememberLazyListState()
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,16 +146,26 @@ private fun TimelineScreen(
                     val allStops = timelines.currentRoute.stops
                     val formatter = timeFormatter(is24Hour)
                     val now = timelines.currentTime
+                    val currentTrainStopIndex = allStops.indexOfLast { stop ->
+                        stop.departsAt.isBefore(now) || stop.departsAt.isEqual(now)
+                    }
+
+                    LaunchedEffect(currentTrainStopIndex) {
+                        if (currentTrainStopIndex >= 0) {
+                            lazyListState.animateScrollToItem(
+                                index = if (currentTrainStopIndex > 0) currentTrainStopIndex - 1 else 0
+                            )
+                        }
+                    }
 
                     LazyColumn(
+                        state = lazyListState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .align(Alignment.TopStart)
+                            .padding(horizontal = 16.dp),
+                        horizontalAlignment = Alignment.Start,
                     ) {
-                        val currentTrainStopIndex = allStops.indexOfLast { stop ->
-                            stop.departsAt.isBefore(now) || stop.departsAt.isEqual(now)
-                        }
-
                         itemsIndexed(allStops) { index, stop ->
                             val time = stop.departsAt.format(formatter)
 
@@ -156,18 +178,21 @@ private fun TimelineScreen(
                             }
 
                             val isTrainAtStation = index == currentTrainStopIndex
-                            val eta = if (!isPassed) {
-                                etaString(
-                                    context = injectContext(),
-                                    now = now,
-                                    target = stop.departsAt,
-                                    compactMode = true
-                                )
-                            } else null
+                            val eta = etaString(
+                                context = injectContext(),
+                                now = now,
+                                target = stop.departsAt,
+                                compactMode = false
+                            )
 
                             TimelineNode(
+                                modifier = Modifier.padding(
+                                    top = if (index == 0) 16.dp else 0.dp,
+                                    bottom = if (index == allStops.lastIndex) 16.dp else 0.dp
+                                ),
                                 time = time,
                                 stationName = stop.stationName,
+                                lineColor = lineColor,
                                 eta = eta,
                                 isLast = index == allStops.lastIndex,
                                 isPassed = isPassed,
@@ -196,34 +221,46 @@ fun TimelineNode(
     modifier: Modifier = Modifier,
     time: String?,
     stationName: String,
+    lineColor: String? = null,
     eta: String? = null,
     isLast: Boolean = false,
     isPassed: Boolean = false,
     isNextStop: Boolean = false,
     isTrainAtStation: Boolean = false
 ) {
+    val colorScheme = LocalColorScheme.current
+    val color = if (colorScheme == darkTheme) {
+        lineColor?.toColor()?.brighter(0.35f)
+    } else {
+        lineColor?.toColor()?.darken(0.15f)
+    }
+
     val nodeColor = when {
-        isPassed -> MaterialTheme.colorScheme.primary
+        isPassed && !isTrainAtStation -> color?.copy(alpha = 0.4f) ?: MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+        isTrainAtStation -> color ?: MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.outline
     }
 
     val textColor = when {
-        isPassed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        isPassed && !isTrainAtStation -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
         isNextStop -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface
     }
 
     val textWeight = if (isTrainAtStation && !isPassed) FontWeight.Bold else FontWeight.SemiBold
 
-    val lineColor = when {
-        isPassed && !isTrainAtStation -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+    val strokeColor = when {
+        isPassed && !isTrainAtStation -> color?.copy(alpha = 0.4f) ?: MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
         else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     }
 
+    val nodeSize = if (isTrainAtStation) 24.dp else 16.dp
+
     Row(
         modifier = modifier
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.Top
+            .fillMaxWidth()
+            .padding(bottom = if (isTrainAtStation) 24.dp else 16.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         Text(
             text = time ?: "--:--",
@@ -232,8 +269,8 @@ fun TimelineNode(
                 fontWeight = textWeight
             ),
             modifier = Modifier
-                .width(90.dp)
-                .offset( y = if (!isTrainAtStation) (-2).dp else 2.dp),
+                .width(60.dp)
+                .offset(y = if (!isTrainAtStation) (-2).dp else 2.dp),
             color = textColor
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -242,17 +279,17 @@ fun TimelineNode(
             modifier = Modifier.width(32.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            // Last node no line
+            // Last node no stroke
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
-                        .height(64.dp)
-                        .offset(y = 16.dp)
-                        .background(lineColor)
+                        .height(48.dp)
+                        .offset(y = nodeSize)
+                        .background(strokeColor)
                 )
             }
-            
+
             // Node circle
             if (isTrainAtStation) {
                 Box(
@@ -284,7 +321,7 @@ fun TimelineNode(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .offset( y = if (!isTrainAtStation) (-2).dp else 2.dp)
+                .offset(y = if (!isTrainAtStation) (-2).dp else 2.dp)
         ) {
             Text(
                 text = stationName,
