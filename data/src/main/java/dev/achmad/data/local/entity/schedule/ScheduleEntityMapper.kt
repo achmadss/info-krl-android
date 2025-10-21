@@ -2,7 +2,7 @@ package dev.achmad.data.local.entity.schedule
 
 import dev.achmad.core.util.format
 import dev.achmad.core.util.toLocalDateTime
-import dev.achmad.domain.model.Schedule
+import dev.achmad.domain.schedule.model.Schedule
 
 fun ScheduleEntity.toDomain(): Schedule {
     return Schedule(

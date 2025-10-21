@@ -1,7 +1,7 @@
-package dev.achmad.domain.usecase.route
+package dev.achmad.domain.route.interactor
 
-import dev.achmad.domain.model.Route
-import dev.achmad.domain.repository.RouteRepository
+import dev.achmad.domain.route.model.Route
+import dev.achmad.domain.route.repository.RouteRepository
 import kotlinx.coroutines.flow.Flow
 
 class GetRoute(

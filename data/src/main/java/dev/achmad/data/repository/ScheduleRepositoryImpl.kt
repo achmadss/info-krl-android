@@ -9,8 +9,8 @@ import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.schedule.ScheduleResponse
 import dev.achmad.data.remote.model.schedule.toEntity as responseToEntity
-import dev.achmad.domain.model.Schedule
-import dev.achmad.domain.repository.ScheduleRepository
+import dev.achmad.domain.schedule.model.Schedule
+import dev.achmad.domain.schedule.repository.ScheduleRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -51,6 +51,12 @@ class ScheduleRepositoryImpl(
             }
             data.data.map { it.responseToEntity().toDomain() }
                 .filter { !it.trainId.contains("/") }
+        }
+    }
+
+    override suspend fun awaitAll(stationId: String): List<Schedule> {
+        return withContext(Dispatchers.IO) {
+            scheduleDao.awaitAllByStationId(stationId).toDomain()
         }
     }
 

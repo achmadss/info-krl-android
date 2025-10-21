@@ -1,4 +1,4 @@
-package dev.achmad.domain.model
+package dev.achmad.domain.station.model
 
 import dev.achmad.core.util.enumValueOfOrDefault
 import java.time.LocalDateTime

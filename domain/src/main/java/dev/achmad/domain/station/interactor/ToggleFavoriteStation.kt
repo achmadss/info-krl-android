@@ -1,7 +1,7 @@
-package dev.achmad.domain.usecase.station
+package dev.achmad.domain.station.interactor
 
-import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.station.model.Station
+import dev.achmad.domain.station.repository.StationRepository
 
 class ToggleFavoriteStation(
     private val stationRepository: StationRepository

@@ -1,6 +1,6 @@
-package dev.achmad.domain.usecase.route
+package dev.achmad.domain.route.interactor
 
-import dev.achmad.domain.repository.RouteRepository
+import dev.achmad.domain.route.repository.RouteRepository
 
 class SyncRoute(
     private val routeRepository: RouteRepository

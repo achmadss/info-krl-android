@@ -53,9 +53,9 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.model.Station
+import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.AppBarTitle
 import dev.achmad.infokrl.components.SearchToolbar
 import dev.achmad.infokrl.work.SyncStationJob

@@ -19,7 +19,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import dev.achmad.core.di.util.inject
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.preference.ApplicationPreference
+import dev.achmad.domain.theme.Themes
 import dev.achmad.infokrl.util.collectAsState
 
 val LocalColorScheme = compositionLocalOf { lightColorScheme() }
@@ -34,14 +35,14 @@ fun AppTheme(
     val applicationPreference = inject<ApplicationPreference>()
     val theme by applicationPreference.appTheme().collectAsState()
     val systemBarColor = when (theme) {
-        ApplicationPreference.Themes.DARK -> Color.Transparent
-        ApplicationPreference.Themes.LIGHT -> Color.White
+        Themes.DARK -> Color.Transparent
+        Themes.LIGHT -> Color.White
         else -> if (isDarkTheme) Color.Transparent else Color.White
     }
 
     val colorScheme = when (theme) {
-        ApplicationPreference.Themes.DARK -> darkTheme
-        ApplicationPreference.Themes.LIGHT -> lightTheme
+        Themes.DARK -> darkTheme
+        Themes.LIGHT -> lightTheme
         else -> if (isDarkTheme) darkTheme else lightTheme
     }
     CompositionLocalProvider(

@@ -1,7 +1,7 @@
 package dev.achmad.data.remote.model.station
 
 import dev.achmad.core.util.toLocalDateTime
-import dev.achmad.domain.model.Station
+import dev.achmad.domain.station.model.Station
 
 fun StationResponse.toDomain(): Station {
     return Station(

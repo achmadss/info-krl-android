@@ -9,8 +9,8 @@ import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.usecase.route.SyncRoute
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.route.interactor.SyncRoute
+import dev.achmad.domain.route.interactor.ShouldSyncRoute
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
@@ -22,9 +22,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 class SyncRouteJob(
     context: Context,
@@ -32,28 +29,23 @@ class SyncRouteJob(
 ): CoroutineWorker(context, workerParams) {
 
     private val syncRoute by injectLazy<SyncRoute>()
-    private val applicationPreference by injectLazy<ApplicationPreference>()
+    private val shouldSyncRoute by injectLazy<ShouldSyncRoute>()
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
-            val zone = ZoneId.systemDefault()
-            val now = LocalDateTime.ofInstant(Instant.now(), zone)
-
             try {
                 val trainId = inputData.getString(KEY_TRAIN_ID)
                     ?: throw IllegalArgumentException("Train ID cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
 
-                val lastFetchRoute = applicationPreference.lastFetchRoute(trainId)
-                when (val result = syncRoute.await(trainId)) {
-                    is SyncRoute.Result.Success -> {
-                        lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
-                    }
-                    is SyncRoute.Result.Error -> {
-                        if (result.error is NotFoundException) {
-                            lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
+                if (shouldSyncRoute.await(trainId)) {
+                    when (val result = syncRoute.await(trainId)) {
+                        is SyncRoute.Result.Error -> {
+                            if (result.error !is NotFoundException) {
+                                throw result.error
+                            }
                         }
-                        throw result.error
+                        else -> Unit
                     }
                 }
 
@@ -71,20 +63,6 @@ class SyncRouteJob(
         private const val TAG = "RefreshRoute"
         private const val KEY_TRAIN_ID = "KEY_TRAIN_ID"
         private const val KEY_DELAY = "KEY_DELAY"
-
-        fun shouldSync(
-            trainId: String,
-        ): Boolean {
-            val applicationPreference by injectLazy<ApplicationPreference>()
-            val lastFetchRoute = applicationPreference.lastFetchRoute(trainId)
-            val zone = ZoneId.systemDefault()
-            val now = LocalDateTime.ofInstant(Instant.now(), zone)
-            val lastFetch = LocalDateTime.ofInstant(
-                Instant.ofEpochMilli(lastFetchRoute.get()),
-                zone
-            )
-            return now.toLocalDate().isAfter(lastFetch.toLocalDate())
-        }
 
         fun subscribeState(
             context: Context,
@@ -112,17 +90,6 @@ class SyncRouteJob(
         }
 
         fun start(
-            context: Context,
-            trainId: String,
-            finishDelay: Long = 0
-        ): Boolean {
-            if (!shouldSync(trainId)) {
-                return false
-            }
-            return startNow(context, trainId, finishDelay)
-        }
-
-        fun startNow(
             context: Context,
             trainId: String,
             finishDelay: Long = 0

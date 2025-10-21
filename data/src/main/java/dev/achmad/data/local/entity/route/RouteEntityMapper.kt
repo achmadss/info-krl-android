@@ -2,7 +2,7 @@ package dev.achmad.data.local.entity.route
 
 import dev.achmad.core.util.format
 import dev.achmad.core.util.toLocalDateTime
-import dev.achmad.domain.model.Route
+import dev.achmad.domain.route.model.Route
 
 fun RouteEntity.toDomain(): Route {
     return Route(

@@ -1,7 +1,7 @@
 package dev.achmad.data.local.entity.station
 
 import dev.achmad.core.util.format
-import dev.achmad.domain.model.Station
+import dev.achmad.domain.station.model.Station
 
 fun Station.toStationUpdate(): StationUpdate {
     return StationUpdate(

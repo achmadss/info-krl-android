@@ -1,6 +1,6 @@
-package dev.achmad.domain.repository
+package dev.achmad.domain.station.repository
 
-import dev.achmad.domain.model.Station
+import dev.achmad.domain.station.model.Station
 import kotlinx.coroutines.flow.Flow
 
 interface StationRepository {

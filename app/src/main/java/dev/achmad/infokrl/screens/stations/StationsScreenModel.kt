@@ -3,17 +3,16 @@ package dev.achmad.infokrl.screens.stations
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
-import dev.achmad.domain.model.Station
-import dev.achmad.domain.usecase.station.ReorderFavoriteStations
-import dev.achmad.domain.usecase.station.GetStation
-import dev.achmad.domain.usecase.station.ToggleFavoriteStation
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.station.model.Station
+import dev.achmad.domain.station.interactor.ReorderFavoriteStations
+import dev.achmad.domain.station.interactor.GetStation
+import dev.achmad.domain.station.interactor.ToggleFavoriteStation
+import dev.achmad.domain.station.interactor.HasFetchedStations
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -22,22 +21,22 @@ class StationsScreenModel(
     private val getStation: GetStation = inject(),
     private val toggleFavoriteStation: ToggleFavoriteStation = inject(),
     private val reorderFavoriteStations: ReorderFavoriteStations = inject(),
-    private val applicationPreference: ApplicationPreference = inject(),
+    private val hasFetchedStations: HasFetchedStations = inject(),
 ): ScreenModel {
 
     private val _searchQuery = MutableStateFlow<String?>(null)
     val searchQuery = _searchQuery.asStateFlow()
 
-    private val dbStations = getStation.subscribe()
-        .let {
-            if (!applicationPreference.hasFetchedStations().get()) it.drop(1)
-            else it
-        }
-        .stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = null
-        )
+    private val dbStations = combine(
+        getStation.subscribe(),
+        hasFetchedStations.subscribe()
+    ) { stations, hasFetched ->
+        if (hasFetched) stations else null
+    }.stateIn(
+        scope = screenModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null
+    )
 
     val stations: StateFlow<List<Station>?> = combine(
         _searchQuery,

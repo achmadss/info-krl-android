@@ -3,11 +3,12 @@ package dev.achmad.data.remote
 import dev.achmad.core.network.GET
 import dev.achmad.core.network.NetworkHelper
 import dev.achmad.core.network.await
+import dev.achmad.domain.preference.ApplicationPreference
 import okhttp3.Response
 
 class InfoKRLApi(
     private val networkHelper: NetworkHelper,
-    private val preference: InfoKRLApiPreference,
+    private val preference: ApplicationPreference,
 ) {
     suspend fun getStations(): Response {
         return networkHelper.client.newCall(

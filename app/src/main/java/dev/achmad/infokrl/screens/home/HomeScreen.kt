@@ -75,7 +75,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.AppBarActions
 import dev.achmad.infokrl.components.AppBarTitle

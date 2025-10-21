@@ -9,8 +9,8 @@ import dev.achmad.data.local.entity.route.toEntity as domainToEntity
 import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.route.RouteResponse
-import dev.achmad.domain.model.Route
-import dev.achmad.domain.repository.RouteRepository
+import dev.achmad.domain.route.model.Route
+import dev.achmad.domain.route.repository.RouteRepository
 import dev.achmad.data.remote.model.route.toEntity as responseToEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -50,6 +50,12 @@ class RouteRepositoryImpl(
                 throw Exception(data.metadata.message)
             }
             data.data.responseToEntity().toDomain()
+        }
+    }
+
+    override suspend fun awaitAll(trainId: String): List<Route> {
+        return withContext(Dispatchers.IO) {
+            routeDao.awaitAllByTrainId(trainId).toDomain()
         }
     }
 

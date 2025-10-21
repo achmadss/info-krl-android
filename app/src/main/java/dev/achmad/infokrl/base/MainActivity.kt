@@ -19,6 +19,7 @@ import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.ScreenTransition
+import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.screens.home.HomeScreen
 import dev.achmad.infokrl.screens.onboarding.OnboardingScreen
 import dev.achmad.infokrl.theme.AppTheme

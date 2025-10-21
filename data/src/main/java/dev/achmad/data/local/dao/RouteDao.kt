@@ -14,6 +14,9 @@ interface RouteDao {
     @Query("SELECT * FROM routes WHERE train_id = :trainId")
     suspend fun awaitSingle(trainId: String): RouteEntity?
 
+    @Query("SELECT * FROM routes WHERE train_id = :trainId")
+    suspend fun awaitAllByTrainId(trainId: String): List<RouteEntity>
+
     @Query("SELECT * FROM routes WHERE train_id = :trainId LIMIT 1")
     fun subscribeSingle(trainId: String): Flow<RouteEntity?>
 

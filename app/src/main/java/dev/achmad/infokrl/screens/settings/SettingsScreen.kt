@@ -13,7 +13,7 @@ import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
 import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
-import dev.achmad.infokrl.base.ApplicationPreference
+import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.preference.Preference
 import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen

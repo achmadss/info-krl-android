@@ -9,8 +9,8 @@ import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.station.StationResponse
 import dev.achmad.data.remote.model.station.toDomain
-import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.station.model.Station
+import dev.achmad.domain.station.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged

@@ -1,4 +1,4 @@
-package dev.achmad.domain.model
+package dev.achmad.domain.schedule.model
 
 import java.time.LocalDateTime
 

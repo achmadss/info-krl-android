@@ -1,7 +1,7 @@
-package dev.achmad.domain.usecase.schedule
+package dev.achmad.domain.schedule.interactor
 
-import dev.achmad.domain.model.Schedule
-import dev.achmad.domain.repository.ScheduleRepository
+import dev.achmad.domain.schedule.model.Schedule
+import dev.achmad.domain.schedule.repository.ScheduleRepository
 import kotlinx.coroutines.flow.Flow
 
 class GetSchedule(

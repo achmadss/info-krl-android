@@ -1,6 +1,6 @@
-package dev.achmad.domain.usecase.station
+package dev.achmad.domain.station.interactor
 
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.station.repository.StationRepository
 
 class SyncStation(
     private val stationRepository: StationRepository

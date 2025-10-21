@@ -1,6 +1,6 @@
-package dev.achmad.domain.usecase.schedule
+package dev.achmad.domain.schedule.interactor
 
-import dev.achmad.domain.repository.ScheduleRepository
+import dev.achmad.domain.schedule.repository.ScheduleRepository
 
 class SyncSchedule(
     private val scheduleRepository: ScheduleRepository

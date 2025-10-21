@@ -5,8 +5,8 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.model.Route
-import dev.achmad.domain.usecase.route.GetRoute
+import dev.achmad.domain.route.model.Route
+import dev.achmad.domain.route.interactor.GetRoute
 import dev.achmad.infokrl.work.SyncRouteJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
