@@ -1,7 +1,7 @@
 package dev.achmad.data.local.entity.station
 
-import dev.achmad.core.util.format
 import dev.achmad.core.util.toLocalDateTime
+import dev.achmad.core.util.toUtcString
 import dev.achmad.domain.station.model.Station
 
 fun StationEntity.toDomain(): Station {
@@ -31,8 +31,8 @@ fun Station.toEntity(): StationEntity {
         active = active,
         daop = daop,
         fgEnable = fgEnable,
-        createdAt = createdAt.format(),
-        updatedAt = updatedAt.format(),
+        createdAt = createdAt.toUtcString(),
+        updatedAt = updatedAt.toUtcString(),
     )
 }
 

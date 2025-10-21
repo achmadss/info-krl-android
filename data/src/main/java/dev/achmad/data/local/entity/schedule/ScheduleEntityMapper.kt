@@ -1,7 +1,7 @@
 package dev.achmad.data.local.entity.schedule
 
-import dev.achmad.core.util.format
 import dev.achmad.core.util.toLocalDateTime
+import dev.achmad.core.util.toUtcString
 import dev.achmad.domain.schedule.model.Schedule
 
 fun ScheduleEntity.toDomain(): Schedule {
@@ -30,11 +30,11 @@ fun Schedule.toEntity(): ScheduleEntity {
         trainId = trainId,
         line = line,
         route = route,
-        departsAt = departsAt.format(),
-        arrivesAt = arrivesAt.format(),
+        departsAt = departsAt.toUtcString(),
+        arrivesAt = arrivesAt.toUtcString(),
         color = color,
-        createdAt = createdAt.format(),
-        updatedAt = updatedAt.format(),
+        createdAt = createdAt.toUtcString(),
+        updatedAt = updatedAt.toUtcString(),
     )
 }
 

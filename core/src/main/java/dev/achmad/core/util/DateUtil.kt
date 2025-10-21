@@ -17,7 +17,11 @@ fun String.toLocalDateTime(): LocalDateTime {
         .toLocalDateTime()
 }
 
-fun LocalDateTime.format(): String {
+fun LocalDateTime.toUtcString(): String {
+    // Convert local time back to UTC before formatting for storage
+    val utcDateTime = this.atZone(ZoneId.systemDefault())
+        .withZoneSameInstant(ZoneOffset.UTC)
+        .toLocalDateTime()
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-    return this.format(formatter)
+    return utcDateTime.format(formatter)
 }

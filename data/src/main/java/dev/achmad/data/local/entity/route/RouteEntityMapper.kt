@@ -1,7 +1,7 @@
 package dev.achmad.data.local.entity.route
 
-import dev.achmad.core.util.format
 import dev.achmad.core.util.toLocalDateTime
+import dev.achmad.core.util.toUtcString
 import dev.achmad.domain.route.model.Route
 
 fun RouteEntity.toDomain(): Route {
@@ -35,14 +35,14 @@ fun Route.toEntity(): RouteEntity {
         stationOriginName = stationOriginName,
         stationDestinationId = stationDestinationId,
         stationDestinationName = stationDestinationName,
-        arrivesAt = arrivesAt.format(),
+        arrivesAt = arrivesAt.toUtcString(),
         stops = stops.map {
             RouteEntity.Stops(
                 stationId = it.stationId,
                 stationName = it.stationName,
-                departsAt = it.departsAt.format(),
-                createdAt = it.createdAt.format(),
-                updatedAt = it.updatedAt.format()
+                departsAt = it.departsAt.toUtcString(),
+                createdAt = it.createdAt.toUtcString(),
+                updatedAt = it.updatedAt.toUtcString()
             )
         }
     )

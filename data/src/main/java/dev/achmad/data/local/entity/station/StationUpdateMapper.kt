@@ -1,6 +1,6 @@
 package dev.achmad.data.local.entity.station
 
-import dev.achmad.core.util.format
+import dev.achmad.core.util.toUtcString
 import dev.achmad.domain.station.model.Station
 
 fun Station.toStationUpdate(): StationUpdate {
@@ -14,7 +14,7 @@ fun Station.toStationUpdate(): StationUpdate {
         active = active,
         daop = daop,
         fgEnable = fgEnable,
-        createdAt = createdAt.format(),
-        updatedAt = updatedAt.format()
+        createdAt = createdAt.toUtcString(),
+        updatedAt = updatedAt.toUtcString()
     )
 }
