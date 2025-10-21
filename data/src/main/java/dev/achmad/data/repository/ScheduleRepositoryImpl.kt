@@ -4,10 +4,11 @@ import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.ScheduleDao
 import dev.achmad.data.local.entity.schedule.toDomain
+import dev.achmad.data.local.entity.schedule.toEntity as domainToEntity
 import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.schedule.ScheduleResponse
-import dev.achmad.data.remote.model.schedule.toEntity
+import dev.achmad.data.remote.model.schedule.toEntity as responseToEntity
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.repository.ScheduleRepository
 import kotlinx.coroutines.Dispatchers
@@ -31,25 +32,32 @@ class ScheduleRepositoryImpl(
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
 
-    override fun subscribeSingle(stationId: String): Flow<List<Schedule>> {
+    override fun subscribe(stationId: String): Flow<List<Schedule>> {
         return scheduleDao.subscribeAllByStationId(stationId)
             .mapNotNull { it.toDomain().filter { !it.trainId.contains("/") } }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun fetchAndStoreByStationId(stationId: String) {
-        withContext(Dispatchers.IO) {
+    override suspend fun fetch(stationId: String): List<Schedule> {
+        return withContext(Dispatchers.IO) {
             val response = api.getScheduleByStationId(stationId)
             val data = response.parseAs<BaseResponse<List<ScheduleResponse>>>()
             if (data.metadata.success == false) {
                 throw Exception(data.metadata.message)
             }
-            val schedules = data.data.map { it.toEntity() }
-            if (schedules.isEmpty()) {
+            if (data.data.isEmpty()) {
                 throw Exception("data is empty")
             }
-            scheduleDao.insert(schedules)
+            data.data.map { it.responseToEntity().toDomain() }
+                .filter { !it.trainId.contains("/") }
+        }
+    }
+
+    override suspend fun store(schedules: List<Schedule>) {
+        withContext(Dispatchers.IO) {
+            val scheduleEntities = schedules.map { it.domainToEntity() }
+            scheduleDao.insert(scheduleEntities)
         }
     }
 

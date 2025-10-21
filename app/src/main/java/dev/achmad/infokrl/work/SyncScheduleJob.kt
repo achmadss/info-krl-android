@@ -11,8 +11,8 @@ import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.repository.ScheduleRepository
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.usecase.station.GetStation
+import dev.achmad.domain.usecase.schedule.SyncSchedule
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
@@ -26,8 +26,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
@@ -39,8 +37,8 @@ class SyncScheduleJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val scheduleRepository by injectLazy<ScheduleRepository>()
-    private val stationRepository by injectLazy<StationRepository>()
+    private val syncSchedule by injectLazy<SyncSchedule>()
+    private val getStation by injectLazy<GetStation>()
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
@@ -72,17 +70,19 @@ class SyncScheduleJob(
      */
     private suspend fun syncAllFavoriteStations(now: LocalDateTime, zone: ZoneId) {
         withContext(Dispatchers.IO) {
-            val favoriteStations = stationRepository.awaitAllFavorites()
+            val favoriteStations = getStation.await(favorite = true)
             val workManager = applicationContext.workManager
             favoriteStations.map { station ->
                 async {
                     if (shouldSync(station.id) && !workManager.isRunning(station.id)) {
                         val lastFetchSchedule = applicationPreference.lastFetchSchedule(station.id)
-                        try {
-                            scheduleRepository.fetchAndStoreByStationId(station.id)
-                            lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                        when (val result = syncSchedule.await(station.id)) {
+                            is SyncSchedule.Result.Success -> {
+                                lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+                            }
+                            is SyncSchedule.Result.Error -> {
+                                result.error.printStackTrace()
+                            }
                         }
                     }
                 }
@@ -95,8 +95,14 @@ class SyncScheduleJob(
      */
     private suspend fun syncSingleStation(stationId: String, now: LocalDateTime, zone: ZoneId) {
         val lastFetchSchedule = applicationPreference.lastFetchSchedule(stationId)
-        scheduleRepository.fetchAndStoreByStationId(stationId)
-        lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+        when (val result = syncSchedule.await(stationId)) {
+            is SyncSchedule.Result.Success -> {
+                lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
+            }
+            is SyncSchedule.Result.Error -> {
+                throw result.error
+            }
+        }
     }
 
     companion object {

@@ -15,6 +15,12 @@ data class StationUpdate(
     @ColumnInfo(name = "type")
     val type: String,
 
+    @ColumnInfo(name = "favorite")
+    val favorite: Boolean?,
+
+    @ColumnInfo(name = "favorite_position")
+    val favoritePosition: Int?,
+
     @ColumnInfo(name = "active")
     val active: Boolean?,
 

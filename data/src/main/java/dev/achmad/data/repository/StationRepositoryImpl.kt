@@ -4,11 +4,11 @@ import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.StationDao
 import dev.achmad.data.local.entity.station.toDomain
-import dev.achmad.data.local.entity.station.toEntity
+import dev.achmad.data.local.entity.station.toStationUpdate
 import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.station.StationResponse
-import dev.achmad.data.remote.model.station.toStationUpdate
+import dev.achmad.data.remote.model.station.toDomain
 import dev.achmad.domain.model.Station
 import dev.achmad.domain.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
@@ -38,52 +38,57 @@ class StationRepositoryImpl(
             .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun awaitAllFavorites(): List<Station> {
+    override suspend fun awaitAll(favorite: Boolean?): List<Station> {
         return withContext(Dispatchers.IO) {
-            stationDao.awaitAll(favorite = true).map { it.toDomain() }
+            stationDao.awaitAll(favorite = favorite).map { it.toDomain() }
         }
     }
 
     override suspend fun awaitSingle(id: String): Station? {
-        return stationDao.awaitSingle(id)?.toDomain()
+        return withContext(Dispatchers.IO) {
+            stationDao.awaitSingle(id)?.toDomain()
+        }
     }
 
-    override suspend fun fetchAndStore() {
-        withContext(Dispatchers.IO) {
+    override suspend fun fetch(): List<Station> {
+        return withContext(Dispatchers.IO) {
             val response = api.getStations()
-            val stationUpdates = response
-                .parseAs<BaseResponse<List<StationResponse>>>().data
-                .map { it.toStationUpdate() }
+            response.parseAs<BaseResponse<List<StationResponse>>>()
+                .data.map { it.toDomain() }
+        }
+    }
+
+    override suspend fun store(stations: List<Station>) {
+        withContext(Dispatchers.IO) {
+            val stationUpdates = stations.map { it.toStationUpdate() }
             stationDao.upsert(stationUpdates)
         }
     }
 
-    override suspend fun toggleFavorite(station: Station) {
+    override suspend fun favorite(stationId: String) {
         withContext(Dispatchers.IO) {
-            if (station.favorite) {
-                stationDao.unfavorite(station.id)
-            } else {
-                val updated = station.copy(
-                    favorite = true,
-                    favoritePosition = station.favoritePosition
-                ).toEntity()
-                stationDao.update(updated)
-            }
-        }
-    }
-
-    override suspend fun updateFavorite(station: Station) {
-        withContext(Dispatchers.IO) {
-            val updated = station.toEntity()
+            val station = stationDao.awaitSingle(stationId)?.toDomain()
+                ?: throw IllegalArgumentException("Station not found: $stationId")
+            val updated = station.copy(favorite = true).toStationUpdate()
             stationDao.update(updated)
         }
     }
 
-    override suspend fun reorderFavorites(stations: List<Station>) {
+    override suspend fun unfavorite(stationId: String) {
         withContext(Dispatchers.IO) {
-            val updates = stations.mapIndexed { index, station ->
-                station.copy(favoritePosition = index).toEntity()
-            }
+            val station = stationDao.awaitSingle(stationId)?.toDomain()
+                ?: throw IllegalArgumentException("Station not found: $stationId")
+            val updated = station.copy(
+                favorite = false,
+                favoritePosition = null
+            ).toStationUpdate()
+            stationDao.update(updated)
+        }
+    }
+
+    override suspend fun update(stations: List<Station>) {
+        withContext(Dispatchers.IO) {
+            val updates = stations.map { it.toStationUpdate() }
             stationDao.update(updates)
         }
     }

@@ -7,8 +7,8 @@ import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.ScheduleRepository
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.usecase.schedule.GetSchedule
+import dev.achmad.domain.usecase.station.GetStation
 import dev.achmad.infokrl.util.etaString
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +35,8 @@ data class ScheduleGroup(
 class SchedulesScreenModel(
     private val originStationId: String,
     private val destinationStationId: String,
-    private val scheduleRepository: ScheduleRepository = inject(),
-    private val stationRepository: StationRepository = inject(),
+    private val getSchedule: GetSchedule = inject(),
+    private val getStation: GetStation = inject(),
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
@@ -93,9 +93,7 @@ class SchedulesScreenModel(
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
         return scheduleFlowsCache.getOrPut(stationId) {
-            scheduleRepository.subscribeSingle(
-                stationId = stationId,
-            ).stateIn(
+            getSchedule.subscribe(stationId).stateIn(
                 scope = screenModelScope,
                 started = SharingStarted.Eagerly,
                 initialValue = null
@@ -104,12 +102,11 @@ class SchedulesScreenModel(
     }
 
     private fun getStationFlow(stationId: String): StateFlow<Station?> {
-        return stationRepository.subscribeSingle(stationId)
-            .stateIn(
-                scope = screenModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = null
-            )
+        return getStation.subscribe(stationId).stateIn(
+            scope = screenModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
     }
 
     private fun fetchSchedule() {

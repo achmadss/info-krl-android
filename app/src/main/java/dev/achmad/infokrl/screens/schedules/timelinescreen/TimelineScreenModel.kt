@@ -7,8 +7,8 @@ import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.model.Route
 import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.RouteRepository
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.usecase.route.GetRoute
+import dev.achmad.domain.usecase.station.GetStation
 import dev.achmad.infokrl.work.SyncRouteJob
 import dev.achmad.infokrl.util.mergeRouteStops
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +31,8 @@ class TimelineScreenModel(
     private val trainId: String,
     private val originStationId: String,
     private val destinationStationId: String,
-    private val routeRepository: RouteRepository = inject(),
-    private val stationRepository: StationRepository = inject()
+    private val getRoute: GetRoute = inject(),
+    private val getStation: GetStation = inject()
 ): ScreenModel {
 
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
@@ -78,22 +78,20 @@ class TimelineScreenModel(
     )
 
     private fun getStationFlow(stationId: String): StateFlow<Station?> {
-        return stationRepository.subscribeSingle(stationId)
-            .stateIn(
-                scope = screenModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = null
-            )
+        return getStation.subscribe(stationId).stateIn(
+            scope = screenModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
     }
 
     private fun getRouteFlow(trainId: String): StateFlow<Route?> {
         return routeFlowsCache.getOrPut(trainId) {
-            routeRepository.subscribeSingle(trainId)
-                .stateIn(
-                    scope = screenModelScope,
-                    started = SharingStarted.Eagerly,
-                    initialValue = null
-                )
+            getRoute.subscribe(trainId).stateIn(
+                scope = screenModelScope,
+                started = SharingStarted.Eagerly,
+                initialValue = null
+            )
         }
     }
 

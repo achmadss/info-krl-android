@@ -7,8 +7,8 @@ import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.model.Schedule
 import dev.achmad.domain.model.Station
-import dev.achmad.domain.repository.ScheduleRepository
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.usecase.schedule.GetSchedule
+import dev.achmad.domain.usecase.station.GetStation
 import dev.achmad.infokrl.util.etaString
 import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
@@ -45,8 +45,8 @@ data class DepartureGroup(
 }
 
 class HomeScreenModel(
-    stationRepository: StationRepository = inject(),
-    private val scheduleRepository: ScheduleRepository = inject(),
+    private val getSchedule: GetSchedule = inject(),
+    private val getStation: GetStation = inject(),
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
@@ -64,14 +64,14 @@ class HomeScreenModel(
             initialValue = LocalDateTime.now()
         )
 
-    private val stations = stationRepository.subscribeAll()
+    private val stations = getStation.subscribe()
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    private val favoriteStations = stationRepository.subscribeAll(favorite = true)
+    private val favoriteStations = getStation.subscribe(favorite = true)
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -191,9 +191,7 @@ class HomeScreenModel(
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
         return scheduleFlowsCache.getOrPut(stationId) {
-            scheduleRepository.subscribeSingle(
-                stationId = stationId,
-            ).stateIn(
+            getSchedule.subscribe(stationId).stateIn(
                 scope = screenModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = null

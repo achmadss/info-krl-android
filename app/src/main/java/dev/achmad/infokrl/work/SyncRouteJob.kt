@@ -9,7 +9,7 @@ import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.repository.RouteRepository
+import dev.achmad.domain.usecase.route.SyncRoute
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
@@ -35,7 +35,7 @@ class SyncRouteJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val routeRepository by injectLazy<RouteRepository>()
+    private val syncRoute by injectLazy<SyncRoute>()
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
@@ -45,26 +45,23 @@ class SyncRouteJob(
 
             try {
                 val trainIds = inputData.getStringArray(KEY_TRAIN_ID)
-                    ?: throw IllegalArgumentException("Station ID cannot be null")
+                    ?: throw IllegalArgumentException("Train IDs cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
 
                 trainIds.map { trainId ->
                     async {
-//                        maxRoutePermits.withPermit {
-                            try {
-                                val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
-                                routeRepository.fetchAndStoreByTrainId(trainId)
-                                lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                if (e is NotFoundException) {
-                                    trainId.let {
-                                        val lastFetchSchedule = applicationPreference.lastFetchRoute(trainId)
-                                        lastFetchSchedule.set(now.atZone(zone).toInstant().toEpochMilli())
-                                    }
+                        val lastFetchRoute = applicationPreference.lastFetchRoute(trainId)
+                        when (val result = syncRoute.await(trainId)) {
+                            is SyncRoute.Result.Success -> {
+                                lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
+                            }
+                            is SyncRoute.Result.Error -> {
+                                result.error.printStackTrace()
+                                if (result.error is NotFoundException) {
+                                    lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
                                 }
                             }
-//                        }
+                        }
                     }
                 }.awaitAll()
 

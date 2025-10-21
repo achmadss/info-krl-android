@@ -8,7 +8,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkQuery
 import androidx.work.WorkerParameters
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.repository.StationRepository
+import dev.achmad.domain.usecase.station.SyncStation
 import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
@@ -25,18 +25,20 @@ class SyncStationJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val stationRepository by injectLazy<StationRepository>()
+    private val syncStation by injectLazy<SyncStation>()
     private val applicationPreference by injectLazy<ApplicationPreference>()
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
-            try {
-                stationRepository.fetchAndStore()
-                applicationPreference.hasFetchedStations().set(true)
-                Result.success()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Result.failure()
+            when (val result = syncStation.await()) {
+                is SyncStation.Result.Success -> {
+                    applicationPreference.hasFetchedStations().set(true)
+                    Result.success()
+                }
+                is SyncStation.Result.Error -> {
+                    result.error.printStackTrace()
+                    Result.failure()
+                }
             }
         }
     }

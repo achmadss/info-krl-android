@@ -62,14 +62,14 @@ interface StationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(stations: List<StationEntity>)
 
-    @Update
-    suspend fun update(station: StationEntity)
+    @Update(entity = StationEntity::class)
+    suspend fun update(stationUpdate: StationUpdate)
 
-    @Update
-    suspend fun update(vararg stations: StationEntity)
+    @Update(entity = StationEntity::class)
+    suspend fun update(vararg stationUpdates: StationUpdate)
 
-    @Update
-    suspend fun update(stations: List<StationEntity>)
+    @Update(entity = StationEntity::class)
+    suspend fun update(stationUpdates: List<StationUpdate>)
 
     @Upsert(entity = StationEntity::class)
     suspend fun upsert(stationUpdate: StationUpdate)
@@ -79,8 +79,5 @@ interface StationDao {
 
     @Upsert(entity = StationEntity::class)
     suspend fun upsert(stationUpdates: List<StationUpdate>)
-
-    @Query("UPDATE stations SET favorite = 0, favorite_position = NULL WHERE id = :stationId")
-    suspend fun unfavorite(stationId: String)
 
 }

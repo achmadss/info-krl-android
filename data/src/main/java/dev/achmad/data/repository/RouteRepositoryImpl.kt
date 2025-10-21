@@ -5,10 +5,11 @@ import dev.achmad.core.network.parseAs
 import dev.achmad.data.local.InfoKRLDatabase
 import dev.achmad.data.local.dao.RouteDao
 import dev.achmad.data.local.entity.route.toDomain
+import dev.achmad.data.local.entity.route.toEntity as domainToEntity
 import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.route.RouteResponse
-import dev.achmad.data.remote.model.route.toEntity
+import dev.achmad.data.remote.model.route.toEntity as responseToEntity
 import dev.achmad.domain.model.Route
 import dev.achmad.domain.repository.RouteRepository
 import kotlinx.coroutines.Dispatchers
@@ -31,15 +32,15 @@ class RouteRepositoryImpl(
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
 
-    override fun subscribeSingle(trainId: String): Flow<Route?> {
+    override fun subscribe(trainId: String): Flow<Route?> {
         return routeDao.subscribeSingle(trainId)
             .map { it?.toDomain() }
             .distinctUntilChanged()
             .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun fetchAndStoreByTrainId(trainId: String) {
-        withContext(Dispatchers.IO) {
+    override suspend fun fetch(trainId: String): Route {
+        return withContext(Dispatchers.IO) {
             val response = api.getRouteByTrainId(trainId)
             if (response.code == 404) {
                 throw NotFoundException("trainId not found")
@@ -48,7 +49,13 @@ class RouteRepositoryImpl(
             if (data.metadata.success == false) {
                 throw Exception(data.metadata.message)
             }
-            routeDao.insert(data.data.toEntity())
+            data.data.responseToEntity().toDomain()
+        }
+    }
+
+    override suspend fun store(route: Route) {
+        withContext(Dispatchers.IO) {
+            routeDao.insert(route.domainToEntity())
         }
     }
 

@@ -8,13 +8,14 @@ interface StationRepository {
     fun subscribeAll(favorite: Boolean? = null): Flow<List<Station>>
     fun subscribeSingle(id: String): Flow<Station?>
 
-    suspend fun awaitAllFavorites(): List<Station>
+    suspend fun awaitAll(favorite: Boolean? = null): List<Station>
     suspend fun awaitSingle(id: String): Station?
 
-    suspend fun fetchAndStore()
-    suspend fun toggleFavorite(station: Station)
-    suspend fun updateFavorite(station: Station)
+    suspend fun fetch(): List<Station>
+    suspend fun store(stations: List<Station>)
 
-    suspend fun reorderFavorites(stations: List<Station>)
+    suspend fun favorite(stationId: String)
+    suspend fun unfavorite(stationId: String)
+    suspend fun update(stations: List<Station>)
 
 }
