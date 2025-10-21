@@ -6,11 +6,8 @@ import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.model.Route
-import dev.achmad.domain.model.Station
 import dev.achmad.domain.usecase.route.GetRoute
-import dev.achmad.domain.usecase.station.GetStation
 import dev.achmad.infokrl.work.SyncRouteJob
-import dev.achmad.infokrl.util.mergeRouteStops
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,53 +17,36 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 data class TimelineGroup(
-    val originStation: Station,
-    val destinationStation: Station,
-    val maxStopRoute: Route,
     val currentRoute: Route,
     val currentTime: LocalDateTime
 )
 
 class TimelineScreenModel(
     private val trainId: String,
-    private val originStationId: String,
-    private val destinationStationId: String,
     private val getRoute: GetRoute = inject(),
-    private val getStation: GetStation = inject()
 ): ScreenModel {
 
     private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
 
-    private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
-        scope = screenModelScope,
-        started = SharingStarted.Eagerly,
-        initialValue = null
-    )
+    private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
+        .stateIn(
+            scope = screenModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
 
     val timelineGroup: StateFlow<TimelineGroup?> = combine(
         tick,
-        getStationFlow(originStationId),
-        getStationFlow(destinationStationId),
-        getRouteFlow(maxStopsTrainId),
         getRouteFlow(trainId)
-    ) { _, originStation, destinationStation, maxStopRoute, currentRoute ->
+    ) { tickValue, currentRoute ->
         when {
-            originStation == null -> null
-            destinationStation == null -> null
-            maxStopRoute == null -> null
-            currentRoute == null -> null
+            currentRoute == null -> {
+                fetchRoute(listOf(trainId))
+                null
+            }
             else -> {
-                // Merge current route with max stop route to fill in missing stops
-                val mergedRoute = mergeRouteStops(
-                    currentRoute = currentRoute,
-                    maxStopRoute = maxStopRoute
-                )
-
                 TimelineGroup(
-                    originStation = originStation,
-                    destinationStation = destinationStation,
-                    maxStopRoute = maxStopRoute,
-                    currentRoute = mergedRoute,
+                    currentRoute = currentRoute,
                     currentTime = LocalDateTime.now()
                 )
             }
@@ -76,14 +56,6 @@ class TimelineScreenModel(
         started = SharingStarted.Eagerly,
         initialValue = null
     )
-
-    private fun getStationFlow(stationId: String): StateFlow<Station?> {
-        return getStation.subscribe(stationId).stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = null
-        )
-    }
 
     private fun getRouteFlow(trainId: String): StateFlow<Route?> {
         return routeFlowsCache.getOrPut(trainId) {
@@ -106,6 +78,6 @@ class TimelineScreenModel(
     }
 
     fun refresh() {
-        fetchRoute(listOf(trainId, maxStopsTrainId))
+        fetchRoute(listOf(trainId))
     }
 }

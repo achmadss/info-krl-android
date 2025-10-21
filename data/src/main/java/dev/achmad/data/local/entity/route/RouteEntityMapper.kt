@@ -16,7 +16,6 @@ fun RouteEntity.toDomain(): Route {
         arrivesAt = arrivesAt.toLocalDateTime(),
         stops = stops.map {
             Route.Stops(
-                it.id,
                 stationId = it.stationId,
                 stationName = it.stationName,
                 departsAt = it.departsAt.toLocalDateTime(),
@@ -39,7 +38,6 @@ fun Route.toEntity(): RouteEntity {
         arrivesAt = arrivesAt.format(),
         stops = stops.map {
             RouteEntity.Stops(
-                id = it.id,
                 stationId = it.stationId,
                 stationName = it.stationName,
                 departsAt = it.departsAt.format(),

@@ -14,7 +14,6 @@ data class Route(
     val stops: List<Stops>
 ) {
     data class Stops(
-        val id: String,
         val stationId: String,
         val stationName: String,
         val departsAt: LocalDateTime,
