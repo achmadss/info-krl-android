@@ -1,6 +1,5 @@
 package dev.achmad.infokrl.screens.schedules.timelinescreen
 
-import android.util.Log
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
