@@ -96,8 +96,11 @@ data class SchedulesScreen(
             onNavigateUp = {
                 navigator.pop()
             },
-            onClickSchedule = { trainId ->
-                navigator.push(TimelineScreen(trainId = trainId,))
+            onClickSchedule = { trainId, lineColor ->
+                navigator.push(TimelineScreen(
+                    trainId = trainId,
+                    lineColor = lineColor
+                ))
             },
             focusedScheduleId = scheduleId,
             schedules = schedules,
@@ -112,7 +115,7 @@ data class SchedulesScreen(
 private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
-    onClickSchedule: (String) -> Unit = { _ -> },
+    onClickSchedule: (String, String?) -> Unit = { _, _ -> },
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
@@ -236,7 +239,8 @@ private fun SchedulesScreen(
                                     uiSchedule = uiSchedule,
                                     onClick = {
                                         onClickSchedule(
-                                            uiSchedule.schedule.trainId
+                                            uiSchedule.schedule.trainId,
+                                            uiSchedule.schedule.color
                                         )
                                     },
                                     shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
