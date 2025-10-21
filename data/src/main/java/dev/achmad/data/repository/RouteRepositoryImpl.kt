@@ -9,9 +9,9 @@ import dev.achmad.data.local.entity.route.toEntity as domainToEntity
 import dev.achmad.data.remote.InfoKRLApi
 import dev.achmad.data.remote.model.BaseResponse
 import dev.achmad.data.remote.model.route.RouteResponse
-import dev.achmad.data.remote.model.route.toEntity as responseToEntity
 import dev.achmad.domain.model.Route
 import dev.achmad.domain.repository.RouteRepository
+import dev.achmad.data.remote.model.route.toEntity as responseToEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,7 +21,7 @@ import kotlinx.coroutines.withContext
 
 class RouteRepositoryImpl(
     private val api: InfoKRLApi,
-    private val database: InfoKRLDatabase
+    database: InfoKRLDatabase
 ): RouteRepository {
 
     private val routeDao: RouteDao = database.routeDao()

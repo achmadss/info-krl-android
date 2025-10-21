@@ -69,7 +69,18 @@ class StationRepositoryImpl(
         withContext(Dispatchers.IO) {
             val station = stationDao.awaitSingle(stationId)?.toDomain()
                 ?: throw IllegalArgumentException("Station not found: $stationId")
-            val updated = station.copy(favorite = true).toStationUpdate()
+
+            val currentFavorites = stationDao.awaitAll(favorite = true)
+            val nextPosition = currentFavorites
+                .mapNotNull { it.favoritePosition }
+                .maxOrNull()
+                ?.let { it + 1 }
+                ?: 0
+
+            val updated = station.copy(
+                favorite = true,
+                favoritePosition = nextPosition
+            ).toStationUpdate()
             stationDao.update(updated)
         }
     }

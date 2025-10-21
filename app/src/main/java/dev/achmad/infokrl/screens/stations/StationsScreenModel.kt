@@ -61,20 +61,14 @@ class StationsScreenModel(
             when (val result = toggleFavoriteStation.await(station)) {
                 is ToggleFavoriteStation.Result.Success -> {
                     if (station.favorite) {
-                        // If we're unfavoriting, reorder remaining favorites
                         val remainingFavorites = getStation.await(favorite = true)
                             .sortedBy { it.favoritePosition }
                         if (remainingFavorites.isNotEmpty()) {
                             when (val reorderResult = reorderFavoriteStations.await(remainingFavorites)) {
-                                is ReorderFavoriteStations.Result.Success -> {
-                                    // Success
-                                }
-                                is ReorderFavoriteStations.Result.Unchanged -> {
-                                    // Nothing changed
-                                }
                                 is ReorderFavoriteStations.Result.Error -> {
                                     reorderResult.error.printStackTrace()
                                 }
+                                else -> Unit
                             }
                         }
                     }

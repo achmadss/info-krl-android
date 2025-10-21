@@ -15,16 +15,12 @@ import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
@@ -44,30 +40,27 @@ class SyncRouteJob(
             val now = LocalDateTime.ofInstant(Instant.now(), zone)
 
             try {
-                val trainIds = inputData.getStringArray(KEY_TRAIN_ID)
-                    ?: throw IllegalArgumentException("Train IDs cannot be null")
+                val trainId = inputData.getString(KEY_TRAIN_ID)
+                    ?: throw IllegalArgumentException("Train ID cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
 
-                trainIds.map { trainId ->
-                    async {
-                        val lastFetchRoute = applicationPreference.lastFetchRoute(trainId)
-                        when (val result = syncRoute.await(trainId)) {
-                            is SyncRoute.Result.Success -> {
-                                lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
-                            }
-                            is SyncRoute.Result.Error -> {
-                                result.error.printStackTrace()
-                                if (result.error is NotFoundException) {
-                                    lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
-                                }
-                            }
-                        }
+                val lastFetchRoute = applicationPreference.lastFetchRoute(trainId)
+                when (val result = syncRoute.await(trainId)) {
+                    is SyncRoute.Result.Success -> {
+                        lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
                     }
-                }.awaitAll()
+                    is SyncRoute.Result.Error -> {
+                        if (result.error is NotFoundException) {
+                            lastFetchRoute.set(now.atZone(zone).toInstant().toEpochMilli())
+                        }
+                        throw result.error
+                    }
+                }
 
                 delay(delay)
                 Result.success()
             } catch (e: Exception) {
+                e.printStackTrace()
                 Result.failure()
             }
         }
@@ -78,8 +71,6 @@ class SyncRouteJob(
         private const val TAG = "RefreshRoute"
         private const val KEY_TRAIN_ID = "KEY_TRAIN_ID"
         private const val KEY_DELAY = "KEY_DELAY"
-
-//        val maxRoutePermits = Semaphore(10)
 
         fun shouldSync(
             trainId: String,
@@ -98,35 +89,10 @@ class SyncRouteJob(
         fun subscribeState(
             context: Context,
             scope: CoroutineScope,
-            trainIds: List<String>,
+            trainId: String,
         ): StateFlow<WorkInfo.State?> {
             val workQuery = WorkQuery.Builder
-                .fromTags(trainIds)
-                .addStates(listOf(
-                    WorkInfo.State.ENQUEUED,
-                    WorkInfo.State.RUNNING,
-                    WorkInfo.State.BLOCKED
-                ))
-                .build()
-
-            return context.workManager
-                .getWorkInfosFlow(workQuery)
-                .map { it.firstOrNull()?.state }
-                .distinctUntilChanged()
-                .stateIn(
-                    scope = scope,
-                    started = SharingStarted.Eagerly,
-                    initialValue = null
-                )
-        }
-
-        fun subscribeStateByStation(
-            context: Context,
-            scope: CoroutineScope,
-            stationId: String,
-        ): StateFlow<WorkInfo.State?> {
-            val workQuery = WorkQuery.Builder
-                .fromTags(listOf(stationId))
+                .fromTags(listOf(trainId))
                 .addStates(listOf(
                     WorkInfo.State.ENQUEUED,
                     WorkInfo.State.RUNNING,
@@ -147,58 +113,36 @@ class SyncRouteJob(
 
         fun start(
             context: Context,
-            trainIds: List<String>,
-            stationId: String? = null,
+            trainId: String,
             finishDelay: Long = 0
         ): Boolean {
-            val trainIdsToStart = trainIds.toMutableList()
-            trainIds.forEach {
-                if (!shouldSync(it)) {
-                    trainIdsToStart.remove(it)
-                }
+            if (!shouldSync(trainId)) {
+                return false
             }
-            if (trainIdsToStart.isEmpty()) return false
-            return startNow(context, trainIdsToStart, stationId, finishDelay)
+            return startNow(context, trainId, finishDelay)
         }
-
 
         fun startNow(
             context: Context,
-            trainIds: List<String>,
-            stationId: String? = null,
+            trainId: String,
             finishDelay: Long = 0
         ): Boolean {
             val workManager = context.workManager
-            val trainIdsToEnqueue = trainIds.toMutableList()
-
-            trainIds.forEach { trainId ->
-                if (workManager.isRunning(trainId)) {
-                    trainIdsToEnqueue.remove(trainId)
-                }
+            if (workManager.isRunning(trainId)) {
+                return false
             }
-            if (trainIdsToEnqueue.isEmpty()) return false
 
-            // FIXED: Use trainIdsToEnqueue instead of trainIds to prevent duplicate requests
             val inputData = workDataOf(
-                KEY_TRAIN_ID to trainIdsToEnqueue.toTypedArray(),
+                KEY_TRAIN_ID to trainId,
                 KEY_DELAY to finishDelay,
             )
             val request = OneTimeWorkRequestBuilder<SyncRouteJob>()
                 .addTag(TAG)
+                .addTag(trainId)
                 .setInputData(inputData)
+                .build()
 
-            trainIdsToEnqueue.forEach {
-                request.addTag(it)
-            }
-
-            // Add stationId as a tag if provided
-            if (stationId != null) {
-                request.addTag(stationId)
-            }
-
-            workManager.enqueue(
-                request = request.build()
-            )
+            workManager.enqueue(request)
             return true
         }
 

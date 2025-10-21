@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.schedules.timelinescreen
+package dev.achmad.infokrl.screens.timeline
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

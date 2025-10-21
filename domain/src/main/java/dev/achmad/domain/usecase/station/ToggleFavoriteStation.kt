@@ -6,12 +6,6 @@ import dev.achmad.domain.repository.StationRepository
 class ToggleFavoriteStation(
     private val stationRepository: StationRepository
 ) {
-
-    sealed interface Result {
-        data object Success : Result
-        data class Error(val error: Throwable) : Result
-    }
-
     suspend fun await(station: Station): Result {
         return try {
             if (station.favorite) {
@@ -23,6 +17,11 @@ class ToggleFavoriteStation(
         } catch (e: Exception) {
             Result.Error(e)
         }
+    }
+
+    sealed interface Result {
+        data object Success : Result
+        data class Error(val error: Throwable) : Result
     }
 
 }

@@ -5,12 +5,6 @@ import dev.achmad.domain.repository.StationRepository
 class SyncStation(
     private val stationRepository: StationRepository
 ) {
-
-    sealed interface Result {
-        data object Success : Result
-        data class Error(val error: Throwable) : Result
-    }
-
     suspend fun await(): Result {
         return try {
             val stations = stationRepository.fetch()
@@ -19,6 +13,11 @@ class SyncStation(
         } catch (e: Exception) {
             Result.Error(e)
         }
+    }
+
+    sealed interface Result {
+        data object Success : Result
+        data class Error(val error: Throwable) : Result
     }
 
 }

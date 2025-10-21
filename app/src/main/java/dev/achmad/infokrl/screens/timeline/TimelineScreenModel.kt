@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.schedules.timelinescreen
+package dev.achmad.infokrl.screens.timeline
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -26,8 +26,6 @@ class TimelineScreenModel(
     private val getRoute: GetRoute = inject(),
 ): ScreenModel {
 
-    private val routeFlowsCache = mutableMapOf<String, StateFlow<Route?>>()
-
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .stateIn(
             scope = screenModelScope,
@@ -35,19 +33,25 @@ class TimelineScreenModel(
             initialValue = null
         )
 
+    private val route = getRoute.subscribe(trainId).stateIn(
+        scope = screenModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     val timelineGroup: StateFlow<TimelineGroup?> = combine(
         tick,
-        getRouteFlow(trainId)
+        route
     ) { tickValue, currentRoute ->
         when {
             currentRoute == null -> {
-                fetchRoute(listOf(trainId))
+                fetchRoute(trainId)
                 null
             }
             else -> {
                 TimelineGroup(
                     currentRoute = currentRoute,
-                    currentTime = LocalDateTime.now()
+                    currentTime = tickValue ?: LocalDateTime.now()
                 )
             }
         }
@@ -57,27 +61,17 @@ class TimelineScreenModel(
         initialValue = null
     )
 
-    private fun getRouteFlow(trainId: String): StateFlow<Route?> {
-        return routeFlowsCache.getOrPut(trainId) {
-            getRoute.subscribe(trainId).stateIn(
-                scope = screenModelScope,
-                started = SharingStarted.Eagerly,
-                initialValue = null
-            )
-        }
-    }
-
-    private fun fetchRoute(trainIds: List<String>) {
+    private fun fetchRoute(trainId: String) {
         screenModelScope.launch(Dispatchers.IO) {
             SyncRouteJob.start(
                 context = injectContext(),
-                trainIds = trainIds,
+                trainId = trainId,
                 finishDelay = 500
             )
         }
     }
 
     fun refresh() {
-        fetchRoute(listOf(trainId))
+        fetchRoute(trainId)
     }
 }

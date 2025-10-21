@@ -14,7 +14,7 @@ class ApplicationPreference(
     )
 
     fun hasFetchedStations() = preferenceStore.getBoolean(
-        key = "first_run",
+        key = "has_fetch_stations",
         defaultValue = false
     )
 

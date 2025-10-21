@@ -62,7 +62,7 @@ import dev.achmad.infokrl.base.ApplicationPreference
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.theme.LocalColorScheme
 import dev.achmad.infokrl.theme.darkTheme
-import dev.achmad.infokrl.screens.schedules.timelinescreen.TimelineScreen
+import dev.achmad.infokrl.screens.timeline.TimelineScreen
 import dev.achmad.infokrl.util.brighter
 import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken

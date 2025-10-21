@@ -87,7 +87,7 @@ class SchedulesScreenModel(
         }
     }.distinctUntilChanged().stateIn(
         scope = screenModelScope,
-        started = SharingStarted.Eagerly,
+        started = SharingStarted.WhileSubscribed(5000),
         initialValue = null
     )
 
