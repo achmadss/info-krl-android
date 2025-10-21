@@ -51,18 +51,12 @@ import dev.achmad.infokrl.util.timeFormatter
 
 data class TimelineScreen(
     private val trainId: String,
-    private val originStationId: String,
-    private val destinationStationId: String,
 ) : Screen {
 
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { TimelineScreenModel(
-            trainId = trainId,
-            originStationId = originStationId,
-            destinationStationId = destinationStationId,
-        ) }
+        val screenModel = rememberScreenModel { TimelineScreenModel(trainId = trainId) }
 
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
@@ -88,7 +82,6 @@ private fun TimelineScreen(
     trainId: String,
     timelines: TimelineGroup?
 ) {
-
     Scaffold(
         topBar = {
             Surface(
@@ -138,42 +131,32 @@ private fun TimelineScreen(
                     }
                 }
                 timelines != null -> {
-                    // Use currentRoute stops as the primary source
                     val allStops = timelines.currentRoute.stops
                     val formatter = timeFormatter(is24Hour)
-
                     val now = timelines.currentTime
 
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(16.dp)
                     ) {
-                        // Find the latest station reached (train's current position)
                         val currentTrainStopIndex = allStops.indexOfLast { stop ->
                             stop.departsAt.isBefore(now) || stop.departsAt.isEqual(now)
                         }
 
-                        // Show all stops from current route
                         itemsIndexed(allStops) { index, stop ->
-                            // Check if this stop has real time data or is a placeholder (missing stop)
-                            val hasTimeData = stop.departsAt.isBefore(timelines.currentRoute.arrivesAt)
+                            val time = stop.departsAt.format(formatter)
 
-                            val time = if (hasTimeData) stop.departsAt.format(formatter) else null
-
-                            val isPassed = if (hasTimeData) stop.departsAt.isBefore(now) else false
-                            val isNextStop = if (hasTimeData && index > 0) {
+                            val isPassed = stop.departsAt.isBefore(now)
+                            val isNextStop = if ( index > 0) {
                                 allStops[index - 1].departsAt.isBefore(now) &&
                                 stop.departsAt.isAfter(now)
                             } else {
                                 false
                             }
 
-                            // Show train icon ONLY at the latest reached station (current position)
-                            val isTrainAtStation = if (hasTimeData) index == currentTrainStopIndex else false
-
-                            // Calculate ETA only for stops with real time data
-                            val eta = if (hasTimeData && !isPassed) {
+                            val isTrainAtStation = index == currentTrainStopIndex
+                            val eta = if (!isPassed) {
                                 etaString(
                                     context = injectContext(),
                                     now = now,
@@ -186,52 +169,20 @@ private fun TimelineScreen(
                                 time = time,
                                 stationName = stop.stationName,
                                 eta = eta,
-                                isLast = false,
-                                isActive = hasTimeData, // Inactive if no time data
+                                isLast = index == allStops.lastIndex,
                                 isPassed = isPassed,
                                 isNextStop = isNextStop,
                                 isTrainAtStation = isTrainAtStation
                             )
                         }
-
-                        // Add destination station as final item
-                        item {
-                            val isPassed = timelines.currentRoute.arrivesAt.isBefore(now)
-                            val lastStop = allStops.lastOrNull()
-                            val isNextStop = if (lastStop != null) {
-                                lastStop.departsAt.isBefore(now) && timelines.currentRoute.arrivesAt.isAfter(now)
-                            } else {
-                                false
-                            }
-
-                            // Check if train is at destination (only if all stops are passed)
-                            val isTrainAtStation = if (currentTrainStopIndex == allStops.size - 1 && !timelines.currentRoute.arrivesAt.isAfter(now)) {
-                                true
-                            } else {
-                                false
-                            }
-
-                            // Calculate ETA for destination
-                            val eta = if (!isPassed) {
-                                etaString(
-                                    context = injectContext(),
-                                    now = now,
-                                    target = timelines.currentRoute.arrivesAt,
-                                    compactMode = true
-                                )
-                            } else null
-
-                            TimelineNode(
-                                time = timelines.currentRoute.arrivesAt.format(formatter),
-                                stationName = timelines.destinationStation.name,
-                                eta = eta,
-                                isLast = true,
-                                isActive = true,
-                                isPassed = isPassed,
-                                isNextStop = isNextStop,
-                                isTrainAtStation = isTrainAtStation
-                            )
-                        }
+                    }
+                }
+                else -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator()
                     }
                 }
             }
@@ -247,26 +198,27 @@ fun TimelineNode(
     stationName: String,
     eta: String? = null,
     isLast: Boolean = false,
-    isActive: Boolean = true,
     isPassed: Boolean = false,
     isNextStop: Boolean = false,
     isTrainAtStation: Boolean = false
 ) {
-    // Determine color based on state
     val nodeColor = when {
-        !isActive -> MaterialTheme.colorScheme.outline
-        isPassed -> MaterialTheme.colorScheme.primary // Passed station - blue
-        else -> MaterialTheme.colorScheme.outline // Future station - grey
+        isPassed -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.outline
     }
 
     val textColor = when {
-        !isActive -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
         isPassed -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         isNextStop -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurface
     }
 
     val textWeight = if (isTrainAtStation && !isPassed) FontWeight.Bold else FontWeight.SemiBold
+
+    val lineColor = when {
+        isPassed && !isTrainAtStation -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    }
 
     Row(
         modifier = modifier
@@ -275,36 +227,33 @@ fun TimelineNode(
     ) {
         Text(
             text = time ?: "--:--",
+            textAlign = TextAlign.End,
             style = MaterialTheme.typography.titleMedium.copy(
                 fontWeight = textWeight
             ),
-            modifier = Modifier.width(90.dp),
+            modifier = Modifier
+                .width(90.dp)
+                .offset(y = (-4).dp),
             color = textColor
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(16.dp))
 
         Box(
             modifier = Modifier.width(32.dp),
             contentAlignment = Alignment.TopCenter
         ) {
-            // Line segment AFTER this node (going to next station)
+            // Last node no line
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
                         .height(64.dp)
                         .offset(y = 16.dp)
-                        .background(
-                            if (isPassed && !isTrainAtStation) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            } else {
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                            }
-                        )
+                        .background(lineColor)
                 )
             }
             
-            // Node circle - show train icon inside if train is at or past this station
+            // Node circle
             if (isTrainAtStation) {
                 Box(
                     modifier = Modifier
@@ -333,7 +282,9 @@ fun TimelineNode(
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .offset(y = (-4).dp)
         ) {
             Text(
                 text = stationName,
@@ -343,14 +294,12 @@ fun TimelineNode(
                 color = textColor
             )
 
-
             // Display ETA if available
             if (eta != null) {
                 Text(
                     text = eta,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(top = 2.dp)
                 )
             }
         }

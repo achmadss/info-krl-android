@@ -96,14 +96,8 @@ data class SchedulesScreen(
             onNavigateUp = {
                 navigator.pop()
             },
-            onClickSchedule = { originStationId, destinationStationId, trainId ->
-                navigator.push(
-                    TimelineScreen(
-                        originStationId = originStationId,
-                        destinationStationId = destinationStationId,
-                        trainId = trainId,
-                    )
-                )
+            onClickSchedule = { trainId ->
+                navigator.push(TimelineScreen(trainId = trainId,))
             },
             focusedScheduleId = scheduleId,
             schedules = schedules,
@@ -118,7 +112,7 @@ data class SchedulesScreen(
 private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
-    onClickSchedule: (String, String, String) -> Unit = { _, _, _ -> },
+    onClickSchedule: (String) -> Unit = { _ -> },
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     is24Hour: Boolean,
@@ -242,8 +236,6 @@ private fun SchedulesScreen(
                                     uiSchedule = uiSchedule,
                                     onClick = {
                                         onClickSchedule(
-                                            schedules.originStation.id,
-                                            schedules.destinationStation.id,
                                             uiSchedule.schedule.trainId
                                         )
                                     },
