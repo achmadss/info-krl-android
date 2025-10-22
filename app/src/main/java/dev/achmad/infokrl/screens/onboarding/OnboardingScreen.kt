@@ -38,8 +38,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
-import dev.achmad.infokrl.screens.home.HomeScreen
 import dev.achmad.core.di.util.injectLazy
+import dev.achmad.infokrl.screens.home.HomeScreen
 import kotlinx.coroutines.launch
 
 object OnboardingScreen : Screen {

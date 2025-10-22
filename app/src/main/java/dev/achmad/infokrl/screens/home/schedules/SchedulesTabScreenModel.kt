@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.home
+package dev.achmad.infokrl.screens.home.schedules
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -45,7 +46,7 @@ data class DepartureGroup(
     }
 }
 
-class HomeScreenModel(
+class SchedulesTabScreenModel(
     private val getSchedule: GetSchedule = inject(),
     private val getStation: GetStation = inject(),
 ): ScreenModel {
@@ -53,9 +54,6 @@ class HomeScreenModel(
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
-
-    private val _filterFutureSchedulesOnly = MutableStateFlow(true)
-    val filterFutureSchedulesOnly = _filterFutureSchedulesOnly.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .distinctUntilChanged()
@@ -72,10 +70,7 @@ class HomeScreenModel(
             initialValue = emptyList()
         )
 
-    val departureGroups = combine(
-        favoriteStations,
-        _filterFutureSchedulesOnly,
-    ) { favorites, _ ->
+    val departureGroups = favoriteStations.map { favorites ->
         favorites
             .sortedBy { it.favoritePosition }
             .map { favorite ->
@@ -106,14 +101,12 @@ class HomeScreenModel(
                     flowOf(schedules),
                     destinationStationsFlow,
                     tick,
-                    _filterFutureSchedulesOnly,
-                ) { currentSchedules, destinationStations, time, filterFutureOnly ->
+                ) { currentSchedules, destinationStations, time ->
                     withContext(Dispatchers.Default) {
                         computeScheduleGroups(
                             schedules = currentSchedules,
                             stations = destinationStations,
                             currentTime = time ?: LocalDateTime.now(),
-                            filterFutureOnly = filterFutureOnly
                         )
                     }
                 }
@@ -134,18 +127,13 @@ class HomeScreenModel(
         schedules: List<Schedule>,
         stations: List<Station>,
         currentTime: LocalDateTime,
-        filterFutureOnly: Boolean,
     ): List<DepartureGroup.ScheduleGroup> {
         val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
             val destinationStation = stations.firstOrNull { it.id == destinationId }
             destinationStation?.let {
-                val filteredSchedules = when {
-                    filterFutureOnly -> schedulesForDest.filter { it.departsAt.isAfter(currentTime) }
-                    else -> schedulesForDest
-                }
 
-                val sortedSchedules = filteredSchedules.sortedBy { it.departsAt }
+                val sortedSchedules = schedulesForDest.sortedBy { it.departsAt }
                 val uiSchedules = sortedSchedules.map { schedule ->
                     DepartureGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,
@@ -180,7 +168,7 @@ class HomeScreenModel(
     }
 
     fun fetchSchedules() {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             favoriteStations.value.forEach { favorite ->
                 SyncScheduleJob.start(
                     context = injectContext(),
@@ -192,17 +180,13 @@ class HomeScreenModel(
     }
 
     fun fetchScheduleForStation(stationId: String) {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             SyncScheduleJob.start(
                 context = injectContext(),
                 stationId = stationId,
                 finishDelay = fetchScheduleFinishDelay
             )
         }
-    }
-
-    fun toggleFilterFutureSchedules() {
-        _filterFutureSchedulesOnly.update { !it }
     }
 
     fun onTabFocused(stationId: String) {

@@ -21,6 +21,7 @@ import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.ScreenTransition
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.screens.home.HomeScreen
+import dev.achmad.infokrl.screens.home.schedules.SchedulesTab
 import dev.achmad.infokrl.screens.onboarding.OnboardingScreen
 import dev.achmad.infokrl.theme.AppTheme
 import org.koin.android.ext.android.inject
