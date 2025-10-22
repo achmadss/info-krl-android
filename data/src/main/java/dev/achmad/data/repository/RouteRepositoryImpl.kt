@@ -40,29 +40,23 @@ class RouteRepositoryImpl(
     }
 
     override suspend fun fetch(trainId: String): Route {
-        return withContext(Dispatchers.IO) {
-            val response = api.getRouteByTrainId(trainId)
-            if (response.code == 404) {
-                throw NotFoundException("trainId not found")
-            }
-            val data = response.parseAs<BaseResponse<RouteResponse>>()
-            if (data.metadata.success == false) {
-                throw Exception(data.metadata.message)
-            }
-            data.data.responseToEntity().toDomain()
+        val response = api.getRouteByTrainId(trainId)
+        if (response.code == 404) {
+            throw NotFoundException("trainId not found")
         }
+        val data = response.parseAs<BaseResponse<RouteResponse>>()
+        if (data.metadata.success == false) {
+            throw Exception(data.metadata.message)
+        }
+        return data.data.responseToEntity().toDomain()
     }
 
     override suspend fun awaitAll(trainId: String): List<Route> {
-        return withContext(Dispatchers.IO) {
-            routeDao.awaitAllByTrainId(trainId).toDomain()
-        }
+        return routeDao.awaitAllByTrainId(trainId).toDomain()
     }
 
     override suspend fun store(route: Route) {
-        withContext(Dispatchers.IO) {
-            routeDao.insert(route.domainToEntity())
-        }
+        routeDao.insert(route.domainToEntity())
     }
 
 }

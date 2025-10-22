@@ -36,8 +36,8 @@ class SyncScheduleJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val syncSchedule by injectLazy<SyncSchedule>()
     private val getStation by injectLazy<GetStation>()
+    private val syncSchedule by injectLazy<SyncSchedule>()
     private val shouldSyncSchedule by injectLazy<ShouldSyncSchedule>()
 
     override suspend fun doWork(): Result {
@@ -69,7 +69,7 @@ class SyncScheduleJob(
      */
     private suspend fun syncAllFavoriteStations() {
         withContext(Dispatchers.IO) {
-            val favoriteStations = getStation.await(favorite = true)
+            val favoriteStations = getStation.awaitAll(favorite = true)
             val workManager = applicationContext.workManager
             favoriteStations.map { station ->
                 async {

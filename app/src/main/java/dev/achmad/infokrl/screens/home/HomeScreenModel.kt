@@ -65,14 +65,7 @@ class HomeScreenModel(
             initialValue = LocalDateTime.now()
         )
 
-    private val stations = getStation.subscribe()
-        .stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
-            initialValue = emptyList()
-        )
-
-    private val favoriteStations = getStation.subscribe(favorite = true)
+    private val favoriteStations = getStation.subscribeAll(favorite = true)
         .stateIn(
             scope = screenModelScope,
             started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
@@ -80,16 +73,15 @@ class HomeScreenModel(
         )
 
     val departureGroups = combine(
-        stations,
         favoriteStations,
         _filterFutureSchedulesOnly,
-    ) { stations, favorites, _ ->
+    ) { favorites, _ ->
         favorites
             .sortedBy { it.favoritePosition }
             .map { favorite ->
                 DepartureGroup(
                     station = favorite,
-                    scheduleGroup = createScheduleGroupFlow(favorite.id, stations)
+                    scheduleGroup = createScheduleGroupFlow(favorite.id)
                 )
             }
     }.distinctUntilChanged().stateIn(
@@ -100,25 +92,26 @@ class HomeScreenModel(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun createScheduleGroupFlow(
-        stationId: String,
-        stations: List<Station>
+        stationId: String
     ): StateFlow<List<DepartureGroup.ScheduleGroup>?> {
         val scheduleFlow = getScheduleFlow(stationId)
-
         return scheduleFlow
             .flatMapLatest { schedules ->
                 if (schedules.isNullOrEmpty()) {
                     return@flatMapLatest flowOf(null)
                 }
+                val destinationIds = schedules.map { it.stationDestinationId }.distinct()
+                val destinationStationsFlow = getStation.subscribeMultiple(destinationIds)
                 combine(
                     flowOf(schedules),
+                    destinationStationsFlow,
                     tick,
                     _filterFutureSchedulesOnly,
-                ) { currentSchedules, time, filterFutureOnly ->
+                ) { currentSchedules, destinationStations, time, filterFutureOnly ->
                     withContext(Dispatchers.Default) {
                         computeScheduleGroups(
                             schedules = currentSchedules,
-                            stations = stations,
+                            stations = destinationStations,
                             currentTime = time ?: LocalDateTime.now(),
                             filterFutureOnly = filterFutureOnly
                         )

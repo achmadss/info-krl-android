@@ -38,70 +38,63 @@ class StationRepositoryImpl(
             .flowOn(Dispatchers.IO)
     }
 
+    override fun subscribeMultiple(ids: List<String>): Flow<List<Station>> {
+        return stationDao.subscribeMultiple(ids)
+            .map { it.toDomain() }
+            .distinctUntilChanged()
+            .flowOn(Dispatchers.IO)
+    }
+
     override suspend fun awaitAll(favorite: Boolean?): List<Station> {
-        return withContext(Dispatchers.IO) {
-            stationDao.awaitAll(favorite = favorite).map { it.toDomain() }
-        }
+        return stationDao.awaitAll(favorite = favorite).map { it.toDomain() }
     }
 
     override suspend fun awaitSingle(id: String): Station? {
-        return withContext(Dispatchers.IO) {
-            stationDao.awaitSingle(id)?.toDomain()
-        }
+        return stationDao.awaitSingle(id)?.toDomain()
     }
 
     override suspend fun fetch(): List<Station> {
-        return withContext(Dispatchers.IO) {
-            val response = api.getStations()
-            response.parseAs<BaseResponse<List<StationResponse>>>()
-                .data.map { it.toDomain() }
-        }
+        return api.getStations()
+            .parseAs<BaseResponse<List<StationResponse>>>()
+            .data.map { it.toDomain() }
     }
 
     override suspend fun store(stations: List<Station>) {
-        withContext(Dispatchers.IO) {
-            val stationUpdates = stations.map { it.toStationUpdate() }
-            stationDao.upsert(stationUpdates)
-        }
+        val stationUpdates = stations.map { it.toStationUpdate() }
+        stationDao.upsert(stationUpdates)
     }
 
     override suspend fun favorite(stationId: String) {
-        withContext(Dispatchers.IO) {
-            val station = stationDao.awaitSingle(stationId)?.toDomain()
-                ?: throw IllegalArgumentException("Station not found: $stationId")
+        val station = stationDao.awaitSingle(stationId)?.toDomain()
+            ?: throw IllegalArgumentException("Station not found: $stationId")
 
-            val currentFavorites = stationDao.awaitAll(favorite = true)
-            val nextPosition = currentFavorites
-                .mapNotNull { it.favoritePosition }
-                .maxOrNull()
-                ?.let { it + 1 }
-                ?: 0
+        val currentFavorites = stationDao.awaitAll(favorite = true)
+        val nextPosition = currentFavorites
+            .mapNotNull { it.favoritePosition }
+            .maxOrNull()
+            ?.let { it + 1 }
+            ?: 0
 
-            val updated = station.copy(
-                favorite = true,
-                favoritePosition = nextPosition
-            ).toStationUpdate()
-            stationDao.update(updated)
-        }
+        val updated = station.copy(
+            favorite = true,
+            favoritePosition = nextPosition
+        ).toStationUpdate()
+        stationDao.update(updated)
     }
 
     override suspend fun unfavorite(stationId: String) {
-        withContext(Dispatchers.IO) {
-            val station = stationDao.awaitSingle(stationId)?.toDomain()
-                ?: throw IllegalArgumentException("Station not found: $stationId")
-            val updated = station.copy(
-                favorite = false,
-                favoritePosition = null
-            ).toStationUpdate()
-            stationDao.update(updated)
-        }
+        val station = stationDao.awaitSingle(stationId)?.toDomain()
+            ?: throw IllegalArgumentException("Station not found: $stationId")
+        val updated = station.copy(
+            favorite = false,
+            favoritePosition = null
+        ).toStationUpdate()
+        stationDao.update(updated)
     }
 
     override suspend fun update(stations: List<Station>) {
-        withContext(Dispatchers.IO) {
-            val updates = stations.map { it.toStationUpdate() }
-            stationDao.update(updates)
-        }
+        val updates = stations.map { it.toStationUpdate() }
+        stationDao.update(updates)
     }
 
 }

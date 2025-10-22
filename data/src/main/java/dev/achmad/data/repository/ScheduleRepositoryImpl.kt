@@ -40,31 +40,25 @@ class ScheduleRepositoryImpl(
     }
 
     override suspend fun fetch(stationId: String): List<Schedule> {
-        return withContext(Dispatchers.IO) {
-            val response = api.getScheduleByStationId(stationId)
-            val data = response.parseAs<BaseResponse<List<ScheduleResponse>>>()
-            if (data.metadata.success == false) {
-                throw Exception(data.metadata.message)
-            }
-            if (data.data.isEmpty()) {
-                throw Exception("data is empty")
-            }
-            data.data.map { it.responseToEntity().toDomain() }
-                .filter { !it.trainId.contains("/") }
+        val response = api.getScheduleByStationId(stationId)
+        val data = response.parseAs<BaseResponse<List<ScheduleResponse>>>()
+        if (data.metadata.success == false) {
+            throw Exception(data.metadata.message)
         }
+        if (data.data.isEmpty()) {
+            throw Exception("data is empty")
+        }
+        return data.data.map { it.responseToEntity().toDomain() }
+            .filter { !it.trainId.contains("/") }
     }
 
     override suspend fun awaitAll(stationId: String): List<Schedule> {
-        return withContext(Dispatchers.IO) {
-            scheduleDao.awaitAllByStationId(stationId).toDomain()
-        }
+        return scheduleDao.awaitAllByStationId(stationId).toDomain()
     }
 
     override suspend fun store(schedules: List<Schedule>) {
-        withContext(Dispatchers.IO) {
-            val scheduleEntities = schedules.map { it.domainToEntity() }
-            scheduleDao.insert(scheduleEntities)
-        }
+        val scheduleEntities = schedules.map { it.domainToEntity() }
+        scheduleDao.insert(scheduleEntities)
     }
 
 }
