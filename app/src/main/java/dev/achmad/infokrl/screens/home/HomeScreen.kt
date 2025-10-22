@@ -48,36 +48,7 @@ object HomeScreen: Screen {
             CompositionLocalProvider(LocalNavigator provides navigator) {
                 Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            TABS
-                                .fastForEach { tab ->
-                                    val selected = tabNavigator.current::class == tab::class
-                                    NavigationBarItem(
-                                        selected = selected,
-                                        onClick = {
-                                            if (!selected) {
-                                                tabNavigator.current = tab
-                                            }
-                                        },
-                                        icon = {
-                                            tab.options.icon?.let { icon ->
-                                                Icon(
-                                                    painter = icon,
-                                                    contentDescription = null
-                                                )
-                                            }
-                                        },
-                                        label = {
-                                            Text(
-                                                text = tab.options.title,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                            )
-                                        }
-                                    )
-                                }
-                        }
+                        HomeNavigationBar(tabNavigator)
                     }
                 ) { contentPadding ->
                     Box(
@@ -102,6 +73,39 @@ object HomeScreen: Screen {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun HomeNavigationBar(tabNavigator: TabNavigator) {
+        NavigationBar {
+            TABS.fastForEach { tab ->
+                val selected = tabNavigator.current::class == tab::class
+                NavigationBarItem(
+                    selected = selected,
+                    onClick = {
+                        if (!selected) {
+                            tabNavigator.current = tab
+                        }
+                    },
+                    icon = {
+                        tab.options.icon?.let { icon ->
+                            Icon(
+                                painter = icon,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                    label = {
+                        Text(
+                            text = tab.options.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                )
             }
         }
     }
