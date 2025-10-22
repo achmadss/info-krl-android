@@ -1,5 +1,6 @@
 package dev.achmad.infokrl.screens.timeline
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,18 +28,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -55,10 +60,13 @@ import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.etaString
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
+import dev.achmad.infokrl.work.SyncRouteJob
+import kotlinx.coroutines.CoroutineScope
 
 data class TimelineScreen(
     private val trainId: String,
     private val lineColor: String? = null,
+    val onReturn: (() -> Unit)? = null
 ) : Screen {
 
     @Composable
@@ -70,9 +78,18 @@ data class TimelineScreen(
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
         val timelines by screenModel.timelineGroup.collectAsState()
 
+        BackHandler {
+            onReturn?.invoke()
+            navigator.pop()
+        }
+
         TimelineScreen(
-            onNavigateUp = { navigator.pop() },
+            onNavigateUp = {
+                onReturn?.invoke()
+                navigator.pop()
+            },
             onRefresh = { screenModel.refresh() },
+            syncScope = screenModel.screenModelScope,
             is24Hour = is24Hour,
             trainId = trainId,
             lineColor = lineColor,
@@ -87,11 +104,24 @@ data class TimelineScreen(
 private fun TimelineScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit,
+    syncScope: CoroutineScope,
     is24Hour: Boolean,
     trainId: String,
     lineColor: String? = null,
     timelines: TimelineGroup?
 ) {
+    val applicationContext = LocalContext.current.applicationContext
+
+    val syncState by remember(trainId) {
+        SyncRouteJob.subscribeState(
+            context = applicationContext,
+            scope = syncScope,
+            trainId = trainId
+        )
+    }.collectAsState(initial = null)
+
+    val isRefreshing = syncState?.isFinished?.not() == true
+
     Scaffold(
         topBar = {
             Surface(
@@ -106,10 +136,12 @@ private fun TimelineScreen(
     ) { contentPadding ->
         val lazyListState = rememberLazyListState()
 
-        Box(
+        PullToRefreshBox(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(contentPadding)
+                .padding(contentPadding),
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
         ) {
             when {
                 timelines?.currentRoute?.stops?.isEmpty() == true -> {
@@ -202,14 +234,6 @@ private fun TimelineScreen(
                         }
                     }
                 }
-                else -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        androidx.compose.material3.CircularProgressIndicator()
-                    }
-                }
             }
         }
     }
@@ -269,7 +293,7 @@ fun TimelineNode(
                 fontWeight = textWeight
             ),
             modifier = Modifier
-                .width(60.dp)
+                .width(64.dp)
                 .offset(y = if (!isTrainAtStation) (-2).dp else 2.dp),
             color = textColor
         )

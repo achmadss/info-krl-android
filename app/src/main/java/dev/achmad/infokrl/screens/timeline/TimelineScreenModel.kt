@@ -26,6 +26,10 @@ class TimelineScreenModel(
     private val getRoute: GetRoute = inject(),
 ): ScreenModel {
 
+    init {
+        fetchRoute(trainId)
+    }
+
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .stateIn(
             scope = screenModelScope,
@@ -44,10 +48,7 @@ class TimelineScreenModel(
         route
     ) { tickValue, currentRoute ->
         when {
-            currentRoute == null -> {
-                fetchRoute(trainId)
-                null
-            }
+            currentRoute == null -> { null }
             else -> {
                 TimelineGroup(
                     currentRoute = currentRoute,

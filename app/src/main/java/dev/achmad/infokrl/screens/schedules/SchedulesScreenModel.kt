@@ -1,5 +1,8 @@
 package dev.achmad.infokrl.screens.schedules
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
@@ -26,6 +29,7 @@ private const val fetchScheduleFinishDelay = 0L
 data class ScheduleGroup(
     val originStation: Station,
     val destinationStation: Station,
+    val currentTime: LocalDateTime,
     val schedules: List<UISchedule>,
 ) {
     data class UISchedule(
@@ -40,6 +44,8 @@ class SchedulesScreenModel(
     private val getSchedule: GetSchedule = inject(),
     private val getStation: GetStation = inject(),
 ): ScreenModel {
+
+    var backFromTimeline by mutableStateOf(false)
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
 
@@ -58,7 +64,7 @@ class SchedulesScreenModel(
         getScheduleFlow(originStationId),
         getStationFlow(originStationId),
         getStationFlow(destinationStationId),
-    ) { _, schedules, originStation, destinationStation ->
+    ) { tickValue, schedules, originStation, destinationStation ->
         when {
             schedules == null -> null
             originStation == null -> null
@@ -83,6 +89,7 @@ class SchedulesScreenModel(
                 ScheduleGroup(
                     originStation = originStation,
                     destinationStation = destinationStation,
+                    currentTime = tickValue ?: LocalDateTime.now(),
                     schedules = filteredSchedules,
                 )
             }
@@ -111,7 +118,7 @@ class SchedulesScreenModel(
         )
     }
 
-    private fun fetchSchedule() {
+    fun fetchSchedule() {
         screenModelScope.launch(Dispatchers.IO) {
             SyncScheduleJob.start(
                 context = injectContext(),

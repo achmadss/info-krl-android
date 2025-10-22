@@ -24,17 +24,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Train
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -68,6 +68,8 @@ import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
+import dev.achmad.infokrl.work.SyncScheduleJob
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 
 private const val BLINK_DELAY = 300L
@@ -94,16 +96,25 @@ data class SchedulesScreen(
 
         SchedulesScreen(
             onNavigateUp = {
+                screenModel.backFromTimeline = false
                 navigator.pop()
+            },
+            onRefresh = {
+                screenModel.fetchSchedule()
             },
             onClickSchedule = { trainId, lineColor ->
                 navigator.push(TimelineScreen(
                     trainId = trainId,
-                    lineColor = lineColor
+                    lineColor = lineColor,
+                    onReturn = {
+                        screenModel.backFromTimeline = true
+                    }
                 ))
             },
+            syncScope = screenModel.screenModelScope,
             focusedScheduleId = scheduleId,
             schedules = schedules,
+            isFromTimeline = screenModel.backFromTimeline,
             is24Hour = is24Hour,
         )
     }
@@ -116,11 +127,26 @@ private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
     onClickSchedule: (String, String?) -> Unit = { _, _ -> },
+    syncScope: CoroutineScope,
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
+    isFromTimeline: Boolean,
     is24Hour: Boolean,
 ) {
     val colorScheme = LocalColorScheme.current
+    val applicationContext = LocalContext.current.applicationContext
+
+    val syncState by remember(schedules?.originStation?.id) {
+        schedules?.originStation?.id?.let { stationId ->
+            SyncScheduleJob.subscribeState(
+                context = applicationContext,
+                scope = syncScope,
+                stationId = stationId
+            )
+        }
+    }?.collectAsState(initial = null) ?: remember { mutableStateOf(null) }
+    val isRefreshing = syncState?.isFinished?.not() == true
+
     Scaffold(
         topBar = {
             Surface(
@@ -185,7 +211,9 @@ private fun SchedulesScreen(
         var isScrollComplete by remember { mutableStateOf(focusedScheduleId == null) }
         var blinkScheduleId by remember { mutableStateOf(focusedScheduleId) }
 
-        Box(
+        PullToRefreshBox(
+            isRefreshing = schedules == null || isRefreshing,
+            onRefresh = onRefresh,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(contentPadding)
@@ -194,8 +222,11 @@ private fun SchedulesScreen(
                 schedules?.schedules?.isEmpty() == true -> {
                     // Empty state
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             modifier = Modifier.size(36.dp),
@@ -210,70 +241,48 @@ private fun SchedulesScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             textAlign = TextAlign.Center,
                         )
-                        IconButton(
-                            onClick = {
-                              onRefresh()
-                            },
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.action_refresh)
-                            )
-                        }
                     }
                 }
-                else -> {
-                    if (schedules != null) {
-                        LazyColumn(
-                            state = lazyListState,
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            itemsIndexed(
-                                items = schedules.schedules,
-                                key = { _, item -> item.schedule.id }
-                            ) { index, uiSchedule ->
-                                ScheduleDetailItem(
-                                    index = index,
-                                    lastIndex = schedules.schedules.lastIndex,
-                                    is24Hour = is24Hour,
-                                    uiSchedule = uiSchedule,
-                                    onClick = {
-                                        onClickSchedule(
-                                            uiSchedule.schedule.trainId,
-                                            uiSchedule.schedule.color
-                                        )
-                                    },
-                                    shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
-                                    onBlinkComplete = { blinkScheduleId = null }
-                                )
-                            }
-                            item {
-                                HorizontalDivider()
-                            }
+                schedules != null -> {
+                    LazyColumn(
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        itemsIndexed(
+                            items = schedules.schedules,
+                            key = { _, item -> item.schedule.id }
+                        ) { index, uiSchedule ->
+                            ScheduleDetailItem(
+                                index = index,
+                                lastIndex = schedules.schedules.lastIndex,
+                                is24Hour = is24Hour,
+                                isFromTimeline = isFromTimeline,
+                                isPassed = uiSchedule.schedule.departsAt.isBefore(schedules.currentTime),
+                                uiSchedule = uiSchedule,
+                                onClick = {
+                                    onClickSchedule(
+                                        uiSchedule.schedule.trainId,
+                                        uiSchedule.schedule.color
+                                    )
+                                },
+                                shouldBlink = uiSchedule.schedule.id == blinkScheduleId,
+                                onBlinkComplete = { blinkScheduleId = null }
+                            )
                         }
-
-                        if (focusedScheduleId != null) {
-                            LaunchedEffect(focusedScheduleId) {
-                                val index = schedules.schedules.indexOfFirst {
-                                    it.schedule.id == focusedScheduleId
-                                }
-                                if (index != -1) {
-                                    lazyListState.scrollToItem(index)
-                                }
-                                isScrollComplete = true
-                            }
+                        item {
+                            HorizontalDivider()
                         }
                     }
-                    if (schedules == null || !isScrollComplete) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MaterialTheme.colorScheme.background)
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                            )
+
+                    if (focusedScheduleId != null && !isScrollComplete && !isFromTimeline) {
+                        LaunchedEffect(focusedScheduleId) {
+                            val index = schedules.schedules.indexOfFirst {
+                                it.schedule.id == focusedScheduleId
+                            }
+                            if (index != -1) {
+                                lazyListState.scrollToItem(index)
+                            }
+                            isScrollComplete = true
                         }
                     }
                 }
@@ -287,6 +296,8 @@ private fun ScheduleDetailItem(
     index: Int,
     lastIndex: Int,
     is24Hour: Boolean,
+    isFromTimeline: Boolean,
+    isPassed: Boolean = false,
     uiSchedule: ScheduleGroup.UISchedule,
     onClick: () -> Unit = {},
     shouldBlink: Boolean = false,
@@ -299,7 +310,7 @@ private fun ScheduleDetailItem(
     var blinkState by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        if (shouldBlink) {
+        if (shouldBlink && !isFromTimeline) {
             onBlinkComplete()
             repeat(2) {
                 blinkState = 1
@@ -314,7 +325,7 @@ private fun ScheduleDetailItem(
     val backgroundColor by animateColorAsState(
         targetValue = if (blinkState == 1) {
             MaterialTheme.colorScheme.surfaceBright.copy(alpha = 0.3f)
-        } else {
+        }  else {
             MaterialTheme.colorScheme.background
         },
         animationSpec = tween(durationMillis = 500),
@@ -325,13 +336,13 @@ private fun ScheduleDetailItem(
         modifier = Modifier
             .background(backgroundColor)
             .clickable(
-                onClick = onClick
+                onClick = onClick,
             )
     ) {
         Box(
             modifier = Modifier
                 .height(height)
-                .background(color = color)
+                .background(color = if (isPassed) color.copy(alpha = 0.3f) else color)
                 .padding(start = 6.dp),
         )
         Column(
@@ -352,7 +363,11 @@ private fun ScheduleDetailItem(
                     Text(
                         text = stringResource(R.string.departs_at),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = if (isPassed) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        },
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
@@ -366,12 +381,21 @@ private fun ScheduleDetailItem(
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold
                             ),
+                            color = if (isPassed) {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
                         )
                         Text(
                             modifier = Modifier.offset(y = (-2).dp),
                             text = uiSchedule.eta,
                             style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.outline,
+                            color = if (isPassed) {
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
                         )
                     }
 
@@ -379,6 +403,11 @@ private fun ScheduleDetailItem(
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
+                    tint = if (isPassed) {
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 )
             }
 
@@ -397,13 +426,21 @@ private fun ScheduleDetailItem(
                         modifier = Modifier.size(16.dp),
                         imageVector = Icons.Default.Train,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline,
+                        tint = if (isPassed) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = schedule.trainId,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.outline,
+                        color = if (isPassed) {
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        },
                     )
                 }
             }
