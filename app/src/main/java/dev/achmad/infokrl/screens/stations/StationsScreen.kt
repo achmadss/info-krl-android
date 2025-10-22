@@ -82,7 +82,8 @@ object StationsScreen: Screen {
         StationsScreen(
             loading = when {
                 syncState == WorkInfo.State.ENQUEUED ||
-                        syncState == WorkInfo.State.RUNNING -> true
+                syncState == WorkInfo.State.RUNNING ||
+                stations == null -> true
                 else -> false
             },
             error = when(syncState) {
@@ -101,7 +102,7 @@ object StationsScreen: Screen {
                 navigator.pop()
             },
             onTryAgain = {
-                SyncStationJob.start(appContext)
+                screenModel.fetchStations()
             },
             onReorder = { station, newPosition ->
                 screenModel.reorderFavorite(station, newPosition)

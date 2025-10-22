@@ -1,8 +1,10 @@
 package dev.achmad.domain.station.interactor
 
 import dev.achmad.domain.station.repository.StationRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 class HasFetchedStations(
     private val stationRepository: StationRepository
@@ -13,6 +15,8 @@ class HasFetchedStations(
     }
 
     suspend fun await(): Boolean {
-        return stationRepository.awaitAll().isNotEmpty()
+        return withContext(Dispatchers.IO) {
+            stationRepository.awaitAll().isNotEmpty()
+        }
     }
 }

@@ -104,7 +104,7 @@ class SchedulesScreenModel(
     }
 
     private fun getStationFlow(stationId: String): StateFlow<Station?> {
-        return getStation.subscribe(stationId).stateIn(
+        return getStation.subscribeSingle(stationId).stateIn(
             scope = screenModelScope,
             started = SharingStarted.Eagerly,
             initialValue = null
