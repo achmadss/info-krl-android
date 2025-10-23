@@ -133,7 +133,9 @@ class SchedulesTabScreenModel(
             val destinationStation = stations.firstOrNull { it.id == destinationId }
             destinationStation?.let {
 
-                val sortedSchedules = schedulesForDest.sortedBy { it.departsAt }
+                val sortedSchedules = schedulesForDest
+                    .filter { it.departsAt.isAfter(currentTime) }
+                    .sortedBy { it.departsAt }
                 val uiSchedules = sortedSchedules.map { schedule ->
                     DepartureGroup.ScheduleGroup.UISchedule(
                         schedule = schedule,

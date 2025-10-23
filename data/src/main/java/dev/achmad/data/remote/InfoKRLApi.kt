@@ -12,25 +12,25 @@ class InfoKRLApi(
 ) {
     suspend fun getStations(): Response {
         return networkHelper.client.newCall(
-            GET(preference.baseUrl().get() + "/v1/station/")
+            GET(preference.baseUrl().get() + "/v1/krl/station/")
         ).await()
     }
 
     suspend fun getStationById(id: String): Response {
         return networkHelper.client.newCall(
-            GET(preference.baseUrl().get() + "/v1/station/$id")
+            GET(preference.baseUrl().get() + "/v1/krl/station/$id")
         ).await()
     }
 
     suspend fun getScheduleByStationId(stationId: String): Response {
         return networkHelper.client.newCall(
-            GET(preference.baseUrl().get() + "/v1/schedule/$stationId")
+            GET(preference.baseUrl().get() + "/v1/krl/schedule/$stationId")
         ).await()
     }
 
     suspend fun getRouteByTrainId(trainId: String): Response {
         return networkHelper.client.newCall(
-            GET(preference.baseUrl().get() + "/v1/route/$trainId")
+            GET(preference.baseUrl().get() + "/v1/krl/route/$trainId")
         ).await()
     }
 }
