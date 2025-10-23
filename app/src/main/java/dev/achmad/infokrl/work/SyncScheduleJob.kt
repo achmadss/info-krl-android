@@ -13,7 +13,6 @@ import androidx.work.workDataOf
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.domain.schedule.interactor.SyncSchedule
-import dev.achmad.domain.schedule.interactor.ShouldSyncSchedule
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +37,6 @@ class SyncScheduleJob(
 
     private val getStation by injectLazy<GetStation>()
     private val syncSchedule by injectLazy<SyncSchedule>()
-    private val shouldSyncSchedule by injectLazy<ShouldSyncSchedule>()
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
@@ -49,7 +47,7 @@ class SyncScheduleJob(
                 if (stationId.isNullOrEmpty()) {
                     syncAllFavoriteStations()
                 } else {
-                    if (shouldSyncSchedule.await(stationId)) {
+                    if (syncSchedule.shouldSync(stationId)) {
                         syncSingleStation(stationId)
                     }
                 }
@@ -73,7 +71,7 @@ class SyncScheduleJob(
             val workManager = applicationContext.workManager
             favoriteStations.map { station ->
                 async {
-                    if (shouldSyncSchedule.await(station.id) && !workManager.isRunning(station.id)) {
+                    if (syncSchedule.shouldSync(station.id) && !workManager.isRunning(station.id)) {
                         when (val result = syncSchedule.await(station.id)) {
                             is SyncSchedule.Result.Error -> {
                                 result.error.printStackTrace()
@@ -100,7 +98,7 @@ class SyncScheduleJob(
 
     companion object {
 
-        private const val TAG = "RefreshSchedule"
+        private const val TAG = "SyncSchedule"
         private const val KEY_STATION_ID = "KEY_STATION_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 

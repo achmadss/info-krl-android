@@ -33,4 +33,16 @@ class InfoKRLApi(
             GET(preference.baseUrl().get() + "/v1/krl/route/$trainId")
         ).await()
     }
+
+    suspend fun getFare(
+        originStationId: String,
+        destinationStationId: String,
+    ): Response {
+        return networkHelper.client.newCall(
+            GET(
+                preference.baseUrl().get() +
+                "/v1/krl/fare?stationfrom=$originStationId&stationto=$destinationStationId"
+            )
+        ).await()
+    }
 }

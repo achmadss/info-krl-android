@@ -1,16 +1,19 @@
 package dev.achmad.infokrl.di
 
+import dev.achmad.data.repository.FareRepositoryImpl
 import dev.achmad.data.repository.RouteRepositoryImpl
 import dev.achmad.data.repository.ScheduleRepositoryImpl
 import dev.achmad.data.repository.StationRepositoryImpl
+import dev.achmad.domain.fare.interactor.GetFare
+import dev.achmad.domain.fare.interactor.SyncFare
+import dev.achmad.domain.fare.interactor.WipeFareTables
+import dev.achmad.domain.fare.repository.FareRepository
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.route.interactor.GetRoute
-import dev.achmad.domain.route.interactor.ShouldSyncRoute
 import dev.achmad.domain.route.interactor.SyncRoute
 import dev.achmad.domain.route.interactor.WipeRouteTables
 import dev.achmad.domain.route.repository.RouteRepository
 import dev.achmad.domain.schedule.interactor.GetSchedule
-import dev.achmad.domain.schedule.interactor.ShouldSyncSchedule
 import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.schedule.interactor.WipeScheduleTables
 import dev.achmad.domain.schedule.repository.ScheduleRepository
@@ -34,15 +37,18 @@ val domainModule = module {
 
     single<ScheduleRepository> { ScheduleRepositoryImpl(get(), get()) }
     factory { GetSchedule(get()) }
-    factory { ShouldSyncSchedule(get()) }
     factory { SyncSchedule(get()) }
     factory { WipeScheduleTables(get()) }
 
     single<RouteRepository> { RouteRepositoryImpl(get(), get()) }
     factory { GetRoute(get()) }
-    factory { ShouldSyncRoute(get()) }
     factory { SyncRoute(get()) }
     factory { WipeRouteTables(get()) }
+
+    single<FareRepository> { FareRepositoryImpl(get(), get()) }
+    factory { GetFare(get()) }
+    factory { SyncFare(get()) }
+    factory { WipeFareTables(get()) }
 
     single<ApplicationPreference> { ApplicationPreference(get()) }
 }

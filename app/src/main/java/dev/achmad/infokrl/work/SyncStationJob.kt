@@ -48,7 +48,7 @@ class SyncStationJob(
     }
 
     companion object {
-        private const val WORK_NAME = "RefreshStation"
+        private const val WORK_NAME = "SyncStation"
 
         fun subscribeState(
             context: Context,

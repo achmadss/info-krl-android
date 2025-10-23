@@ -10,7 +10,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.domain.route.interactor.SyncRoute
-import dev.achmad.domain.route.interactor.ShouldSyncRoute
 import dev.achmad.infokrl.util.isRunning
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +28,6 @@ class SyncRouteJob(
 ): CoroutineWorker(context, workerParams) {
 
     private val syncRoute by injectLazy<SyncRoute>()
-    private val shouldSyncRoute by injectLazy<ShouldSyncRoute>()
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
@@ -38,7 +36,7 @@ class SyncRouteJob(
                     ?: throw IllegalArgumentException("Train ID cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
 
-                if (shouldSyncRoute.await(trainId)) {
+                if (syncRoute.shouldSync(trainId)) {
                     when (val result = syncRoute.await(trainId)) {
                         is SyncRoute.Result.Error -> {
                             if (result.error !is NotFoundException) {
@@ -60,7 +58,7 @@ class SyncRouteJob(
 
     companion object {
 
-        private const val TAG = "RefreshRoute"
+        private const val TAG = "SyncRoute"
         private const val KEY_TRAIN_ID = "KEY_TRAIN_ID"
         private const val KEY_DELAY = "KEY_DELAY"
 
