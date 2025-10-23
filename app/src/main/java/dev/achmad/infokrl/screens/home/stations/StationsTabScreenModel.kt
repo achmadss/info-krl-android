@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.stations
+package dev.achmad.infokrl.screens.home.stations
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class StationsScreenModel(
+class StationsTabScreenModel(
     private val getStation: GetStation = inject(),
     private val toggleFavoriteStation: ToggleFavoriteStation = inject(),
     private val reorderFavoriteStations: ReorderFavoriteStations = inject(),

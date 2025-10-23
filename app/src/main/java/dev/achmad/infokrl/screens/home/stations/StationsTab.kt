@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.screens.stations
+package dev.achmad.infokrl.screens.home.stations
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -21,7 +21,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,9 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import cafe.adriel.voyager.core.screen.Screen
-import cafe.adriel.voyager.navigator.LocalNavigator
-import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
+import cafe.adriel.voyager.navigator.tab.Tab
+import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBarTitle
@@ -60,14 +63,29 @@ import dev.achmad.infokrl.work.SyncStationJob
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-object StationsScreen: Screen {
-    private fun readResolve(): Any = StationsScreen
+object StationsTab: Tab {
+    private fun readResolve(): Any = StationsTab
+
+    override val options: TabOptions
+        @Composable
+        get() {
+            val isSelected = LocalTabNavigator.current.current.key == key
+            return TabOptions(
+                index = 2u,
+                title = "Stations", // TODO string resource
+                icon = rememberVectorPainter(
+                    when {
+                        isSelected -> Icons.Default.Train
+                        else -> Icons.Outlined.Train
+                    }
+                )
+            )
+        }
 
     @Composable
     override fun Content() {
-        val navigator = LocalNavigator.currentOrThrow
         val appContext = LocalContext.current.applicationContext
-        val screenModel = rememberScreenModel { StationsScreenModel() }
+        val screenModel = rememberScreenModel { StationsTabScreenModel() }
         val searchQuery by screenModel.searchQuery.collectAsState()
         val stations by screenModel.stations.collectAsState()
         val syncState by SyncStationJob.subscribeState(
@@ -79,7 +97,7 @@ object StationsScreen: Screen {
             screenModel.search(null)
         }
 
-        StationsScreen(
+        StationsTab(
             loading = when {
                 syncState == WorkInfo.State.ENQUEUED ||
                 syncState == WorkInfo.State.RUNNING ||
@@ -98,9 +116,6 @@ object StationsScreen: Screen {
             onTogglePin = { station ->
                 screenModel.toggleFavorite(station)
             },
-            onNavigateUp = {
-                navigator.pop()
-            },
             onTryAgain = {
                 screenModel.fetchStations()
             },
@@ -113,14 +128,13 @@ object StationsScreen: Screen {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StationsScreen(
+private fun StationsTab(
     loading: Boolean,
     error: Boolean,
     stations: List<Station>?,
     searchQuery: String?,
     onChangeSearchQuery: (String?) -> Unit,
     onTogglePin: (Station) -> Unit,
-    onNavigateUp: () -> Unit,
     onTryAgain: () -> Unit,
     onReorder: (Station, Int) -> Unit,
     modifier: Modifier = Modifier
@@ -134,7 +148,6 @@ private fun StationsScreen(
                     titleContent = { AppBarTitle(stringResource(R.string.stations)) },
                     searchQuery = searchQuery,
                     onChangeSearchQuery = onChangeSearchQuery,
-                    navigateUp = { onNavigateUp() },
                 )
             }
         }

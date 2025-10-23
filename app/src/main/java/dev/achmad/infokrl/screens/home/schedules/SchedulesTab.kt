@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.Train
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -86,8 +85,8 @@ import dev.achmad.infokrl.components.AppBarActions
 import dev.achmad.infokrl.components.AppBarTitle
 import dev.achmad.infokrl.components.SearchToolbar
 import dev.achmad.infokrl.components.TabText
+import dev.achmad.infokrl.screens.home.stations.StationsTab
 import dev.achmad.infokrl.screens.schedules.SchedulesScreen
-import dev.achmad.infokrl.screens.settings.SettingsScreen
 import dev.achmad.infokrl.theme.LocalColorScheme
 import dev.achmad.infokrl.theme.darkTheme
 import dev.achmad.infokrl.util.brighter
@@ -131,6 +130,7 @@ object SchedulesTab: Tab {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
+        val tabNavigator = LocalTabNavigator.current
         val screenModel = rememberScreenModel { SchedulesTabScreenModel() }
         val destinationGroups by screenModel.departureGroups.collectAsState()
         val focusedStationId by screenModel.focusedStationId.collectAsState()
@@ -154,7 +154,7 @@ object SchedulesTab: Tab {
                 screenModel.onTabFocused(stationId)
             },
             onClickAddStation = {
-                // TODO change tab to stations tab
+                tabNavigator.current = StationsTab
             },
             onClickStationDetail = { originStationId, destinationStationId, scheduleId ->
                 navigator.push(
@@ -267,7 +267,7 @@ private fun SchedulesTab(
 
             SearchToolbar(
                 titleContent = {
-                    AppBarTitle(stringResource(R.string.app_name))
+                    AppBarTitle("Schedules" /* TODO string resource */)
                 },
                 searchEnabled = searchEnabled ?: true,
                 searchQuery = searchQuery,
