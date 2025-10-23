@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.LinkIcon
@@ -84,7 +85,7 @@ private fun AboutScreen(
             item {
                 TextPreferenceWidget(
                     title = stringResource(R.string.version),
-                    subtitle ="",
+                    subtitle = BuildConfig.VERSION_NAME,
                     onPreferenceClick = onClickVersion
                 )
             }
@@ -98,12 +99,6 @@ private fun AboutScreen(
                 TextPreferenceWidget(
                     title = stringResource(R.string.credits),
                     onPreferenceClick = onClickCredits
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = stringResource(R.string.privacy_policy),
-                    onPreferenceClick = onClickPrivacyPolicy
                 )
             }
             item { HorizontalDivider() }
