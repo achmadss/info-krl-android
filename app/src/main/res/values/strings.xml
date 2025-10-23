@@ -26,7 +26,7 @@
     <!-- TimelineScreen -->
     <string name="train">Train</string>
 
-    <!-- StationsScreen -->
+    <!-- StationsTab -->
     <string name="stations">Stations</string>
     <string name="no_station_found">No station found for\n\"%1$s\"</string>
     <string name="error_something_wrong">Something wrong happened</string>
@@ -45,9 +45,13 @@
     <string name="theme_system">Follow system</string>
     <string name="language">Language</string>
     <string name="time_format_24h">24-hour format</string>
+
+    <!-- AboutScreen -->
     <string name="about">About</string>
     <string name="version">Version</string>
+    <string name="changelog">Changelog</string>
     <string name="credits">Credits &amp; Licenses</string>
+    <string name="privacy_policy">Privacy Policy</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Train Icon</string>

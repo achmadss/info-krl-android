@@ -21,7 +21,10 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.TabNavigator
+import dev.achmad.infokrl.screens.home.more.MoreTab
 import dev.achmad.infokrl.screens.home.schedules.SchedulesTab
+import dev.achmad.infokrl.screens.home.stations.StationsTab
+import dev.achmad.infokrl.screens.home.trip.TripTab
 import soup.compose.material.motion.animation.materialFadeThroughIn
 import soup.compose.material.motion.animation.materialFadeThroughOut
 
@@ -35,7 +38,10 @@ object HomeScreen: Screen {
     private const val TabNavigatorKey = "HomeTabs"
 
     private val TABS = listOf(
-        SchedulesTab, // TODO add more tabs
+        SchedulesTab,
+        StationsTab,
+        TripTab,
+        MoreTab
     )
 
     @Composable

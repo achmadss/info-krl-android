@@ -26,7 +26,7 @@
     <!-- TimelineScreen -->
     <string name="train">Kereta</string>
 
-    <!-- StationsScreen -->
+    <!-- StationsTab -->
     <string name="stations">Stasiun</string>
     <string name="no_station_found">Tidak ada stasiun yang ditemukan untuk\n\"%1$s\"</string>
     <string name="error_something_wrong">Terjadi kesalahan</string>
@@ -45,9 +45,13 @@
     <string name="theme_system">Mengikuti sistem</string>
     <string name="language">Bahasa</string>
     <string name="time_format_24h">Format 24 jam</string>
+
+    <!-- AboutScreen -->
     <string name="about">Tentang</string>
     <string name="version">Versi</string>
+    <string name="changelog">Riwayat Perubahan</string>
     <string name="credits">Kredit &amp; Lisensi</string>
+    <string name="privacy_policy">Kebijakan Privasi</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Ikon Kereta</string>
