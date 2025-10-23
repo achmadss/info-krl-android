@@ -59,4 +59,8 @@ class RouteRepositoryImpl(
         routeDao.insert(route.domainToEntity())
     }
 
+    override suspend fun deleteAll() {
+        routeDao.deleteAll()
+    }
+
 }

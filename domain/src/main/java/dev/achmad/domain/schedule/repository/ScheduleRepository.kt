@@ -12,4 +12,5 @@ interface ScheduleRepository {
     suspend fun fetch(stationId: String): List<Schedule>
     suspend fun store(schedules: List<Schedule>)
 
+    suspend fun deleteAll()
 }

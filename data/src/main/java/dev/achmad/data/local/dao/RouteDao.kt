@@ -50,4 +50,7 @@ interface RouteDao {
     @Delete
     suspend fun delete(routes: List<RouteEntity>)
 
+    @Query("DELETE FROM routes")
+    suspend fun deleteAll()
+
 }

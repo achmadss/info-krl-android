@@ -80,4 +80,7 @@ interface StationDao {
     @Upsert(entity = StationEntity::class)
     suspend fun upsert(stationUpdates: List<StationUpdate>)
 
+    @Query("DELETE FROM stations")
+    suspend fun deleteAll()
+
 }

@@ -5,6 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.model.rememberScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
@@ -16,19 +18,22 @@ import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.preference.Preference
 import dev.achmad.infokrl.components.preference.PreferenceScreen
+import dev.achmad.infokrl.screens.settings.credits.CreditsScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.infokrl.screens.settings.language.localeOptions
-import dev.achmad.infokrl.screens.settings.credits.CreditsScreen
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
+import kotlinx.coroutines.launch
 
 object SettingsScreen : Screen {
+    // TODO clear data button
+
     private fun readResolve(): Any = SettingsScreen
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-
+        val screenModel = rememberScreenModel { SettingsScreenModel() }
         val appPreference by injectLazy<ApplicationPreference>()
 
         PreferenceScreen(
@@ -40,7 +45,14 @@ object SettingsScreen : Screen {
             itemsProvider = {
                 listOf(
                     appearanceGroup(appPreference, navigator),
-                    aboutGroup(navigator)
+                    aboutGroup(navigator),
+                    dataGroup(
+                        onClickClearData = {
+                            screenModel.screenModelScope.launch {
+                                screenModel.wipeAllData()
+                            }
+                        }
+                    )
                 )
             },
         )
@@ -103,4 +115,21 @@ object SettingsScreen : Screen {
         )
     }
 
+    @Composable
+    private fun dataGroup(
+        onClickClearData: () -> Unit = {},
+    ): Preference {
+        return Preference.PreferenceGroup(
+            title = "Data", // TODO add string resource
+            preferenceItems = listOf(
+                Preference.PreferenceItem.TextPreference(
+                    title = "Clear Local Data",
+                    subtitle = "This action cannot be undone",
+                    onClick = {
+                        onClickClearData
+                    }
+                )
+            )
+        )
+    }
 }

@@ -19,4 +19,5 @@ interface StationRepository {
     suspend fun unfavorite(stationId: String)
     suspend fun update(stations: List<Station>)
 
+    suspend fun deleteAll()
 }

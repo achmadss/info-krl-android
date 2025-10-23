@@ -97,4 +97,7 @@ class StationRepositoryImpl(
         stationDao.update(updates)
     }
 
+    override suspend fun deleteAll() {
+        stationDao.deleteAll()
+    }
 }

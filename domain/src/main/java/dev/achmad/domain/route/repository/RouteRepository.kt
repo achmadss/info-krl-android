@@ -12,4 +12,5 @@ interface RouteRepository {
     suspend fun fetch(trainId: String): Route
     suspend fun store(route: Route)
 
+    suspend fun deleteAll()
 }

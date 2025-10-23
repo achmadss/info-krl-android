@@ -61,4 +61,8 @@ class ScheduleRepositoryImpl(
         scheduleDao.insert(scheduleEntities)
     }
 
+    override suspend fun deleteAll() {
+        scheduleDao.deleteAll()
+    }
+
 }
