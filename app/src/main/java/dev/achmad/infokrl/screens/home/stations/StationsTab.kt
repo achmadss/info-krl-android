@@ -105,7 +105,7 @@ object StationsTab: Tab {
                 else -> false
             },
             error = when(syncState) {
-                WorkInfo.State.FAILED, WorkInfo.State.BLOCKED, WorkInfo.State.CANCELLED -> true
+                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> true
                 else -> false
             },
             stations = stations,

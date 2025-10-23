@@ -25,13 +25,12 @@ class SyncStationJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val syncStation by injectLazy<SyncStation>()
-    private val hasFetchedStations by injectLazy<HasFetchedStations>()
-
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
             try {
+                val hasFetchedStations by injectLazy<HasFetchedStations>()
                 if (hasFetchedStations.await()) return@withContext Result.success()
+                val syncStation by injectLazy<SyncStation>()
                 when (val result = syncStation.await()) {
                     is SyncStation.Result.Success -> {
                         return@withContext Result.success()

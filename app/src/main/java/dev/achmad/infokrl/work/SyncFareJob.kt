@@ -28,8 +28,6 @@ class SyncFareJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val syncFare by injectLazy<SyncFare>()
-
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
             try {
@@ -38,6 +36,7 @@ class SyncFareJob(
                 val destinationStationId = inputData.getString(KEY_DESTINATION_STATION_ID)
                     ?: throw IllegalStateException("destinationStationId cannot be null")
 
+                val syncFare by injectLazy<SyncFare>()
                 if (syncFare.shouldSync(originStationId, destinationStationId)) {
                     syncFare.await(originStationId, destinationStationId)
                 }

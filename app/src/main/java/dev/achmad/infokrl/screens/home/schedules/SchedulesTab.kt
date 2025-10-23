@@ -98,6 +98,7 @@ import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 data class TabContent(
@@ -136,14 +137,6 @@ object SchedulesTab: Tab {
         val focusedStationId by screenModel.focusedStationId.collectAsState()
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
-
-        LaunchedEffect(destinationGroups) {
-            if (destinationGroups.isNotEmpty()) {
-                screenModel.fetchSchedules()
-                val initialStationId = focusedStationId ?: destinationGroups.firstOrNull()?.station?.id
-                initialStationId?.let { screenModel.onTabFocused(it) }
-            }
-        }
 
         SchedulesTab(
             syncScope = screenModel.screenModelScope,

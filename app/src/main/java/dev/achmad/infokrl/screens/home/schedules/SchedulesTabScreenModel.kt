@@ -85,6 +85,18 @@ class SchedulesTabScreenModel(
         initialValue = emptyList()
     )
 
+    init {
+        screenModelScope.launch {
+            departureGroups.collect {
+                if (it.isNotEmpty()) {
+                    fetchSchedules()
+                    val initialStationId = focusedStationId.value ?: it.firstOrNull()?.station?.id
+                    initialStationId?.let { onTabFocused(it) }
+                }
+            }
+        }
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun createScheduleGroupFlow(
         stationId: String

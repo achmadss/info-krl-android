@@ -35,20 +35,20 @@ class SyncScheduleJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val getStation by injectLazy<GetStation>()
-    private val syncSchedule by injectLazy<SyncSchedule>()
-
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
             try {
                 val stationId = inputData.getString(KEY_STATION_ID)
                 val delay = inputData.getLong(KEY_DELAY, 0)
 
+                val getStation by injectLazy<GetStation>()
+                val syncSchedule by injectLazy<SyncSchedule>()
+
                 if (stationId.isNullOrEmpty()) {
-                    syncAllFavoriteStations()
+                    syncAllFavoriteStations(getStation, syncSchedule)
                 } else {
                     if (syncSchedule.shouldSync(stationId)) {
-                        syncSingleStation(stationId)
+                        syncSingleStation(stationId, syncSchedule)
                     }
                 }
 
@@ -65,7 +65,10 @@ class SyncScheduleJob(
      * Syncs all favorite stations for the daily periodic sync.
      * Skips stations that already have a running worker to prevent duplicate work.
      */
-    private suspend fun syncAllFavoriteStations() {
+    private suspend fun syncAllFavoriteStations(
+        getStation: GetStation,
+        syncSchedule: SyncSchedule
+    ) {
         withContext(Dispatchers.IO) {
             val favoriteStations = getStation.awaitAll(favorite = true)
             val workManager = applicationContext.workManager
@@ -87,7 +90,10 @@ class SyncScheduleJob(
     /**
      * Syncs a single station schedule.
      */
-    private suspend fun syncSingleStation(stationId: String) {
+    private suspend fun syncSingleStation(
+        stationId: String,
+        syncSchedule: SyncSchedule,
+    ) {
         when (val result = syncSchedule.await(stationId)) {
             is SyncSchedule.Result.Error -> {
                 throw result.error

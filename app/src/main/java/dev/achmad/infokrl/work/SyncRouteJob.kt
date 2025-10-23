@@ -27,14 +27,13 @@ class SyncRouteJob(
     workerParams: WorkerParameters,
 ): CoroutineWorker(context, workerParams) {
 
-    private val syncRoute by injectLazy<SyncRoute>()
-
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.IO) {
             try {
                 val trainId = inputData.getString(KEY_TRAIN_ID)
                     ?: throw IllegalArgumentException("Train ID cannot be null")
                 val delay = inputData.getLong(KEY_DELAY, 0)
+                val syncRoute by injectLazy<SyncRoute>()
 
                 if (syncRoute.shouldSync(trainId)) {
                     when (val result = syncRoute.await(trainId)) {

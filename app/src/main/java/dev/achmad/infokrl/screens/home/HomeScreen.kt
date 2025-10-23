@@ -1,5 +1,6 @@
 package dev.achmad.infokrl.screens.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
@@ -51,6 +52,11 @@ object HomeScreen: Screen {
             tab = SchedulesTab,
             key = TabNavigatorKey,
         ) { tabNavigator ->
+
+            BackHandler(tabNavigator.current != SchedulesTab) {
+                tabNavigator.current = SchedulesTab
+            }
+
             CompositionLocalProvider(LocalNavigator provides navigator) {
                 Scaffold(
                     bottomBar = {
