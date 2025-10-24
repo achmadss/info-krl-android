@@ -3,12 +3,11 @@ package dev.achmad.infokrl.screens.home.stations
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
-import dev.achmad.core.di.util.injectContext
 import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.station.interactor.ReorderFavoriteStations
 import dev.achmad.domain.station.interactor.GetStation
+import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.interactor.ToggleFavoriteStation
-import dev.achmad.infokrl.work.SyncStationJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,12 +22,16 @@ import kotlinx.coroutines.withContext
 
 class StationsTabScreenModel(
     private val getStation: GetStation = inject(),
+    private val syncStation: SyncStation = inject(),
     private val toggleFavoriteStation: ToggleFavoriteStation = inject(),
     private val reorderFavoriteStations: ReorderFavoriteStations = inject(),
 ): ScreenModel {
 
     private val _searchQuery = MutableStateFlow<String?>(null)
     val searchQuery = _searchQuery.asStateFlow()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
 
     private val dbStations = getStation.subscribeAll()
         .map { stations ->
@@ -110,7 +113,17 @@ class StationsTabScreenModel(
 
     fun fetchStations() {
         screenModelScope.launch(Dispatchers.IO) {
-            SyncStationJob.start(injectContext())
+            _isRefreshing.value = true
+            try {
+                when (val result = syncStation.await()) {
+                    is SyncStation.Result.Error -> {
+                        result.error.printStackTrace()
+                    }
+                    else -> Unit
+                }
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 }

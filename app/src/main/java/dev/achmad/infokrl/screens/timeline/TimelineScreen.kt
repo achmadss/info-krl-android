@@ -60,8 +60,6 @@ import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.etaString
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.infokrl.work.SyncRouteJob
-import kotlinx.coroutines.CoroutineScope
 
 data class TimelineScreen(
     private val trainId: String,
@@ -77,6 +75,7 @@ data class TimelineScreen(
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
         val timelines by screenModel.timelineGroup.collectAsState()
+        val isRefreshing by screenModel.isRefreshing.collectAsState()
 
         BackHandler {
             onReturn?.invoke()
@@ -89,7 +88,7 @@ data class TimelineScreen(
                 navigator.pop()
             },
             onRefresh = { screenModel.refresh() },
-            syncScope = screenModel.screenModelScope,
+            isRefreshing = isRefreshing,
             is24Hour = is24Hour,
             trainId = trainId,
             lineColor = lineColor,
@@ -104,23 +103,12 @@ data class TimelineScreen(
 private fun TimelineScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit,
-    syncScope: CoroutineScope,
+    isRefreshing: Boolean,
     is24Hour: Boolean,
     trainId: String,
     lineColor: String? = null,
     timelines: TimelineGroup?
 ) {
-    val applicationContext = LocalContext.current.applicationContext
-
-    val syncState by remember(trainId) {
-        SyncRouteJob.subscribeState(
-            context = applicationContext,
-            scope = syncScope,
-            trainId = trainId
-        )
-    }.collectAsState(initial = null)
-
-    val isRefreshing = syncState?.isFinished?.not() == true
 
     Scaffold(
         topBar = {

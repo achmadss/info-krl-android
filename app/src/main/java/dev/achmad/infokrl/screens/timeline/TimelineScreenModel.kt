@@ -3,14 +3,15 @@ package dev.achmad.infokrl.screens.timeline
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
-import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.route.model.Route
 import dev.achmad.domain.route.interactor.GetRoute
-import dev.achmad.infokrl.work.SyncRouteJob
+import dev.achmad.domain.route.interactor.SyncRoute
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,7 +25,11 @@ data class TimelineGroup(
 class TimelineScreenModel(
     private val trainId: String,
     private val getRoute: GetRoute = inject(),
+    private val syncRoute: SyncRoute = inject(),
 ): ScreenModel {
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
 
     init {
         fetchRoute(trainId)
@@ -64,11 +69,14 @@ class TimelineScreenModel(
 
     private fun fetchRoute(trainId: String) {
         screenModelScope.launch(Dispatchers.IO) {
-            SyncRouteJob.start(
-                context = injectContext(),
-                trainId = trainId,
-                finishDelay = 500
-            )
+            _isRefreshing.value = true
+            try {
+                if (syncRoute.shouldSync(trainId)) {
+                    syncRoute.await(trainId)
+                }
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 

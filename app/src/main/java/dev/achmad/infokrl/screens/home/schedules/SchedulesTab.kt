@@ -47,7 +47,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +59,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -69,9 +67,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import androidx.work.WorkInfo
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
@@ -94,11 +90,8 @@ import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.infokrl.work.SyncScheduleJob
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 data class TabContent(
@@ -135,13 +128,14 @@ object SchedulesTab: Tab {
         val screenModel = rememberScreenModel { SchedulesTabScreenModel() }
         val destinationGroups by screenModel.departureGroups.collectAsState()
         val focusedStationId by screenModel.focusedStationId.collectAsState()
+        val isRefreshing by screenModel.isRefreshing.collectAsState()
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
 
         SchedulesTab(
-            syncScope = screenModel.screenModelScope,
             departureGroups = destinationGroups,
             focusedStationId = focusedStationId,
+            isRefreshing = isRefreshing,
             is24Hour = is24Hour,
             onTabFocused = { stationId ->
                 screenModel.onTabFocused(stationId)
@@ -158,8 +152,8 @@ object SchedulesTab: Tab {
                     )
                 )
             },
-            onRefreshStation = { stationId ->
-                screenModel.fetchScheduleForStation(stationId)
+            onRefreshAll = {
+                screenModel.refreshAllStations()
             },
         )
     }
@@ -169,38 +163,26 @@ object SchedulesTab: Tab {
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
 private fun SchedulesTab(
-    syncScope: CoroutineScope,
     departureGroups: List<DepartureGroup>,
     focusedStationId: String?,
+    isRefreshing: Boolean,
     onTabFocused: (String) -> Unit,
     onClickAddStation: () -> Unit,
     onClickStationDetail: (String, String, String) -> Unit,
-    onRefreshStation: (String) -> Unit,
+    onRefreshAll: () -> Unit,
     is24Hour: Boolean,
 ) {
-    val applicationContext = LocalContext.current.applicationContext
     var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
     var searchResults by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
 
-    // Track schedule sync state for each station
-    val syncStates = departureGroups.associate { group ->
-        group.station.id to remember(group.station.id) {
-            SyncScheduleJob.subscribeState(
-                context = applicationContext,
-                scope = syncScope,
-                stationId = group.station.id
-            )
-        }.collectAsState(initial = null)
-    }
-
     val tabs = mapTabContents(
         departureGroups = departureGroups,
-        syncStates = syncStates,
+        isRefreshing = isRefreshing,
         searchQuery = searchQuery,
         searchResults = searchResults,
         is24Hour = is24Hour,
         onClickStationDetail = onClickStationDetail,
-        onRefreshStation = onRefreshStation
+        onRefreshAll = onRefreshAll
     )
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -389,15 +371,14 @@ private fun SchedulesTab(
 @Composable
 private fun mapTabContents(
     departureGroups: List<DepartureGroup>,
-    syncStates: Map<String, State<WorkInfo.State?>>,
+    isRefreshing: Boolean,
     searchQuery: String?,
     searchResults: Map<String, Int>,
     is24Hour: Boolean,
     onClickStationDetail: (String, String, String) -> Unit,
-    onRefreshStation: (String) -> Unit,
+    onRefreshAll: () -> Unit,
 ): List<TabContent> {
     return departureGroups.map { group ->
-        val syncState = syncStates[group.station.id]?.value
         val badgeCount = searchResults[group.station.id]?.takeIf { it > 0 }
         TabContent(
             title = group.station.name,
@@ -407,11 +388,10 @@ private fun mapTabContents(
             content = { contentPadding, _ ->
                 val schedules = group.scheduleGroup.collectAsState().value
                 val query = searchQuery?.uppercase()
-                val isRefreshing = syncState?.isFinished?.not() == true
 
                 PullToRefreshBox(
                     isRefreshing = schedules == null || isRefreshing,
-                    onRefresh = { onRefreshStation(group.station.id) },
+                    onRefresh = onRefreshAll,
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Box(

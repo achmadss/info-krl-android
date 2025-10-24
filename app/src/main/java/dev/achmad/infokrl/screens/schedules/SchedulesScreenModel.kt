@@ -11,20 +11,20 @@ import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.schedule.model.Schedule
 import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.schedule.interactor.GetSchedule
+import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.infokrl.util.etaString
-import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
-
-private const val fetchScheduleFinishDelay = 0L
 
 data class ScheduleGroup(
     val originStation: Station,
@@ -42,12 +42,16 @@ class SchedulesScreenModel(
     private val originStationId: String,
     private val destinationStationId: String,
     private val getSchedule: GetSchedule = inject(),
+    private val syncSchedule: SyncSchedule = inject(),
     private val getStation: GetStation = inject(),
 ): ScreenModel {
 
     var backFromTimeline by mutableStateOf(false)
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -120,11 +124,14 @@ class SchedulesScreenModel(
 
     fun fetchSchedule() {
         screenModelScope.launch(Dispatchers.IO) {
-            SyncScheduleJob.start(
-                context = injectContext(),
-                stationId = originStationId,
-                finishDelay = fetchScheduleFinishDelay
-            )
+            _isRefreshing.value = true
+            try {
+                if (syncSchedule.shouldSync(originStationId)) {
+                    syncSchedule.await(originStationId)
+                }
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 

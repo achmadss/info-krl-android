@@ -49,9 +49,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.work.WorkInfo
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
@@ -59,7 +57,6 @@ import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBarTitle
 import dev.achmad.infokrl.components.SearchToolbar
-import dev.achmad.infokrl.work.SyncStationJob
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -84,30 +81,17 @@ object StationsTab: Tab {
 
     @Composable
     override fun Content() {
-        val appContext = LocalContext.current.applicationContext
         val screenModel = rememberScreenModel { StationsTabScreenModel() }
         val searchQuery by screenModel.searchQuery.collectAsState()
         val stations by screenModel.stations.collectAsState()
-        val syncState by SyncStationJob.subscribeState(
-            context = appContext,
-            scope = screenModel.screenModelScope
-        ).collectAsState()
+        val isRefreshing by screenModel.isRefreshing.collectAsState()
 
         BackHandler(searchQuery != null) {
             screenModel.search(null)
         }
 
         StationsTab(
-            loading = when {
-                syncState == WorkInfo.State.ENQUEUED ||
-                syncState == WorkInfo.State.RUNNING ||
-                stations == null -> true
-                else -> false
-            },
-            error = when(syncState) {
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> true
-                else -> false
-            },
+            loading = isRefreshing || stations == null,
             stations = stations,
             searchQuery = searchQuery,
             onChangeSearchQuery = { query ->
@@ -130,7 +114,6 @@ object StationsTab: Tab {
 @Composable
 private fun StationsTab(
     loading: Boolean,
-    error: Boolean,
     stations: List<Station>?,
     searchQuery: String?,
     onChangeSearchQuery: (String?) -> Unit,
@@ -182,38 +165,6 @@ private fun StationsTab(
                     text = stringResource(R.string.no_station_found, searchQuery ?: ""),
                     textAlign = TextAlign.Center,
                 )
-            }
-            return@Scaffold
-        }
-
-        if (error) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    modifier = Modifier.size(36.dp),
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    text = stringResource(R.string.error_something_wrong),
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = onTryAgain) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = stringResource(R.string.action_try_again))
-                    }
-                }
             }
             return@Scaffold
         }

@@ -8,11 +8,13 @@ import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.schedule.model.Schedule
 import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.schedule.interactor.GetSchedule
+import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.infokrl.util.etaString
-import dev.achmad.infokrl.work.SyncScheduleJob
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,7 +30,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 
-private const val fetchScheduleFinishDelay = 0L
 private const val sharingStartedStopTimeout = 5_000L
 
 data class DepartureGroup(
@@ -48,12 +49,17 @@ data class DepartureGroup(
 
 class SchedulesTabScreenModel(
     private val getSchedule: GetSchedule = inject(),
+    private val syncSchedule: SyncSchedule = inject(),
     private val getStation: GetStation = inject(),
 ): ScreenModel {
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
+
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
+
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .distinctUntilChanged()
@@ -84,18 +90,6 @@ class SchedulesTabScreenModel(
         started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
         initialValue = emptyList()
     )
-
-    init {
-        screenModelScope.launch {
-            departureGroups.collect {
-                if (it.isNotEmpty()) {
-                    fetchSchedules()
-                    val initialStationId = focusedStationId.value ?: it.firstOrNull()?.station?.id
-                    initialStationId?.let { onTabFocused(it) }
-                }
-            }
-        }
-    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun createScheduleGroupFlow(
@@ -144,7 +138,6 @@ class SchedulesTabScreenModel(
         return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
             val destinationStation = stations.firstOrNull { it.id == destinationId }
             destinationStation?.let {
-
                 val sortedSchedules = schedulesForDest
                     .filter { it.departsAt.isAfter(currentTime) }
                     .sortedBy { it.departsAt }
@@ -158,7 +151,6 @@ class SchedulesTabScreenModel(
                         ),
                     )
                 }
-
                 if (uiSchedules.isNotEmpty()) {
                     DepartureGroup.ScheduleGroup(
                         destinationStation = destinationStation,
@@ -172,34 +164,43 @@ class SchedulesTabScreenModel(
     }
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {
-        return scheduleFlowsCache.getOrPut(stationId) {
-            getSchedule.subscribe(stationId).stateIn(
+        val cache = scheduleFlowsCache[stationId]
+        if (cache == null) {
+            val scheduleFlow = getSchedule.subscribe(stationId).stateIn(
                 scope = screenModelScope,
                 started = SharingStarted.WhileSubscribed(sharingStartedStopTimeout),
                 initialValue = null
             )
+            scheduleFlowsCache[stationId] = scheduleFlow
+            fetchScheduleForStation(stationId)
+            return scheduleFlow
         }
+        return cache
     }
 
-    fun fetchSchedules() {
-        screenModelScope.launch {
-            favoriteStations.value.forEach { favorite ->
-                SyncScheduleJob.start(
-                    context = injectContext(),
-                    stationId = favorite.id,
-                    finishDelay = fetchScheduleFinishDelay
-                )
+    fun fetchScheduleForStation(stationId: String) {
+        screenModelScope.launch(Dispatchers.IO) {
+            if (syncSchedule.shouldSync(stationId)) {
+                syncSchedule.await(stationId)
             }
         }
     }
 
-    fun fetchScheduleForStation(stationId: String) {
-        screenModelScope.launch {
-            SyncScheduleJob.start(
-                context = injectContext(),
-                stationId = stationId,
-                finishDelay = fetchScheduleFinishDelay
-            )
+    fun refreshAllStations() {
+        screenModelScope.launch(Dispatchers.IO) {
+            _isRefreshing.value = true
+            try {
+                val stations = favoriteStations.value
+                stations.map { station ->
+                    async {
+                        if (syncSchedule.shouldSync(station.id)) {
+                            syncSchedule.await(station.id)
+                        }
+                    }
+                }.awaitAll()
+            } finally {
+                _isRefreshing.value = false
+            }
         }
     }
 

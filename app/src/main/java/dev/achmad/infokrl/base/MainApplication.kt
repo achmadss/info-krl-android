@@ -5,7 +5,7 @@ import android.util.Log
 import dev.achmad.core.di.coreModule
 import dev.achmad.infokrl.di.dataModule
 import dev.achmad.infokrl.di.domainModule
-import dev.achmad.infokrl.work.SyncScheduleJob
+import dev.achmad.infokrl.work.SyncFavoriteStationSchedulesJob
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import org.koin.core.logger.Level
@@ -38,6 +38,6 @@ class MainApplication: Application() {
                 )
             )
         }
-        SyncScheduleJob.scheduleDailySync(this)
+        SyncFavoriteStationSchedulesJob.scheduleDailySync(this)
     }
 }

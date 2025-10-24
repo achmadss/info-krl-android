@@ -44,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -52,7 +51,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -68,8 +66,6 @@ import dev.achmad.infokrl.util.collectAsState
 import dev.achmad.infokrl.util.darken
 import dev.achmad.infokrl.util.timeFormatter
 import dev.achmad.infokrl.util.toColor
-import dev.achmad.infokrl.work.SyncScheduleJob
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 
 private const val BLINK_DELAY = 300L
@@ -90,6 +86,7 @@ data class SchedulesScreen(
             )
         }
         val schedules by screenModel.scheduleGroup.collectAsState()
+        val isRefreshing by screenModel.isRefreshing.collectAsState()
 
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
@@ -111,7 +108,7 @@ data class SchedulesScreen(
                     }
                 ))
             },
-            syncScope = screenModel.screenModelScope,
+            isRefreshing = isRefreshing,
             focusedScheduleId = scheduleId,
             schedules = schedules,
             isFromTimeline = screenModel.backFromTimeline,
@@ -127,25 +124,13 @@ private fun SchedulesScreen(
     onNavigateUp: () -> Unit,
     onRefresh: () -> Unit = {},
     onClickSchedule: (String, String?) -> Unit = { _, _ -> },
-    syncScope: CoroutineScope,
+    isRefreshing: Boolean,
     focusedScheduleId: String?,
     schedules: ScheduleGroup?,
     isFromTimeline: Boolean,
     is24Hour: Boolean,
 ) {
     val colorScheme = LocalColorScheme.current
-    val applicationContext = LocalContext.current.applicationContext
-
-    val syncState by remember(schedules?.originStation?.id) {
-        schedules?.originStation?.id?.let { stationId ->
-            SyncScheduleJob.subscribeState(
-                context = applicationContext,
-                scope = syncScope,
-                stationId = stationId
-            )
-        }
-    }?.collectAsState(initial = null) ?: remember { mutableStateOf(null) }
-    val isRefreshing = syncState?.isFinished?.not() == true
 
     Scaffold(
         topBar = {
