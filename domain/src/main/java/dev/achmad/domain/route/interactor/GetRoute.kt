@@ -8,10 +8,6 @@ class GetRoute(
     private val routeRepository: RouteRepository
 ) {
 
-    fun subscribe(): Flow<List<Route>> {
-        return routeRepository.subscribeAll()
-    }
-
     fun subscribe(trainId: String): Flow<Route?> {
         return routeRepository.subscribe(trainId)
     }

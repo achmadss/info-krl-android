@@ -8,10 +8,6 @@ class GetSchedule(
     private val scheduleRepository: ScheduleRepository
 ) {
 
-    fun subscribe(): Flow<List<Schedule>> {
-        return scheduleRepository.subscribeAll()
-    }
-
     fun subscribe(stationId: String): Flow<List<Schedule>> {
         return scheduleRepository.subscribe(stationId)
     }

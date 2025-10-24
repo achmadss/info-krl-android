@@ -18,7 +18,6 @@ import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.schedule.interactor.WipeScheduleTables
 import dev.achmad.domain.schedule.repository.ScheduleRepository
 import dev.achmad.domain.station.interactor.GetStation
-import dev.achmad.domain.station.interactor.HasFetchedStations
 import dev.achmad.domain.station.interactor.ReorderFavoriteStations
 import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.interactor.ToggleFavoriteStation
@@ -29,7 +28,6 @@ import org.koin.dsl.module
 val domainModule = module {
     single<StationRepository> { StationRepositoryImpl(get(), get()) }
     factory { GetStation(get()) }
-    factory { HasFetchedStations(get()) }
     factory { ReorderFavoriteStations(get()) }
     factory { SyncStation(get()) }
     factory { ToggleFavoriteStation(get()) }
