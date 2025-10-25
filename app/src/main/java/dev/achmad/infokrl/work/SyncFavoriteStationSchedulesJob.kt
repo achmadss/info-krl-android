@@ -35,13 +35,11 @@ class SyncFavoriteStationSchedulesJob(
                 val favoriteStations = getStation.awaitAll(favorite = true)
                 favoriteStations.map { station ->
                     async {
-                        if (syncSchedule.shouldSync(station.id)) {
-                            when (val result = syncSchedule.await(station.id)) {
-                                is SyncSchedule.Result.Error -> {
-                                    result.error.printStackTrace()
-                                }
-                                else -> Unit
+                        when (val result = syncSchedule.await(station.id)) {
+                            is SyncSchedule.Result.Error -> {
+                                result.error.printStackTrace()
                             }
+                            else -> Unit
                         }
                     }
                 }.awaitAll()

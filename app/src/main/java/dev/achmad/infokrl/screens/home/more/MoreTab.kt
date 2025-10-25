@@ -40,6 +40,7 @@ import dev.achmad.infokrl.components.ScrollbarLazyColumn
 import dev.achmad.infokrl.components.preference.widget.ListPreferenceWidget
 import dev.achmad.infokrl.components.preference.widget.TextPreferenceWidget
 import dev.achmad.infokrl.screens.about.AboutScreen
+import dev.achmad.infokrl.screens.fare.FareCalculatorScreen
 import dev.achmad.infokrl.util.collectAsState
 
 object MoreTab : Tab {
@@ -67,6 +68,9 @@ object MoreTab : Tab {
         // Provide navigator to inner composable
         val navigator = LocalNavigator.currentOrThrow
         MoreTab(
+            onClickFareCalc = {
+                navigator.push(FareCalculatorScreen)
+            },
             onClickSettings = {
                 navigator.push(SettingsScreen)
             },
