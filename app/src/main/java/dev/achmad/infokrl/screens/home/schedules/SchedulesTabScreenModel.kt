@@ -58,8 +58,8 @@ class SchedulesTabScreenModel(
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing = _isRefreshing.asStateFlow()
+    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result>(SyncSchedule.Result.Loading)
+    val syncScheduleResult = _syncScheduleResult.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
         .distinctUntilChanged()
@@ -172,34 +172,23 @@ class SchedulesTabScreenModel(
                 initialValue = null
             )
             scheduleFlowsCache[stationId] = scheduleFlow
-            fetchScheduleForStation(stationId)
+            screenModelScope.launch(Dispatchers.IO) {
+                syncSchedule.await(stationId)
+            }
             return scheduleFlow
         }
         return cache
     }
 
-    fun fetchScheduleForStation(stationId: String) {
-        screenModelScope.launch(Dispatchers.IO) {
-            if (syncSchedule.shouldSync(stationId)) {
-                syncSchedule.await(stationId)
-            }
-        }
-    }
-
     fun refreshAllStations() {
         screenModelScope.launch(Dispatchers.IO) {
-            _isRefreshing.value = true
+            _syncScheduleResult.update { SyncSchedule.Result.Loading }
             try {
-                val stations = favoriteStations.value
-                stations.map { station ->
-                    async {
-                        if (syncSchedule.shouldSync(station.id)) {
-                            syncSchedule.await(station.id)
-                        }
-                    }
+                favoriteStations.value.map { station ->
+                    async { syncSchedule.await(station.id) }
                 }.awaitAll()
             } finally {
-                _isRefreshing.value = false
+                _syncScheduleResult.update { SyncSchedule.Result.Success }
             }
         }
     }

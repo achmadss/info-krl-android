@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
@@ -28,8 +29,8 @@ class TimelineScreenModel(
     private val syncRoute: SyncRoute = inject(),
 ): ScreenModel {
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing = _isRefreshing.asStateFlow()
+    private val _syncRouteResult = MutableStateFlow<SyncRoute.Result>(SyncRoute.Result.Loading)
+    val syncRouteResult = _syncRouteResult.asStateFlow()
 
     init {
         fetchRoute(trainId)
@@ -69,13 +70,8 @@ class TimelineScreenModel(
 
     private fun fetchRoute(trainId: String) {
         screenModelScope.launch(Dispatchers.IO) {
-            _isRefreshing.value = true
-            try {
-                if (syncRoute.shouldSync(trainId)) {
-                    syncRoute.await(trainId)
-                }
-            } finally {
-                _isRefreshing.value = false
+            syncRoute.subscribe(trainId).collect {
+                _syncRouteResult.update { it }
             }
         }
     }

@@ -76,6 +76,7 @@ import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
+import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.AppBarActions
 import dev.achmad.infokrl.components.AppBarTitle
@@ -128,14 +129,14 @@ object SchedulesTab: Tab {
         val screenModel = rememberScreenModel { SchedulesTabScreenModel() }
         val destinationGroups by screenModel.departureGroups.collectAsState()
         val focusedStationId by screenModel.focusedStationId.collectAsState()
-        val isRefreshing by screenModel.isRefreshing.collectAsState()
+        val syncScheduleResult by screenModel.syncScheduleResult.collectAsState()
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
 
         SchedulesTab(
             departureGroups = destinationGroups,
             focusedStationId = focusedStationId,
-            isRefreshing = isRefreshing,
+            isRefreshing = syncScheduleResult is SyncSchedule.Result.Loading,
             is24Hour = is24Hour,
             onTabFocused = { stationId ->
                 screenModel.onTabFocused(stationId)

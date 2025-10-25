@@ -43,7 +43,6 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +52,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBarTitle
@@ -84,14 +84,15 @@ object StationsTab: Tab {
         val screenModel = rememberScreenModel { StationsTabScreenModel() }
         val searchQuery by screenModel.searchQuery.collectAsState()
         val stations by screenModel.stations.collectAsState()
-        val isRefreshing by screenModel.isRefreshing.collectAsState()
+        val syncStationResult by screenModel.syncStationResult.collectAsState()
 
         BackHandler(searchQuery != null) {
             screenModel.search(null)
         }
 
         StationsTab(
-            loading = isRefreshing || stations == null,
+            loading = syncStationResult is SyncStation.Result.Loading || stations == null,
+            error = syncStationResult is SyncStation.Result.Error,
             stations = stations,
             searchQuery = searchQuery,
             onChangeSearchQuery = { query ->
@@ -114,6 +115,7 @@ object StationsTab: Tab {
 @Composable
 private fun StationsTab(
     loading: Boolean,
+    error: Boolean,
     stations: List<Station>?,
     searchQuery: String?,
     onChangeSearchQuery: (String?) -> Unit,
@@ -165,6 +167,38 @@ private fun StationsTab(
                     text = stringResource(R.string.no_station_found, searchQuery ?: ""),
                     textAlign = TextAlign.Center,
                 )
+            }
+            return@Scaffold
+        }
+
+        if (error) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    modifier = Modifier.size(36.dp),
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(R.string.error_something_wrong),
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onTryAgain) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = stringResource(R.string.action_try_again))
+                    }
+                }
             }
             return@Scaffold
         }

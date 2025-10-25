@@ -22,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TooltipBox
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.achmad.infokrl.util.clearFocusOnSoftKeyboardHide
@@ -80,6 +82,7 @@ fun AppBar(
     actionModeActions: @Composable RowScope.() -> Unit = {},
 
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    shadowElevation: Dp = 0.dp,
 ) {
     val isActionMode by remember(actionModeCounter) {
         derivedStateOf { actionModeCounter > 0 }
@@ -107,6 +110,7 @@ fun AppBar(
         isActionMode = isActionMode,
         onCancelActionMode = onCancelActionMode,
         scrollBehavior = scrollBehavior,
+        shadowElevation = shadowElevation,
     )
 }
 
@@ -128,36 +132,41 @@ fun AppBar(
     onCancelActionMode: () -> Unit = {},
 
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    shadowElevation: Dp = 0.dp,
 ) {
-    Column(
-        modifier = modifier,
+    Surface(
+        shadowElevation = shadowElevation
     ) {
-        TopAppBar(
-            navigationIcon = {
-                if (isActionMode) {
-                    IconButton(onClick = onCancelActionMode) {
-                        Icon(
-                            imageVector = Icons.Outlined.Close,
-                            contentDescription = null,
-                        )
-                    }
-                } else {
-                    navigateUp?.let {
-                        IconButton(onClick = it) {
-                            UpIcon(navigationIcon = navigationIcon)
+        Column(
+            modifier = modifier,
+        ) {
+            TopAppBar(
+                navigationIcon = {
+                    if (isActionMode) {
+                        IconButton(onClick = onCancelActionMode) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = null,
+                            )
+                        }
+                    } else {
+                        navigateUp?.let {
+                            IconButton(onClick = it) {
+                                UpIcon(navigationIcon = navigationIcon)
+                            }
                         }
                     }
-                }
-            },
-            title = titleContent,
-            actions = actions,
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
-                    elevation = if (isActionMode) 8.dp else 0.dp,
+                },
+                title = titleContent,
+                actions = actions,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor ?: MaterialTheme.colorScheme.surfaceColorAtElevation(
+                        elevation = if (isActionMode) 8.dp else 0.dp,
+                    ),
                 ),
-            ),
-            scrollBehavior = scrollBehavior,
-        )
+                scrollBehavior = scrollBehavior,
+            )
+        }
     }
 }
 
@@ -302,6 +311,7 @@ fun SearchToolbar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    shadowElevation: Dp = 0.dp,
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -423,6 +433,7 @@ fun SearchToolbar(
         },
         isActionMode = false,
         scrollBehavior = scrollBehavior,
+        shadowElevation = shadowElevation,
     )
 }
 

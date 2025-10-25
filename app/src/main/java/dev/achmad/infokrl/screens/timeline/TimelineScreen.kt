@@ -26,24 +26,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.rememberScreenModel
-import cafe.adriel.voyager.core.model.screenModelScope
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -51,6 +47,7 @@ import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
+import dev.achmad.domain.route.interactor.SyncRoute
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.theme.LocalColorScheme
 import dev.achmad.infokrl.theme.darkTheme
@@ -75,7 +72,7 @@ data class TimelineScreen(
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
         val timelines by screenModel.timelineGroup.collectAsState()
-        val isRefreshing by screenModel.isRefreshing.collectAsState()
+        val syncRouteResult by screenModel.syncRouteResult.collectAsState()
 
         BackHandler {
             onReturn?.invoke()
@@ -88,7 +85,7 @@ data class TimelineScreen(
                 navigator.pop()
             },
             onRefresh = { screenModel.refresh() },
-            isRefreshing = isRefreshing,
+            isRefreshing = syncRouteResult is SyncRoute.Result.Loading,
             is24Hour = is24Hour,
             trainId = trainId,
             lineColor = lineColor,
@@ -112,14 +109,11 @@ private fun TimelineScreen(
 
     Scaffold(
         topBar = {
-            Surface(
-                shadowElevation = 4.dp
-            ) {
-                AppBar(
-                    title = "${stringResource(R.string.train)} $trainId",
-                    navigateUp = onNavigateUp,
-                )
-            }
+            AppBar(
+                title = "${stringResource(R.string.train)} $trainId",
+                navigateUp = onNavigateUp,
+                shadowElevation = 4.dp,
+            )
         }
     ) { contentPadding ->
         val lazyListState = rememberLazyListState()

@@ -30,8 +30,8 @@ class StationsTabScreenModel(
     private val _searchQuery = MutableStateFlow<String?>(null)
     val searchQuery = _searchQuery.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing = _isRefreshing.asStateFlow()
+    private val _syncStationResult = MutableStateFlow<SyncStation.Result>(SyncStation.Result.Loading)
+    val syncStationResult = _syncStationResult.asStateFlow()
 
     private val dbStations = getStation.subscribeAll()
         .map { stations ->
@@ -113,16 +113,8 @@ class StationsTabScreenModel(
 
     fun fetchStations() {
         screenModelScope.launch(Dispatchers.IO) {
-            _isRefreshing.value = true
-            try {
-                when (val result = syncStation.await()) {
-                    is SyncStation.Result.Error -> {
-                        result.error.printStackTrace()
-                    }
-                    else -> Unit
-                }
-            } finally {
-                _isRefreshing.value = false
+            syncStation.subscribe().collect {
+                _syncStationResult.update { it }
             }
         }
     }

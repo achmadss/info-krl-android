@@ -2,6 +2,8 @@ package dev.achmad.domain.station.interactor
 
 import dev.achmad.domain.station.repository.StationRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 class SyncStation(
@@ -19,8 +21,16 @@ class SyncStation(
         }
     }
 
+    fun subscribe(): Flow<Result> = flow {
+        withContext(Dispatchers.IO) {
+            emit(Result.Loading)
+            emit(await())
+        }
+    }
+
     sealed interface Result {
         data object Success : Result
+        data object Loading : Result
         data class Error(val error: Throwable) : Result
     }
 

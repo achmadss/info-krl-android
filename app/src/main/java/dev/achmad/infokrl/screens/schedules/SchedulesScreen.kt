@@ -57,6 +57,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
+import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.theme.LocalColorScheme
 import dev.achmad.infokrl.theme.darkTheme
@@ -86,7 +87,7 @@ data class SchedulesScreen(
             )
         }
         val schedules by screenModel.scheduleGroup.collectAsState()
-        val isRefreshing by screenModel.isRefreshing.collectAsState()
+        val syncScheduleResult by screenModel.syncScheduleResult.collectAsState()
 
         val applicationPreference by injectLazy<ApplicationPreference>()
         val is24Hour by applicationPreference.is24HourFormat().collectAsState()
@@ -108,7 +109,7 @@ data class SchedulesScreen(
                     }
                 ))
             },
-            isRefreshing = isRefreshing,
+            isRefreshing = syncScheduleResult is SyncSchedule.Result.Loading,
             focusedScheduleId = scheduleId,
             schedules = schedules,
             isFromTimeline = screenModel.backFromTimeline,
@@ -134,62 +135,59 @@ private fun SchedulesScreen(
 
     Scaffold(
         topBar = {
-            Surface(
-                shadowElevation = 4.dp
-            ) {
-                val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
-                AppBar(
-                    titleContent = {
-                        Column {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    text = schedules?.originStation?.name ?: "",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+            val firstSchedule = schedules?.schedules?.firstOrNull()?.schedule
+            AppBar(
+                titleContent = {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = schedules?.originStation?.name ?: "",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
 
-                                Icon(
-                                    modifier = Modifier
-                                        .height(20.dp),
-                                    imageVector = Icons.AutoMirrored.Default.ArrowRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.outline,
-                                )
+                            Icon(
+                                modifier = Modifier
+                                    .height(20.dp),
+                                imageVector = Icons.AutoMirrored.Default.ArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                            )
 
-                                Text(
-                                    text = schedules?.destinationStation?.name ?: "",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            if (firstSchedule != null) {
-                                val color = firstSchedule.color.toColor()
-                                Text(
-                                    text = firstSchedule.line,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (colorScheme == darkTheme) {
-                                        color.brighter(.35f)
-                                    } else color.darken(.15f),
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.basicMarquee(
-                                        repeatDelayMillis = 2_000
-                                    )
-                                )
-                            }
+                            Text(
+                                text = schedules?.destinationStation?.name ?: "",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
-                    },
-                    navigateUp = onNavigateUp
-                )
-            }
+                        if (firstSchedule != null) {
+                            val color = firstSchedule.color.toColor()
+                            Text(
+                                text = firstSchedule.line,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (colorScheme == darkTheme) {
+                                    color.brighter(.35f)
+                                } else color.darken(.15f),
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.basicMarquee(
+                                    repeatDelayMillis = 2_000
+                                )
+                            )
+                        }
+                    }
+                },
+                navigateUp = onNavigateUp,
+                shadowElevation = 4.dp
+            )
         },
     ) { contentPadding ->
         val lazyListState = rememberLazyListState()

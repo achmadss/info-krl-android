@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -50,8 +51,8 @@ class SchedulesScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing = _isRefreshing.asStateFlow()
+    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result>(SyncSchedule.Result.Loading)
+    val syncScheduleResult = _syncScheduleResult.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
         scope = screenModelScope,
@@ -124,13 +125,8 @@ class SchedulesScreenModel(
 
     fun fetchSchedule() {
         screenModelScope.launch(Dispatchers.IO) {
-            _isRefreshing.value = true
-            try {
-                if (syncSchedule.shouldSync(originStationId)) {
-                    syncSchedule.await(originStationId)
-                }
-            } finally {
-                _isRefreshing.value = false
+            syncSchedule.subscribe(originStationId).collect {
+                _syncScheduleResult.update { it }
             }
         }
     }
