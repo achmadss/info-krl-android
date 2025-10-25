@@ -17,7 +17,9 @@ class SyncRoute(
         checkShouldSync: Boolean = true
     ): Result {
         return withContext(Dispatchers.IO) {
-            if (checkShouldSync && !shouldSync(trainId)) Result.AlreadySynced
+            if (checkShouldSync && !shouldSync(trainId)) {
+                return@withContext Result.AlreadySynced
+            }
             try {
                 val route = routeRepository.fetch(trainId)
                 routeRepository.store(route)

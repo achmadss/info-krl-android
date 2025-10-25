@@ -17,7 +17,9 @@ class SyncSchedule(
         checkShouldSync: Boolean = true
     ): Result {
         return withContext(Dispatchers.IO) {
-            if (checkShouldSync && !shouldSync(stationId)) Result.AlreadySynced
+            if (checkShouldSync && !shouldSync(stationId)) {
+                return@withContext Result.AlreadySynced
+            }
             try {
                 val schedules = scheduleRepository.fetch(stationId)
                 scheduleRepository.store(schedules)

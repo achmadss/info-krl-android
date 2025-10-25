@@ -17,7 +17,7 @@ class SyncFare(
     ): Result {
         return withContext(Dispatchers.IO) {
             if (checkShouldSync && !shouldSync(originStationId, destinationStationId)) {
-                Result.AlreadySynced
+                return@withContext Result.AlreadySynced
             }
             try {
                 val fare = fareRepository.fetch(

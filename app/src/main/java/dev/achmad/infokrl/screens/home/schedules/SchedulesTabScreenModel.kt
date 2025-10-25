@@ -58,7 +58,7 @@ class SchedulesTabScreenModel(
     private val _focusedStationId = MutableStateFlow<String?>(null)
     val focusedStationId = _focusedStationId.asStateFlow()
 
-    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result>(SyncSchedule.Result.Loading)
+    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result?>(null)
     val syncScheduleResult = _syncScheduleResult.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks
