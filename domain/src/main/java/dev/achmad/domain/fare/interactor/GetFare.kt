@@ -3,6 +3,8 @@ package dev.achmad.domain.fare.interactor
 import dev.achmad.domain.fare.model.Fare
 import dev.achmad.domain.fare.repository.FareRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 class GetFare(
@@ -16,4 +18,12 @@ class GetFare(
             fareRepository.await(originStationId, destinationStationId)
         }
     }
+
+    fun subscribeSingle(
+        originStationId: String,
+        destinationStationId: String,
+    ): Flow<Fare?> {
+        return fareRepository.subscribe(originStationId, destinationStationId)
+    }
+
 }
