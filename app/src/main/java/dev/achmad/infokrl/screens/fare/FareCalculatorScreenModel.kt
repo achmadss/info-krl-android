@@ -108,7 +108,7 @@ class FareCalculatorScreenModel(
                     destinationStation.value.first,
                 ).collect { result ->
                     _syncFareResult.update { result }
-                    if (result is SyncFare.Result.Success) {
+                    if (result is SyncFare.Result.Success || result is SyncFare.Result.AlreadySynced) {
                         val fetchedFare = getFare.awaitSingle(
                             originStation.value.first,
                             destinationStation.value.first

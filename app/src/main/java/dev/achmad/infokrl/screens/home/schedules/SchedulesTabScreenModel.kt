@@ -147,7 +147,7 @@ class SchedulesTabScreenModel(
                         eta = etaString(
                             context = injectContext(),
                             now = currentTime,
-                            target = schedule.departsAt
+                            target = schedule.departsAt,
                         ),
                     )
                 }

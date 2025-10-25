@@ -191,7 +191,9 @@ private fun FareCalculatorScreen(
                     )
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
@@ -206,14 +208,6 @@ private fun FareCalculatorScreen(
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = onTryAgain) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = stringResource(R.string.action_try_again))
-                            }
-                        }
                     }
                 }
             } else if (fare != null) {
@@ -236,7 +230,13 @@ private fun FareCalculatorScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Rp ${fare.fare}",
+                            text = "Rp ${
+                                if (fare.fare % 1.0 == 0.0) {
+                                    fare.fare.toLong()
+                                } else {
+                                    fare.fare
+                                }
+                            }",
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )

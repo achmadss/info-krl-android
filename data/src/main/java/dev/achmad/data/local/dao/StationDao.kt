@@ -34,6 +34,7 @@ interface StationDao {
         SELECT * FROM stations
         WHERE (:applyFavorite = 0 OR favorite = :favorite)
         AND id IN (:ids)
+        ORDER BY name ASC
     """)
     fun subscribeMultiple(
         ids: List<String>,
@@ -41,13 +42,13 @@ interface StationDao {
         applyFavorite: Int = if (favorite == null) 0 else 1
     ): Flow<List<StationEntity>>
 
-    @Query("SELECT * FROM stations WHERE (:applyFavorite = 0 OR favorite = :favorite)")
+    @Query("SELECT * FROM stations WHERE (:applyFavorite = 0 OR favorite = :favorite) ORDER BY name ASC")
     suspend fun awaitAll(
         favorite: Boolean? = null,
         applyFavorite: Int = if (favorite == null) 0 else 1
     ): List<StationEntity>
 
-    @Query("SELECT * FROM stations WHERE (:applyFavorite = 0 OR favorite = :favorite)")
+    @Query("SELECT * FROM stations WHERE (:applyFavorite = 0 OR favorite = :favorite) ORDER BY name ASC")
     fun subscribeAll(
         favorite: Boolean? = null,
         applyFavorite: Int = if (favorite == null) 0 else 1
