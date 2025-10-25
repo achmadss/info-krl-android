@@ -12,9 +12,9 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
+import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
-import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.components.preference.Preference
 import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.credits.CreditsScreen

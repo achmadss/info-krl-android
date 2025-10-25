@@ -74,9 +74,9 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.schedule.interactor.SyncSchedule
+import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.AppBarActions
 import dev.achmad.infokrl.components.AppBarTitle

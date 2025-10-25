@@ -2,8 +2,10 @@ package dev.achmad.domain.schedule.interactor
 
 import dev.achmad.domain.schedule.repository.ScheduleRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
@@ -16,24 +18,22 @@ class SyncSchedule(
         stationId: String,
         checkShouldSync: Boolean = true
     ): Result {
-        return withContext(Dispatchers.IO) {
+        try {
             if (checkShouldSync && !shouldSync(stationId)) {
-                return@withContext Result.AlreadySynced
+                return Result.AlreadySynced
             }
-            try {
-                val schedules = scheduleRepository.fetch(stationId)
-                scheduleRepository.store(schedules)
-                Result.Success
-            } catch (e: Exception) {
-                Result.Error(e)
-            }
+            val schedules = scheduleRepository.fetch(stationId)
+            scheduleRepository.store(schedules)
+            return Result.Success
+        } catch (e: Exception) {
+            return Result.Error(e)
         }
     }
 
     fun subscribe(stationId: String): Flow<Result> = flow {
         emit(Result.Loading)
         emit(await(stationId))
-    }
+    }.flowOn(Dispatchers.IO)
 
     private suspend fun shouldSync(stationId: String): Boolean {
         return withContext(Dispatchers.IO) {

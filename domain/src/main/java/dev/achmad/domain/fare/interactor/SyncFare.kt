@@ -5,6 +5,7 @@ import dev.achmad.domain.fare.repository.FareRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 
 class SyncFare(
@@ -16,10 +17,10 @@ class SyncFare(
         checkShouldSync: Boolean = true
     ): Result {
         return withContext(Dispatchers.IO) {
-            if (checkShouldSync && !shouldSync(originStationId, destinationStationId)) {
-                return@withContext Result.AlreadySynced
-            }
             try {
+                if (checkShouldSync && !shouldSync(originStationId, destinationStationId)) {
+                    return@withContext Result.AlreadySynced
+                }
                 val fare = fareRepository.fetch(
                     originStationId = originStationId,
                     destinationStationId = destinationStationId
@@ -38,7 +39,7 @@ class SyncFare(
     ): Flow<Result> = flow {
         emit(Result.Loading)
         emit(await(originStationId, destinationStationId))
-    }
+    }.flowOn(Dispatchers.IO)
 
     private suspend fun shouldSync(
         originStationId: String,

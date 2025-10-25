@@ -5,11 +5,11 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.schedule.model.Schedule
-import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.schedule.interactor.GetSchedule
 import dev.achmad.domain.schedule.interactor.SyncSchedule
+import dev.achmad.domain.schedule.model.Schedule
 import dev.achmad.domain.station.interactor.GetStation
+import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.util.etaString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -181,7 +181,7 @@ class SchedulesTabScreenModel(
     }
 
     fun refreshAllStations() {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             _syncScheduleResult.update { SyncSchedule.Result.Loading }
             try {
                 favoriteStations.value.map { station ->

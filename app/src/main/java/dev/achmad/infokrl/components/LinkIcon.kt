@@ -1,6 +1,5 @@
 package dev.achmad.infokrl.components
 
-import android.graphics.drawable.Icon
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton

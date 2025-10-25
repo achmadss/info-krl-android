@@ -2,8 +2,8 @@ package dev.achmad.infokrl.screens.settings.theme
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
-import dev.achmad.infokrl.R
 import dev.achmad.domain.theme.Themes
+import dev.achmad.infokrl.R
 
 @Composable
 fun themeOptions(): Map<Themes, String> {

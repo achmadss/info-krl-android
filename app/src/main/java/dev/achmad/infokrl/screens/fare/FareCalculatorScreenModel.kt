@@ -90,7 +90,7 @@ class FareCalculatorScreenModel(
     fun search(query: String?) = _searchQuery.update { query }
 
     fun fetchStations() {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             syncStation.subscribe().collect {
                 _syncStationResult.update { it }
             }

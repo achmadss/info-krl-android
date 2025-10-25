@@ -21,13 +21,12 @@ import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.ScreenTransition
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.screens.home.HomeScreen
-import dev.achmad.infokrl.screens.home.schedules.SchedulesTab
 import dev.achmad.infokrl.screens.onboarding.OnboardingScreen
 import dev.achmad.infokrl.theme.AppTheme
-import org.koin.android.ext.android.inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
+import org.koin.android.ext.android.inject
 import soup.compose.material.motion.animation.materialSharedAxisX
 import soup.compose.material.motion.animation.rememberSlideDistance
 

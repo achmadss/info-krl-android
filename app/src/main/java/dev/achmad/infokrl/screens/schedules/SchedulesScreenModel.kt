@@ -8,13 +8,12 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.di.util.injectContext
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.schedule.model.Schedule
-import dev.achmad.domain.station.model.Station
 import dev.achmad.domain.schedule.interactor.GetSchedule
 import dev.achmad.domain.schedule.interactor.SyncSchedule
+import dev.achmad.domain.schedule.model.Schedule
 import dev.achmad.domain.station.interactor.GetStation
+import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.util.etaString
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -51,7 +49,7 @@ class SchedulesScreenModel(
 
     private val scheduleFlowsCache = mutableMapOf<String, StateFlow<List<Schedule>?>>()
 
-    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result>(SyncSchedule.Result.Loading)
+    private val _syncScheduleResult = MutableStateFlow<SyncSchedule.Result?>(null)
     val syncScheduleResult = _syncScheduleResult.asStateFlow()
 
     private val tick = TimeTicker(TimeTicker.TickUnit.MINUTE).ticks.stateIn(
@@ -124,9 +122,9 @@ class SchedulesScreenModel(
     }
 
     fun fetchSchedule() {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             syncSchedule.subscribe(originStationId).collect {
-                _syncScheduleResult.update { it }
+                _syncScheduleResult.value = it
             }
         }
     }
