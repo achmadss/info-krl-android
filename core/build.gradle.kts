@@ -60,6 +60,9 @@ dependencies {
     api(libs.serialization.json)
     api(libs.serialization.json.okio)
 
+    implementation(libs.app.update)
+    implementation(libs.app.update.ktx)
+
     debugImplementation(libs.chucker)
     releaseImplementation(libs.chucker.release)
 }

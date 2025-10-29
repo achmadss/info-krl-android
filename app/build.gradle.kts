@@ -91,6 +91,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    implementation(libs.app.update)
+    implementation(libs.app.update.ktx)
+
     implementation(project(":core"))
     implementation(project(":domain"))
     implementation(project(":data"))

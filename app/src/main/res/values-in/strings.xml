@@ -66,8 +66,11 @@
     <string name="detailed_schedule_layout">Desain Detail</string>
     <string name="time_format_24h">Format 24 jam</string>
     <string name="data">Data</string>
-    <string name="clear_local_data">Hapus Data Lokal</string>
-    <string name="clear_local_data_warning">Tindakan ini tidak dapat dibatalkan</string>
+    <string name="warning">Peringatan</string>
+    <string name="clear_local_data">Hapus Data</string>
+    <string name="clear_local_data_subtitle">Hapus semua data yang disimpan</string>
+    <string name="clear_local_data_description">Hapus semua data jadwal, stasiun, dan perjalanan. Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="clear_local_data_success">Data yang disimpan telah dihapus</string>
 
     <!-- AboutScreen -->
     <string name="about">Tentang</string>
@@ -75,6 +78,8 @@
     <string name="changelog">Riwayat Perubahan</string>
     <string name="credits">Kredit &amp; Lisensi</string>
     <string name="privacy_policy">Kebijakan Privasi</string>
+    <string name="check_for_updates">Periksa pembaruan</string>
+    <string name="check_for_update_on_launch">Periksa pembaruan saat aplikasi dibuka</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Ikon Kereta</string>
@@ -109,5 +114,6 @@
 
     <!-- General/Common strings -->
     <string name="close">Tutup</string>
+    <string name="cancel">Batal</string>
 
 </resources>

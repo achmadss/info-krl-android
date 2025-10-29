@@ -2,7 +2,7 @@ package dev.achmad.infokrl.base
 
 import android.app.Application
 import android.util.Log
-import dev.achmad.core.di.coreModule
+import dev.achmad.infokrl.di.coreModule
 import dev.achmad.infokrl.di.dataModule
 import dev.achmad.infokrl.di.domainModule
 import dev.achmad.infokrl.work.SyncFavoriteStationSchedulesJob

@@ -83,7 +83,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
-import dev.achmad.core.di.util.injectLazy
+import dev.achmad.core.util.injectLazy
 import dev.achmad.domain.layout.ScheduleLayouts
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.schedule.interactor.SyncSchedule
@@ -407,7 +407,6 @@ private fun mapTabContents(
                         } ?: emptyList()
                         
                         if (schedules?.isNotEmpty() == true && allDestinationGroups.isNotEmpty()) {
-                            // Filter schedules based on search query
                             val filteredSchedules = when {
                                 !query.isNullOrEmpty() -> schedules.mapNotNull { scheduleGroup ->
                                     // Filter destinations to only include those matching the query

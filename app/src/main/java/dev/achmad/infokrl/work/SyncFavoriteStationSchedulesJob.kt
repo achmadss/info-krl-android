@@ -5,7 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkerParameters
-import dev.achmad.core.di.util.injectLazy
+import dev.achmad.core.util.injectLazy
 import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.infokrl.util.workManager

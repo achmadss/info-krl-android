@@ -1,4 +1,4 @@
-package dev.achmad.infokrl.util
+package dev.achmad.core.util
 
 import android.content.Context
 import android.widget.Toast

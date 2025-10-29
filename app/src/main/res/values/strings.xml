@@ -66,8 +66,11 @@
     <string name="detailed_schedule_layout">Detailed Layout</string>
     <string name="time_format_24h">24-hour format</string>
     <string name="data">Data</string>
-    <string name="clear_local_data">Clear Local Data</string>
-    <string name="clear_local_data_warning">This action cannot be undone</string>
+    <string name="warning">Warning</string>
+    <string name="clear_local_data">Clear Data</string>
+    <string name="clear_local_data_subtitle">Delete all saved data</string>
+    <string name="clear_local_data_description">This will delete all schedules, stations, and trips data. This action cannot be undone.</string>
+    <string name="clear_local_data_success">Saved data has been deleted</string>
 
     <!-- AboutScreen -->
     <string name="about">About</string>
@@ -75,6 +78,8 @@
     <string name="changelog">Changelog</string>
     <string name="credits">Credits &amp; Licenses</string>
     <string name="privacy_policy">Privacy Policy</string>
+    <string name="check_for_updates">Check for updates</string>
+    <string name="check_for_update_on_launch">Check for update on app launch</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Train Icon</string>
@@ -116,4 +121,5 @@
 
     <!-- General/Common strings -->
     <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
 </resources>

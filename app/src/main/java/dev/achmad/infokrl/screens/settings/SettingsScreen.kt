@@ -1,5 +1,10 @@
 package dev.achmad.infokrl.screens.settings
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
@@ -10,8 +15,12 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import dev.achmad.core.di.util.injectLazy
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import dev.achmad.core.preference.toggle
+import dev.achmad.core.util.injectLazy
 import dev.achmad.domain.layout.ScheduleLayouts
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.BuildConfig
@@ -34,6 +43,15 @@ object SettingsScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val screenModel = rememberScreenModel { SettingsScreenModel() }
         val appPreference by injectLazy<ApplicationPreference>()
+        val appUpdateManager by injectLazy<AppUpdateManager>()
+
+        val updateResultLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartIntentSenderForResult()
+        ) { result ->
+            if (result.resultCode != Activity.RESULT_OK) {
+                // Update flow was cancelled or failed
+            }
+        }
 
         PreferenceScreen(
             title = stringResource(R.string.settings),
@@ -45,11 +63,16 @@ object SettingsScreen : Screen {
                 listOf(
                     appearanceGroup(appPreference, navigator),
                     dataGroup(
-                        onClickClearData = {
+                        onConfirmClearData = {
                             screenModel.wipeAllData()
                         }
                     ),
-                    aboutGroup(navigator),
+                    aboutGroup(
+                        navigator = navigator,
+                        appUpdateManager = appUpdateManager,
+                        appPreference = appPreference,
+                        updateResultLauncher = updateResultLauncher
+                    ),
                 )
             },
         )
@@ -101,13 +124,32 @@ object SettingsScreen : Screen {
     @Composable
     private fun aboutGroup(
         navigator: Navigator,
+        appUpdateManager: AppUpdateManager,
+        appPreference: ApplicationPreference,
+        updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
     ): Preference {
+        val checkForUpdateOnLaunchPreference = appPreference.checkForUpdateOnLaunch()
+
         return Preference.PreferenceGroup(
             title = stringResource(R.string.about),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.version),
                     subtitle = BuildConfig.VERSION_NAME,
+                ),
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(R.string.check_for_updates),
+                    onClick = {
+                        checkForUpdates(
+                            appUpdateManager = appUpdateManager,
+                            updateResultLauncher = updateResultLauncher
+                        )
+                    }
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = checkForUpdateOnLaunchPreference,
+                    title = stringResource(R.string.check_for_update_on_launch),
+                    onValueChanged = { checkForUpdateOnLaunchPreference.toggle() }
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(R.string.credits),
@@ -119,17 +161,51 @@ object SettingsScreen : Screen {
         )
     }
 
+    private fun checkForUpdates(
+        appUpdateManager: AppUpdateManager,
+        updateResultLauncher: ActivityResultLauncher<IntentSenderRequest>,
+    ) {
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            val updateAvailability = appUpdateInfo.updateAvailability()
+            if (updateAvailability == UpdateAvailability.UPDATE_AVAILABLE) {
+                val updateType = when {
+                    appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> AppUpdateType.IMMEDIATE
+                    appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> AppUpdateType.FLEXIBLE
+                    else -> null
+                }
+
+                updateType?.let {
+                    try {
+                        val options = AppUpdateOptions.newBuilder(it).build()
+                        appUpdateManager.startUpdateFlowForResult(
+                            appUpdateInfo,
+                            updateResultLauncher,
+                            options
+                        )
+                    } catch (e: Exception) {
+                        // Handle error - update flow could not be started
+                    }
+                }
+            }
+        }.addOnFailureListener {
+            // Handle failure - could not check for updates
+        }
+    }
+
     @Composable
     private fun dataGroup(
-        onClickClearData: () -> Unit = {},
+        onConfirmClearData: () -> Unit = {},
     ): Preference {
         return Preference.PreferenceGroup(
             title = stringResource(R.string.data),
             preferenceItems = listOf(
-                Preference.PreferenceItem.TextPreference(
+                Preference.PreferenceItem.AlertDialogPreference(
                     title = stringResource(R.string.clear_local_data),
-                    subtitle = stringResource(R.string.clear_local_data_warning),
-                    onClick = onClickClearData
+                    subtitle = stringResource(R.string.clear_local_data_subtitle),
+                    dialogTitle = stringResource(R.string.warning),
+                    dialogText = stringResource(R.string.clear_local_data_description),
+                    onConfirm = onConfirmClearData,
+                    onCancel = {}
                 )
             )
         )

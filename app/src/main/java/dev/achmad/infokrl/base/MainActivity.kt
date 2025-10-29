@@ -1,13 +1,16 @@
 package dev.achmad.infokrl.base
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -19,6 +22,10 @@ import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.transitions.ScreenTransition
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.screens.home.HomeScreen
 import dev.achmad.infokrl.screens.onboarding.OnboardingScreen
@@ -33,6 +40,7 @@ import soup.compose.material.motion.animation.rememberSlideDistance
 class MainActivity : AppCompatActivity() {
 
     private val applicationPreference: ApplicationPreference by inject()
+    private val appUpdateManager: AppUpdateManager by inject()
 
     private var isReady = false
     private var initialScreen: Screen = HomeScreen
@@ -78,6 +86,10 @@ class MainActivity : AppCompatActivity() {
                         },
                     )
                     HandleNewIntent(this@MainActivity, navigator)
+                    CheckForUpdatesOnLaunch(
+                        appUpdateManager = appUpdateManager,
+                        applicationPreference = applicationPreference
+                    )
                 }
             }
         }
@@ -111,5 +123,50 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntentAction(intent: Intent, navigator: Navigator) {
         // Handle intent here
+    }
+
+    @Composable
+    private fun CheckForUpdatesOnLaunch(
+        appUpdateManager: AppUpdateManager,
+        applicationPreference: ApplicationPreference,
+    ) {
+        val updateResultLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartIntentSenderForResult()
+        ) { result ->
+            if (result.resultCode != Activity.RESULT_OK) {
+                // Update flow was cancelled or failed
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            val shouldCheckForUpdates = applicationPreference.checkForUpdateOnLaunch().get()
+            if (shouldCheckForUpdates) {
+                appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+                    val updateAvailability = appUpdateInfo.updateAvailability()
+                    if (updateAvailability == UpdateAvailability.UPDATE_AVAILABLE) {
+                        val updateType = when {
+                            appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE) -> AppUpdateType.IMMEDIATE
+                            appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> AppUpdateType.FLEXIBLE
+                            else -> null
+                        }
+                        
+                        updateType?.let {
+                            try {
+                                val options = AppUpdateOptions.newBuilder(it).build()
+                                appUpdateManager.startUpdateFlowForResult(
+                                    appUpdateInfo,
+                                    updateResultLauncher,
+                                    options
+                                )
+                            } catch (e: Exception) {
+                                // Handle error - update flow could not be started
+                            }
+                        }
+                    }
+                }.addOnFailureListener {
+                    // Handle failure - could not check for updates
+                }
+            }
+        }
     }
 }
