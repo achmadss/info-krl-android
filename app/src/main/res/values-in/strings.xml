@@ -60,6 +60,10 @@
     <string name="theme_light">Mode terang</string>
     <string name="theme_system">Mengikuti sistem</string>
     <string name="language">Bahasa</string>
+    <string name="schedule_layout_type">Desain Jadwal</string>
+    <string name="compact_schedule_layout">Desain Rapat</string>
+    <string name="comfortable_schedule_layout">Desain Nyaman</string>
+    <string name="detailed_schedule_layout">Desain Detail</string>
     <string name="time_format_24h">Format 24 jam</string>
     <string name="data">Data</string>
     <string name="clear_local_data">Hapus Data Lokal</string>

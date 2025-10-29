@@ -12,6 +12,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.core.di.util.injectLazy
 import dev.achmad.core.preference.toggle
+import dev.achmad.domain.layout.ScheduleLayouts
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
@@ -20,6 +21,7 @@ import dev.achmad.infokrl.components.preference.PreferenceScreen
 import dev.achmad.infokrl.screens.settings.credits.CreditsScreen
 import dev.achmad.infokrl.screens.settings.language.SettingsLanguageScreen
 import dev.achmad.infokrl.screens.settings.language.localeOptions
+import dev.achmad.infokrl.screens.settings.layout.scheduleLayoutOptions
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
 
 object SettingsScreen : Screen {
@@ -58,8 +60,10 @@ object SettingsScreen : Screen {
         applicationPreference: ApplicationPreference,
         navigator: Navigator,
     ): Preference {
+        val schedulesLayoutPreference = applicationPreference.scheduleLayoutType()
         val themePreference = applicationPreference.appTheme()
         val timeFormatPreference = applicationPreference.is24HourFormat()
+        val schedulesLayoutOptions = scheduleLayoutOptions()
         val themeOptions = themeOptions()
         val locale = LocalConfiguration.current.locales[0]
         val localeOptions = localeOptions()
@@ -79,6 +83,11 @@ object SettingsScreen : Screen {
                     onClick = {
                         navigator.push(SettingsLanguageScreen)
                     }
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    title = stringResource(R.string.schedule_layout_type),
+                    preference = schedulesLayoutPreference,
+                    entries = schedulesLayoutOptions,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = timeFormatPreference,
