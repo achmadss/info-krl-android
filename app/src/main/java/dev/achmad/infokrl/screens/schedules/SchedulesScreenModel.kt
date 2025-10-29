@@ -5,9 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import dev.achmad.core.util.TimeTicker
 import dev.achmad.core.util.inject
 import dev.achmad.core.util.injectContext
-import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.schedule.interactor.GetSchedule
 import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.domain.schedule.model.Schedule
