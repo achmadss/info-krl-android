@@ -4,6 +4,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
@@ -83,6 +84,7 @@ fun AppBar(
 
     scrollBehavior: TopAppBarScrollBehavior? = null,
     shadowElevation: Dp = 0.dp,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     val isActionMode by remember(actionModeCounter) {
         derivedStateOf { actionModeCounter > 0 }
@@ -91,6 +93,7 @@ fun AppBar(
     AppBar(
         modifier = modifier,
         backgroundColor = backgroundColor,
+        windowInsets = windowInsets,
         titleContent = {
             if (isActionMode) {
                 AppBarTitle(actionModeCounter.toString())
@@ -133,6 +136,7 @@ fun AppBar(
 
     scrollBehavior: TopAppBarScrollBehavior? = null,
     shadowElevation: Dp = 0.dp,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     Surface(
         shadowElevation = shadowElevation
@@ -157,6 +161,7 @@ fun AppBar(
                         }
                     }
                 },
+                windowInsets = windowInsets,
                 title = titleContent,
                 actions = actions,
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -301,6 +306,7 @@ fun SearchToolbar(
     searchQuery: String?,
     onChangeSearchQuery: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    backgroundColor: Color? = null,
     titleContent: @Composable () -> Unit = {},
     navigateUp: (() -> Unit)? = null,
     searchEnabled: Boolean = true,
@@ -312,11 +318,14 @@ fun SearchToolbar(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     shadowElevation: Dp = 0.dp,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     val focusRequester = remember { FocusRequester() }
 
     AppBar(
         modifier = modifier,
+        windowInsets = windowInsets,
+        backgroundColor = backgroundColor,
         titleContent = {
             if (searchQuery == null) return@AppBar titleContent()
 

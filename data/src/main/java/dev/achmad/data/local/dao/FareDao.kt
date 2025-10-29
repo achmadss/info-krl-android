@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import dev.achmad.data.local.entity.fare.FareEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FareDao {
@@ -15,6 +16,12 @@ interface FareDao {
         originStationId: String,
         destinationStationId: String,
     ): FareEntity?
+
+    @Query("SELECT * FROM fares WHERE station_from = :originStationId AND station_to = :destinationStationId")
+    fun subscribeSingle(
+        originStationId: String,
+        destinationStationId: String,
+    ): Flow<FareEntity?>
 
     @Query("SELECT * FROM fares")
     suspend fun awaitAll(): List<FareEntity>

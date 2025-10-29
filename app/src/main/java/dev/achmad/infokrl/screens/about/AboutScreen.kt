@@ -1,9 +1,6 @@
 package dev.achmad.infokrl.screens.about
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -24,9 +21,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.achmad.infokrl.BuildConfig
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
-import dev.achmad.infokrl.components.LinkIcon
-import dev.achmad.infokrl.components.preference.widget.TextPreferenceWidget
 import dev.achmad.infokrl.components.LogoHeader
+import dev.achmad.infokrl.components.preference.widget.TextPreferenceWidget
 
 object AboutScreen: Screen {
     private fun readResolve(): Any = AboutScreen

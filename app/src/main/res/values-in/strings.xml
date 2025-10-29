@@ -13,11 +13,11 @@
     <string name="action_add_station">Tambah Stasiun</string>
     <string name="no_schedule_found_for_query">Tidak ada jadwal yang ditemukan untuk\n\"%1$s\"</string>
     <string name="no_schedule_found">Tidak ada jadwal.\nCoba lagi besok.</string>
-    <string name="directions_to">Tujuan ke</string>
-    <string name="departs_at">Berangkat jam</string>
+    <string name="directions_to">Arah menuju</string>
+    <string name="departs_at">Berangkat pukul</string>
     <string name="stops_count">%1$d perhentian</string>
     <string name="stops_unknown">Tidak diketahui</string>
-    <string name="next_departures">Keberangkatan berikutnya</string>
+    <string name="next_departures">Jam berikutnya</string>
 
     <!-- SchedulesScreen -->
     <string name="no_upcoming_schedules">Tidak ada jadwal yang akan datang</string>

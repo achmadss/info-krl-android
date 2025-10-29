@@ -3,18 +3,17 @@ package dev.achmad.infokrl.screens.home.stations
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
-import dev.achmad.domain.station.model.Station
-import dev.achmad.domain.station.interactor.ReorderFavoriteStations
 import dev.achmad.domain.station.interactor.GetStation
+import dev.achmad.domain.station.interactor.ReorderFavoriteStations
 import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.interactor.ToggleFavoriteStation
+import dev.achmad.domain.station.model.Station
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -30,20 +29,14 @@ class StationsTabScreenModel(
     private val _searchQuery = MutableStateFlow<String?>(null)
     val searchQuery = _searchQuery.asStateFlow()
 
-    private val _syncStationResult = MutableStateFlow<SyncStation.Result>(SyncStation.Result.Loading)
+    private val _syncStationResult = MutableStateFlow<SyncStation.Result?>(null)
     val syncStationResult = _syncStationResult.asStateFlow()
 
-    private val dbStations = getStation.subscribeAll()
-        .map { stations ->
-            stations.ifEmpty {
-                fetchStations()
-                null
-            }
-        }.stateIn(
-            scope = screenModelScope,
-            started = SharingStarted.Eagerly,
-            initialValue = null
-        )
+    private val dbStations = getStation.subscribeAll().stateIn(
+        scope = screenModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = null
+    )
 
     val stations: StateFlow<List<Station>?> = combine(
         _searchQuery,
@@ -112,9 +105,9 @@ class StationsTabScreenModel(
     }
 
     fun fetchStations() {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             syncStation.subscribe().collect {
-                _syncStationResult.update { it }
+                _syncStationResult.value = it
             }
         }
     }

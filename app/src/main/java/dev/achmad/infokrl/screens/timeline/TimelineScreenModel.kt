@@ -4,17 +4,15 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import dev.achmad.core.di.util.inject
 import dev.achmad.core.util.TimeTicker
-import dev.achmad.domain.route.model.Route
 import dev.achmad.domain.route.interactor.GetRoute
 import dev.achmad.domain.route.interactor.SyncRoute
-import kotlinx.coroutines.Dispatchers
+import dev.achmad.domain.route.model.Route
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
@@ -29,7 +27,7 @@ class TimelineScreenModel(
     private val syncRoute: SyncRoute = inject(),
 ): ScreenModel {
 
-    private val _syncRouteResult = MutableStateFlow<SyncRoute.Result>(SyncRoute.Result.Loading)
+    private val _syncRouteResult = MutableStateFlow<SyncRoute.Result?>(null)
     val syncRouteResult = _syncRouteResult.asStateFlow()
 
     init {
@@ -69,9 +67,9 @@ class TimelineScreenModel(
     )
 
     private fun fetchRoute(trainId: String) {
-        screenModelScope.launch(Dispatchers.IO) {
+        screenModelScope.launch {
             syncRoute.subscribe(trainId).collect {
-                _syncRouteResult.update { it }
+                _syncRouteResult.value = it
             }
         }
     }

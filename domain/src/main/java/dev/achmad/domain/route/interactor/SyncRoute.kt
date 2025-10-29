@@ -2,8 +2,10 @@ package dev.achmad.domain.route.interactor
 
 import dev.achmad.domain.route.repository.RouteRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDateTime
@@ -16,15 +18,15 @@ class SyncRoute(
         trainId: String,
         checkShouldSync: Boolean = true
     ): Result {
-        return withContext(Dispatchers.IO) {
-            if (checkShouldSync && !shouldSync(trainId)) Result.AlreadySynced
-            try {
-                val route = routeRepository.fetch(trainId)
-                routeRepository.store(route)
-                Result.Success
-            } catch (e: Exception) {
-                Result.Error(e)
+        try {
+            if (checkShouldSync && !shouldSync(trainId)) {
+                return Result.AlreadySynced
             }
+            val route = routeRepository.fetch(trainId)
+            routeRepository.store(route)
+            return Result.Success
+        } catch (e: Exception) {
+            return Result.Error(e)
         }
     }
 
@@ -33,8 +35,9 @@ class SyncRoute(
         checkShouldSync: Boolean = true
     ): Flow<Result> = flow {
         emit(Result.Loading)
+        delay(10) // pull to refresh stuck at pulled down state without this, idk why
         emit(await(trainId, checkShouldSync))
-    }
+    }.flowOn(Dispatchers.IO)
 
     private suspend fun shouldSync(trainId: String): Boolean {
         return withContext(Dispatchers.IO) {

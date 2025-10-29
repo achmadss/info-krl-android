@@ -90,6 +90,10 @@ object StationsTab: Tab {
             screenModel.search(null)
         }
 
+        LaunchedEffect(Unit) {
+            screenModel.fetchStations()
+        }
+
         StationsTab(
             loading = syncStationResult is SyncStation.Result.Loading || stations == null,
             error = syncStationResult is SyncStation.Result.Error,
@@ -147,30 +151,6 @@ private fun StationsTab(
             return@Scaffold
         }
 
-        if (stations?.isEmpty() == true) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    modifier = Modifier.size(36.dp),
-                    imageVector = Icons.Default.SearchOff,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    text = stringResource(R.string.no_station_found, searchQuery ?: ""),
-                    textAlign = TextAlign.Center,
-                )
-            }
-            return@Scaffold
-        }
-
         if (error) {
             Column(
                 modifier = Modifier
@@ -199,6 +179,31 @@ private fun StationsTab(
                         Text(text = stringResource(R.string.action_try_again))
                     }
                 }
+            }
+            return@Scaffold
+        }
+
+
+        if (stations?.isEmpty() == true) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Icon(
+                    modifier = Modifier.size(36.dp),
+                    imageVector = Icons.Default.SearchOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    text = stringResource(R.string.no_station_found, searchQuery ?: ""),
+                    textAlign = TextAlign.Center,
+                )
             }
             return@Scaffold
         }

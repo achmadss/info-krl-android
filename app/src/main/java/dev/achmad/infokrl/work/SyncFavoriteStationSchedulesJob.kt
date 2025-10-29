@@ -6,8 +6,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkerParameters
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.domain.schedule.interactor.SyncSchedule
+import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.infokrl.util.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -35,13 +35,11 @@ class SyncFavoriteStationSchedulesJob(
                 val favoriteStations = getStation.awaitAll(favorite = true)
                 favoriteStations.map { station ->
                     async {
-                        if (syncSchedule.shouldSync(station.id)) {
-                            when (val result = syncSchedule.await(station.id)) {
-                                is SyncSchedule.Result.Error -> {
-                                    result.error.printStackTrace()
-                                }
-                                else -> Unit
+                        when (val result = syncSchedule.await(station.id)) {
+                            is SyncSchedule.Result.Error -> {
+                                result.error.printStackTrace()
                             }
+                            else -> Unit
                         }
                     }
                 }.awaitAll()

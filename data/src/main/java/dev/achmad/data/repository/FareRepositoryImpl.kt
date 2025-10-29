@@ -12,6 +12,9 @@ import dev.achmad.data.remote.model.fare.FareResponse
 import dev.achmad.data.remote.model.fare.toEntity
 import dev.achmad.domain.fare.model.Fare
 import dev.achmad.domain.fare.repository.FareRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 class FareRepositoryImpl(
     private val api: InfoKRLApi,
@@ -24,7 +27,15 @@ class FareRepositoryImpl(
         originStationId: String,
         destinationStationId: String
     ): Fare? {
-        TODO("Not yet implemented")
+        return fareDao.awaitSingle(originStationId, destinationStationId)?.toDomain()
+    }
+
+    override fun subscribe(
+        originStationId: String,
+        destinationStationId: String
+    ): Flow<Fare?> {
+        return fareDao.subscribeSingle(originStationId, destinationStationId)
+            .map { it?.toDomain() }
     }
 
     override suspend fun fetch(

@@ -26,21 +26,9 @@ class GetStation(
         return stationRepository.subscribeMultiple(stationIds)
     }
 
-    suspend fun awaitAll(): List<Station> {
-        return withContext(Dispatchers.IO) {
-            stationRepository.awaitAll()
-        }
-    }
-
     suspend fun awaitAll(favorite: Boolean?): List<Station> {
         return withContext(Dispatchers.IO) {
             stationRepository.awaitAll(favorite = favorite)
-        }
-    }
-
-    suspend fun awaitSingle(stationId: String): Station? {
-        return withContext(Dispatchers.IO) {
-            stationRepository.awaitSingle(stationId)
         }
     }
 

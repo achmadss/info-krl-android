@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -57,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -66,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -74,9 +79,9 @@ import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.achmad.core.di.util.injectLazy
-import dev.achmad.infokrl.R
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.schedule.interactor.SyncSchedule
+import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.AppBarActions
 import dev.achmad.infokrl.components.AppBarTitle
@@ -476,6 +481,169 @@ private fun mapTabContents(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun NewScheduleItem(
+    index: Int,
+    lastIndex: Int,
+    scheduleGroup: DepartureGroup.ScheduleGroup,
+    is24Hour: Boolean,
+    onClick: () -> Unit
+) {
+    val colorScheme = LocalColorScheme.current
+    val density = LocalDensity.current
+    val station = scheduleGroup.destinationStation
+    val schedules = scheduleGroup.schedules.ifEmpty { return }
+    val firstSchedule = schedules.first().schedule
+    val color = firstSchedule.color.toColor()
+    var height by remember { mutableStateOf(0.dp) }
+
+    Row(
+        modifier = Modifier
+            .clickable { onClick() },
+    ) {
+        Box(
+            modifier = Modifier
+                .height(height)
+                .background(
+                    color = color,
+                )
+                .padding(start = 6.dp),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onSizeChanged { with(density) { height = it.height.toDp() } }
+                .padding(top = 8.dp),
+        ) {
+            Text(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                text = firstSchedule.line,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (colorScheme == darkTheme) {
+                    color.brighter(.35f)
+                } else color.darken(.15f),
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                modifier = Modifier.padding(horizontal = 8.dp),
+                text = station.name,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            val firstScheduleEta = schedules.first().eta
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    modifier = Modifier.weight(0.33f),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = firstSchedule.departsAt.format(
+                            timeFormatter(is24Hour)
+                        ),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                    )
+                }
+                Text(
+                    modifier = Modifier.weight(0.33f),
+                    text = firstScheduleEta,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Row(
+                    modifier = Modifier.weight(0.33f).padding(end = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Icon(
+                        modifier = Modifier.size(12.dp),
+                        imageVector = Icons.Default.Train,
+                        contentDescription = null,
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = firstSchedule.trainId,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val previewSchedules =
+                if (schedules.size <= 3) schedules
+                else schedules.take(4).drop(1)
+
+            if (previewSchedules.isNotEmpty()) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                previewSchedules.fastForEach { uiSchedule ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(0.33f),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = uiSchedule.schedule.departsAt.format(
+                                    timeFormatter(is24Hour)
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                        Text(
+                            modifier = Modifier.weight(0.33f),
+                            text = uiSchedule.eta,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center,
+                        )
+                        Row(
+                            modifier = Modifier.weight(0.33f).padding(end = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            Icon(
+                                modifier = Modifier.size(12.dp),
+                                imageVector = Icons.Default.Train,
+                                contentDescription = null,
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = firstSchedule.trainId,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (index != lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            if (index == lastIndex) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
     }
 }
 
