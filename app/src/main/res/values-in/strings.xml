@@ -66,6 +66,7 @@
     <string name="clear_local_data">Hapus Data</string>
     <string name="clear_local_data_subtitle">Hapus semua data yang disimpan</string>
     <string name="clear_local_data_description">Hapus semua data jadwal, stasiun, dan perjalanan. Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="clear_local_data_success">Data yang disimpan telah dihapus</string>
 
     <!-- AboutScreen -->
     <string name="about">Tentang</string>

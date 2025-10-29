@@ -66,6 +66,7 @@
     <string name="clear_local_data">Clear Data</string>
     <string name="clear_local_data_subtitle">Delete all saved data</string>
     <string name="clear_local_data_description">This will delete all schedules, stations, and trips data. This action cannot be undone.</string>
+    <string name="clear_local_data_success">Saved data has been deleted</string>
 
     <!-- AboutScreen -->
     <string name="about">About</string>
