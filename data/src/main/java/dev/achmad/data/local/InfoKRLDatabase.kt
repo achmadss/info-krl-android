@@ -21,7 +21,7 @@ import dev.achmad.data.local.entity.transit.TransitEntity
         FareEntity::class,
         TransitEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class InfoKRLDatabase: RoomDatabase() {

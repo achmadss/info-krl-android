@@ -18,7 +18,7 @@ class GetTransit(
         )
     }
 
-    suspend fun await(
+    suspend fun awaitSingle(
         originStationId: String,
         destinationStationId: String
     ): Transit? {

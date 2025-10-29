@@ -9,7 +9,7 @@ fun TransitResponse.toEntity(): TransitEntity {
         originStationName = this.originStationName,
         destinationStationId = this.destinationStationId,
         destinationStationName = this.destinationStationName,
-        totalStops = this.totalStops,
+        totalStops = this.totalStops.toString(),
         routeGroups = this.routeGroups.map { it.toEntity() }
     )
 }

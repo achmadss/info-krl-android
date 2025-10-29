@@ -57,6 +57,7 @@ import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBarTitle
 import dev.achmad.infokrl.components.SearchToolbar
+import dev.achmad.infokrl.components.StationListItem
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -349,7 +350,7 @@ private fun StationsTab(
                 items = unpinnedStations,
                 key = { _, item -> "unpinned_${item.id}" }
             ) { index, station ->
-                StationItem(
+                StationListItem(
                     station = station,
                     onTogglePin = { onTogglePin(station) },
                     onClick = { onTogglePin(station) },
@@ -359,62 +360,6 @@ private fun StationsTab(
                 if (index != unpinnedStations.lastIndex) {
                     HorizontalDivider()
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StationItem(
-    station: Station,
-    onTogglePin: () -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isDragging: Boolean = false,
-    showDragHandle: Boolean = false,
-    enabled: Boolean = true
-) {
-    val icon = if (station.favorite) R.drawable.push_pin else R.drawable.push_pin_outline
-    val backgroundColor = if (isDragging) {
-        MaterialTheme.colorScheme.surfaceVariant
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    Surface(
-        modifier = modifier,
-        color = backgroundColor,
-        shadowElevation = if (isDragging) 4.dp else 0.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .clickable(enabled = enabled) { onClick() }
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (showDragHandle) {
-                Icon(
-                    imageVector = Icons.Default.DragHandle,
-                    contentDescription = stringResource(R.string.content_desc_drag_handle),
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-            }
-            Text(
-                modifier = Modifier.weight(1f),
-                text = station.name,
-                style = MaterialTheme.typography.bodyLarge,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            IconButton(
-                onClick = onTogglePin,
-                enabled = enabled
-            ) {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
             }
         }
     }

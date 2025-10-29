@@ -9,7 +9,7 @@ data class TransitResponse(
     @SerialName("origin_station_name") val originStationName: String,
     @SerialName("destination_station_id") val destinationStationId: String,
     @SerialName("destination_station_name") val destinationStationName: String,
-    @SerialName("total_stops") val totalStops: String,
+    @SerialName("total_stops") val totalStops: Int,
     @SerialName("routes") val routeGroups: List<RouteResponse>
 ) {
     @Serializable

@@ -41,7 +41,7 @@ class InfoKRLApi(
         return networkHelper.client.newCall(
             GET(
                 preference.baseUrl().get() +
-                "/v1/krl/fare?stationfrom=$originStationId&stationto=$destinationStationId"
+                "/v1/krl/fare?from=$originStationId&to=$destinationStationId"
             )
         ).await()
     }
@@ -53,7 +53,7 @@ class InfoKRLApi(
         return networkHelper.client.newCall(
             GET(
                 preference.baseUrl().get() +
-                "/v1/krl/transit?stationfrom=$originStationId&stationto=$destinationStationId"
+                "/v1/krl/transit?from=$originStationId&to=$destinationStationId"
             )
         ).await()
     }
