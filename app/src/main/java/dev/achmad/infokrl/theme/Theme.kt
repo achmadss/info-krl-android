@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import dev.achmad.core.di.util.inject
+import dev.achmad.core.util.inject
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.theme.Themes
 import dev.achmad.infokrl.util.collectAsState

@@ -2,8 +2,8 @@ package dev.achmad.infokrl.screens.settings
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.core.di.util.inject
-import dev.achmad.core.di.util.injectContext
+import dev.achmad.core.util.inject
+import dev.achmad.core.util.injectContext
 import dev.achmad.core.util.ToastHelper
 import dev.achmad.domain.fare.interactor.WipeFareTables
 import dev.achmad.domain.route.interactor.WipeRouteTables

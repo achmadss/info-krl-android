@@ -1,6 +1,8 @@
-package dev.achmad.core.di
+package dev.achmad.infokrl.di
 
 import android.content.Context
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import dev.achmad.core.BuildConfig
 import dev.achmad.core.network.NetworkHelper
 import dev.achmad.core.preference.AndroidPreferenceStore
@@ -17,4 +19,5 @@ val coreModule = module {
             androidContext().getSharedPreferences("app_pref", Context.MODE_PRIVATE)
         )
     }
+    single<AppUpdateManager> { AppUpdateManagerFactory.create(androidContext()) }
 }

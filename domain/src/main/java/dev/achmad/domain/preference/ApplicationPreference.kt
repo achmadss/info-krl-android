@@ -26,4 +26,9 @@ class ApplicationPreference(
         key = "app_theme",
         defaultValue = Themes.SYSTEM,
     )
+
+    fun checkForUpdateOnLaunch() = preferenceStore.getBoolean(
+        key = "check_for_update_on_launch",
+        defaultValue = true
+    )
 }

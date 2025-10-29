@@ -53,7 +53,7 @@ import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import dev.achmad.core.di.util.injectLazy
+import dev.achmad.core.util.injectLazy
 import dev.achmad.domain.preference.ApplicationPreference
 import dev.achmad.domain.schedule.interactor.SyncSchedule
 import dev.achmad.infokrl.R

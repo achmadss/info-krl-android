@@ -2,7 +2,7 @@ package dev.achmad.infokrl.screens.timeline
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.core.di.util.inject
+import dev.achmad.core.util.inject
 import dev.achmad.core.util.TimeTicker
 import dev.achmad.domain.route.interactor.GetRoute
 import dev.achmad.domain.route.interactor.SyncRoute

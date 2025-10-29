@@ -1,4 +1,4 @@
-package dev.achmad.core.di.util
+package dev.achmad.core.util
 
 import android.content.Context
 import org.koin.android.ext.koin.androidContext
