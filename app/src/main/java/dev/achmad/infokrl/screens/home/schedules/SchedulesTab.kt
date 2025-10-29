@@ -556,7 +556,7 @@ private fun LineAccordion(
                     ),
                     color = if (colorScheme == darkTheme) {
                         color.brighter(.35f)
-                    } else color.darken(.15f),
+                    } else color,
                 )
             }
             Icon(
