@@ -58,7 +58,6 @@ private fun AboutScreen(
     onClickVersion: () -> Unit = {},
     onClickChangelog: () -> Unit = {},
     onClickCredits: () -> Unit = {},
-    onClickPrivacyPolicy: () -> Unit = {},
     onGithubClick: () -> Unit = {},
     onWebsiteClick: () -> Unit = {},
 ) {

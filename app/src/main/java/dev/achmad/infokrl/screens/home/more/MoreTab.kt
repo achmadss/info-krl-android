@@ -90,13 +90,7 @@ private fun MoreTab(
     val theme by themePreference.collectAsState()
     val themeOptions = themeOptions()
 
-    Scaffold(
-        topBar = {
-            AppBar(
-                title = "More",
-            )
-        }
-    ) { contentPadding ->
+    Scaffold { contentPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

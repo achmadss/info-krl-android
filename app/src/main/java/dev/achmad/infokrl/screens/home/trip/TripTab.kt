@@ -1,16 +1,21 @@
 package dev.achmad.infokrl.screens.home.trip
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
@@ -38,18 +43,42 @@ object TripTab : Tab {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
-        Scaffold(
-            topBar = {
+
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun TripTab(
+    loading: Boolean,
+    onClickSubmit: () -> Unit = {}
+) {
+    Scaffold(
+        topBar = {
+            Surface(
+                shadowElevation = 4.dp
+            ) {
                 AppBar(
-                    title = "Trip", // TODO string resource
+                    title = "Trip Planner" // TODO string resource
                 )
             }
-        ) { contentPadding ->
-            LazyColumn(
+        }
+    ) { contentPadding ->
+        if (loading) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(contentPadding)
-            ) {
+                    .padding(contentPadding),
+                contentAlignment = Alignment.Center
+            ) { CircularProgressIndicator() }
+            return@Scaffold
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding)
+        ) {
+            item {
 
             }
         }

@@ -4,6 +4,7 @@ import dev.achmad.data.repository.FareRepositoryImpl
 import dev.achmad.data.repository.RouteRepositoryImpl
 import dev.achmad.data.repository.ScheduleRepositoryImpl
 import dev.achmad.data.repository.StationRepositoryImpl
+import dev.achmad.data.repository.TransitRepositoryImpl
 import dev.achmad.domain.fare.interactor.GetFare
 import dev.achmad.domain.fare.interactor.SyncFare
 import dev.achmad.domain.fare.interactor.WipeFareTables
@@ -23,6 +24,10 @@ import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.interactor.ToggleFavoriteStation
 import dev.achmad.domain.station.interactor.WipeStationTables
 import dev.achmad.domain.station.repository.StationRepository
+import dev.achmad.domain.transit.interactor.GetTransit
+import dev.achmad.domain.transit.interactor.SyncTransit
+import dev.achmad.domain.transit.interactor.WipeTransitTables
+import dev.achmad.domain.transit.repository.TransitRepository
 import org.koin.dsl.module
 
 val domainModule = module {
@@ -47,6 +52,11 @@ val domainModule = module {
     factory { GetFare(get()) }
     factory { SyncFare(get()) }
     factory { WipeFareTables(get()) }
+
+    single<TransitRepository> { TransitRepositoryImpl(get(), get()) }
+    factory { GetTransit(get()) }
+    factory { SyncTransit(get()) }
+    factory { WipeTransitTables(get()) }
 
     single<ApplicationPreference> { ApplicationPreference(get()) }
 }

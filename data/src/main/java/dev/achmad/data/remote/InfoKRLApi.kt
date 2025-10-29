@@ -45,4 +45,16 @@ class InfoKRLApi(
             )
         ).await()
     }
+
+    suspend fun getTransitByStationIds(
+        originStationId: String,
+        destinationStationId: String,
+    ): Response {
+        return networkHelper.client.newCall(
+            GET(
+                preference.baseUrl().get() +
+                "/v1/krl/transit?stationfrom=$originStationId&stationto=$destinationStationId"
+            )
+        ).await()
+    }
 }
