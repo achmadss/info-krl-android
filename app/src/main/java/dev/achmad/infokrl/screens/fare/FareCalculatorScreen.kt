@@ -114,7 +114,7 @@ private fun FareCalculatorScreen(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBar(
-                title = "Fare Calculator", // TODO string resource
+                title = stringResource(R.string.fare_calculator),
                 navigateUp = onNavigateUp,
             )
         }
@@ -128,7 +128,7 @@ private fun FareCalculatorScreen(
         ) {
             // Origin station textbox
             StationTextField(
-                label = "From", // TODO string resource
+                label = stringResource(R.string.from),
                 value = originStation.second,
                 onClick = {
                     stationSelectionTarget = "origin"
@@ -137,7 +137,7 @@ private fun FareCalculatorScreen(
 
             // Destination station textbox
             StationTextField(
-                label = "To", // TODO string resource
+                label = stringResource(R.string.to),
                 value = destinationStation.second,
                 onClick = {
                     stationSelectionTarget = "destination"
@@ -154,7 +154,7 @@ private fun FareCalculatorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = calculateButtonEnabled
             ) {
-                Text(text = "Calculate") // TODO string resource
+                Text(text = stringResource(R.string.calculate))
             }
 
             // Fare display section
@@ -206,7 +206,7 @@ private fun FareCalculatorScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Fare", // TODO string resource
+                            text = stringResource(R.string.fare),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )

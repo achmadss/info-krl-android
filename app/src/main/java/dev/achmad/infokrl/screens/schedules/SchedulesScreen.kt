@@ -73,6 +73,7 @@ private const val BLINK_DELAY = 300L
 data class SchedulesScreen(
     private val originStationId: String,
     private val destinationStationId: String,
+    private val line: String,
     private val scheduleId: String? = null,
 ): Screen {
 
@@ -83,6 +84,7 @@ data class SchedulesScreen(
             SchedulesScreenModel(
                 originStationId = originStationId,
                 destinationStationId = destinationStationId,
+                line = line,
             )
         }
         val schedules by screenModel.scheduleGroup.collectAsState()

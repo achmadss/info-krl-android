@@ -42,12 +42,12 @@ object SettingsScreen : Screen {
             itemsProvider = {
                 listOf(
                     appearanceGroup(appPreference, navigator),
-                    aboutGroup(navigator),
                     dataGroup(
                         onClickClearData = {
                             screenModel.wipeAllData()
                         }
-                    )
+                    ),
+                    aboutGroup(navigator),
                 )
             },
         )
@@ -115,11 +115,11 @@ object SettingsScreen : Screen {
         onClickClearData: () -> Unit = {},
     ): Preference {
         return Preference.PreferenceGroup(
-            title = "Data", // TODO add string resource
+            title = stringResource(R.string.data),
             preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
-                    title = "Clear Local Data",
-                    subtitle = "This action cannot be undone",
+                    title = stringResource(R.string.clear_local_data),
+                    subtitle = stringResource(R.string.clear_local_data_warning),
                     onClick = onClickClearData
                 )
             )

@@ -20,11 +20,15 @@
     <string name="next_departures">Next departures</string>
 
     <!-- SchedulesScreen -->
+    <string name="schedules">Schedules</string>
     <string name="no_upcoming_schedules">No upcoming schedules found</string>
     <string name="action_refresh">Refresh</string>
 
     <!-- TimelineScreen -->
-    <string name="train">Train</string>
+    <string name="train">Train %1$s</string>
+
+    <!-- TripTab -->
+    <string name="trip">Trip</string>
 
     <!-- StationsTab -->
     <string name="stations">Stations</string>
@@ -36,6 +40,18 @@
     <string name="all">All</string>
     <string name="content_desc_drag_handle">Drag handle</string>
 
+    <!-- MoreTab -->
+    <string name="more">More</string>
+    <string name="fare_calculator">Travel Fare</string>
+    <string name="report_problem">Report a problem</string>
+
+    <!-- FareCalculatorScreen -->
+    <string name="from">From</string>
+    <string name="to">To</string>
+    <string name="calculate">Calculate</string>
+    <string name="fare">Fare</string>
+    <string name="select_station">Select station</string>
+
     <!-- SettingsScreen -->
     <string name="settings">Settings</string>
     <string name="appearance">Appearance</string>
@@ -45,6 +61,9 @@
     <string name="theme_system">Follow system</string>
     <string name="language">Language</string>
     <string name="time_format_24h">24-hour format</string>
+    <string name="data">Data</string>
+    <string name="clear_local_data">Clear Local Data</string>
+    <string name="clear_local_data_warning">This action cannot be undone</string>
 
     <!-- AboutScreen -->
     <string name="about">About</string>
@@ -87,4 +106,10 @@
     <!-- Languages -->
     <string name="language_english" translatable="false">English</string>
     <string name="language_indonesian" translatable="false">Indonesia</string>
+
+    <!-- Licenses -->
+    <string name="license_apache_2.0" translatable="false">Apache License 2.0</string>
+
+    <!-- General/Common strings -->
+    <string name="close">Close</string>
 </resources>

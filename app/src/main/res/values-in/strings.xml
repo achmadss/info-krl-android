@@ -20,11 +20,15 @@
     <string name="next_departures">Jam berikutnya</string>
 
     <!-- SchedulesScreen -->
+    <string name="schedules">Jadwal</string>
     <string name="no_upcoming_schedules">Tidak ada jadwal yang akan datang</string>
     <string name="action_refresh">Segarkan</string>
 
     <!-- TimelineScreen -->
     <string name="train">Kereta</string>
+
+    <!-- TripTab -->
+    <string name="trip">Perjalanan</string>
 
     <!-- StationsTab -->
     <string name="stations">Stasiun</string>
@@ -36,6 +40,18 @@
     <string name="all">Semua</string>
     <string name="content_desc_drag_handle">Pegangan geser</string>
 
+    <!-- MoreTab -->
+    <string name="more">Lainnya</string>
+    <string name="fare_calculator">Tarif Perjalanan</string>
+    <string name="report_problem">Laporkan Masalah</string>
+
+    <!-- FareCalculatorScreen -->
+    <string name="from">Dari</string>
+    <string name="to">Ke</string>
+    <string name="calculate">Hitung</string>
+    <string name="fare">Tarif</string>
+    <string name="select_station">Pilih stasiun</string>
+
     <!-- SettingsScreen -->
     <string name="settings">Pengaturan</string>
     <string name="appearance">Tampilan</string>
@@ -45,6 +61,9 @@
     <string name="theme_system">Mengikuti sistem</string>
     <string name="language">Bahasa</string>
     <string name="time_format_24h">Format 24 jam</string>
+    <string name="data">Data</string>
+    <string name="clear_local_data">Hapus Data Lokal</string>
+    <string name="clear_local_data_warning">Tindakan ini tidak dapat dibatalkan</string>
 
     <!-- AboutScreen -->
     <string name="about">Tentang</string>
@@ -83,5 +102,8 @@
     <string name="time_minutes">menit</string>
     <string name="time_ago">yang lalu</string>
     <string name="time_in">dalam</string>
+
+    <!-- General/Common strings -->
+    <string name="close">Tutup</string>
 
 </resources>

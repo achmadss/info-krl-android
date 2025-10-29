@@ -61,7 +61,7 @@ object TripTab : Tab {
             val isSelected = LocalTabNavigator.current.current.key == key
             return TabOptions(
                 index = 2u,
-                title = "Trip", // TODO string resource
+                title = stringResource(R.string.trip),
                 icon = rememberVectorPainter(
                     when {
                         isSelected -> Icons.Default.Map
@@ -128,7 +128,7 @@ private fun TripTab(
                 shadowElevation = 4.dp
             ) {
                 AppBar(
-                    title = "Trip Planner" // TODO string resource
+                    title = stringResource(R.string.trip),
                 )
             }
         }
