@@ -444,6 +444,7 @@ private fun mapTabContents(
                                         key = { _, item -> item.line }
                                     ) { index, scheduleGroup ->
                                         LineAccordion(
+                                            index = index,
                                             scheduleGroup = scheduleGroup,
                                             is24Hour = is24Hour,
                                             onClickStationDetail = onClickStationDetail,
@@ -504,6 +505,7 @@ private fun mapTabContents(
 
 @Composable
 private fun LineAccordion(
+    index: Int,
     scheduleGroup: DepartureGroup.ScheduleGroup,
     is24Hour: Boolean,
     onClickStationDetail: (originStationId: String, destinationStationId: String, line: String, scheduleId: String) -> Unit,
@@ -527,7 +529,10 @@ private fun LineAccordion(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .topBorder()
+                .then(
+                    if (index > 0) Modifier
+                    else Modifier.topBorder()
+                )
                 .bottomBorder()
                 .clickable { expanded = !expanded },
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -715,14 +720,9 @@ private fun NewScheduleItem(
                 }
             }
 
-            if (index != lastIndex) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-            if (index == lastIndex) {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 16.dp)
+            )
         }
     }
 }
