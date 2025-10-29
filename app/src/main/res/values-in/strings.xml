@@ -62,8 +62,10 @@
     <string name="language">Bahasa</string>
     <string name="time_format_24h">Format 24 jam</string>
     <string name="data">Data</string>
-    <string name="clear_local_data">Hapus Data Lokal</string>
-    <string name="clear_local_data_warning">Tindakan ini tidak dapat dibatalkan</string>
+    <string name="warning">Peringatan</string>
+    <string name="clear_local_data">Hapus Data</string>
+    <string name="clear_local_data_subtitle">Hapus semua data yang disimpan</string>
+    <string name="clear_local_data_description">Hapus semua data jadwal, stasiun, dan perjalanan. Tindakan ini tidak dapat dibatalkan.</string>
 
     <!-- AboutScreen -->
     <string name="about">Tentang</string>
@@ -105,5 +107,6 @@
 
     <!-- General/Common strings -->
     <string name="close">Tutup</string>
+    <string name="cancel">Batal</string>
 
 </resources>

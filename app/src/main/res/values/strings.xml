@@ -62,8 +62,10 @@
     <string name="language">Language</string>
     <string name="time_format_24h">24-hour format</string>
     <string name="data">Data</string>
-    <string name="clear_local_data">Clear Local Data</string>
-    <string name="clear_local_data_warning">This action cannot be undone</string>
+    <string name="warning">Warning</string>
+    <string name="clear_local_data">Clear Data</string>
+    <string name="clear_local_data_subtitle">Delete all saved data</string>
+    <string name="clear_local_data_description">This will delete all schedules, stations, and trips data. This action cannot be undone.</string>
 
     <!-- AboutScreen -->
     <string name="about">About</string>
@@ -112,4 +114,5 @@
 
     <!-- General/Common strings -->
     <string name="close">Close</string>
+    <string name="cancel">Cancel</string>
 </resources>

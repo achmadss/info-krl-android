@@ -43,7 +43,7 @@ object SettingsScreen : Screen {
                 listOf(
                     appearanceGroup(appPreference, navigator),
                     dataGroup(
-                        onClickClearData = {
+                        onConfirmClearData = {
                             screenModel.wipeAllData()
                         }
                     ),
@@ -112,15 +112,18 @@ object SettingsScreen : Screen {
 
     @Composable
     private fun dataGroup(
-        onClickClearData: () -> Unit = {},
+        onConfirmClearData: () -> Unit = {},
     ): Preference {
         return Preference.PreferenceGroup(
             title = stringResource(R.string.data),
             preferenceItems = listOf(
-                Preference.PreferenceItem.TextPreference(
+                Preference.PreferenceItem.AlertDialogPreference(
                     title = stringResource(R.string.clear_local_data),
-                    subtitle = stringResource(R.string.clear_local_data_warning),
-                    onClick = onClickClearData
+                    subtitle = stringResource(R.string.clear_local_data_subtitle),
+                    dialogTitle = stringResource(R.string.warning),
+                    dialogText = stringResource(R.string.clear_local_data_description),
+                    onConfirm = onConfirmClearData,
+                    onCancel = {}
                 )
             )
         )
