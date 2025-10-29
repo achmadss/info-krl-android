@@ -69,7 +69,7 @@ object StationsTab: Tab {
             val isSelected = LocalTabNavigator.current.current.key == key
             return TabOptions(
                 index = 2u,
-                title = "Stations", // TODO string resource
+                title = stringResource(R.string.stations),
                 icon = rememberVectorPainter(
                     when {
                         isSelected -> Icons.Default.Train

@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -202,4 +204,46 @@ fun Modifier.onClickInput(
                 }
             }
         }
+}
+
+@Composable
+fun Modifier.topBorder(
+    strokeWidth: Dp = 1.dp,
+    color: Color = DividerDefaults.color
+) = composed {
+    val density = LocalDensity.current
+    val strokeWidthPx = density.run { strokeWidth.toPx() }
+
+    Modifier.drawBehind {
+        val width = size.width
+        val height = 0f
+
+        drawLine(
+            color = color,
+            start = Offset(x = 0f, y = height),
+            end = Offset(x = width , y = height),
+            strokeWidth = strokeWidthPx
+        )
+    }
+}
+
+@Composable
+fun Modifier.bottomBorder(
+    strokeWidth: Dp = 1.dp,
+    color: Color = DividerDefaults.color
+) = composed {
+    val density = LocalDensity.current
+    val strokeWidthPx = density.run { strokeWidth.toPx() }
+
+    Modifier.drawBehind {
+        val width = size.width
+        val height = size.height - strokeWidthPx/2
+
+        drawLine(
+            color = color,
+            start = Offset(x = 0f, y = height),
+            end = Offset(x = width , y = height),
+            strokeWidth = strokeWidthPx
+        )
+    }
 }

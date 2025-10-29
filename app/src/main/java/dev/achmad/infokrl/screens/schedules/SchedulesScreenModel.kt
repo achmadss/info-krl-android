@@ -40,6 +40,7 @@ data class ScheduleGroup(
 class SchedulesScreenModel(
     private val originStationId: String,
     private val destinationStationId: String,
+    private val line: String,
     private val getSchedule: GetSchedule = inject(),
     private val syncSchedule: SyncSchedule = inject(),
     private val getStation: GetStation = inject(),
@@ -75,6 +76,7 @@ class SchedulesScreenModel(
             else -> {
                 val filteredSchedules = schedules
                     .filter { it.stationDestinationId == destinationStationId }
+                    .filter { it.line == line }
                     .filter { it.departsAt.toLocalDate() == LocalDate.now() }
                     .sortedBy { it.departsAt }
                     .map { schedule ->

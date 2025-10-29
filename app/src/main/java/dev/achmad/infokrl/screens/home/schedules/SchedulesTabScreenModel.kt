@@ -37,13 +37,19 @@ data class DepartureGroup(
     val scheduleGroup: StateFlow<List<ScheduleGroup>?>
 ) {
     data class ScheduleGroup(
-        val destinationStation: Station,
-        val schedules: List<UISchedule>
+        val line: String,
+        val color: String?,
+        val destinationGroups: List<DestinationGroup>
     ) {
-        data class UISchedule(
-            val schedule: Schedule,
-            val eta: String,
-        )
+        data class DestinationGroup(
+            val destinationStation: Station,
+            val schedules: List<UISchedule>
+        ) {
+            data class UISchedule(
+                val schedule: Schedule,
+                val eta: String,
+            )
+        }
     }
 }
 
@@ -134,33 +140,47 @@ class SchedulesTabScreenModel(
         stations: List<Station>,
         currentTime: LocalDateTime,
     ): List<DepartureGroup.ScheduleGroup> {
-        val schedulesByDestination = schedules.groupBy { it.stationDestinationId }
-        return schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
-            val destinationStation = stations.firstOrNull { it.id == destinationId }
-            destinationStation?.let {
-                val sortedSchedules = schedulesForDest
-                    .filter { it.departsAt.isAfter(currentTime) }
-                    .sortedBy { it.departsAt }
-                val uiSchedules = sortedSchedules.map { schedule ->
-                    DepartureGroup.ScheduleGroup.UISchedule(
-                        schedule = schedule,
-                        eta = etaString(
-                            context = injectContext(),
-                            now = currentTime,
-                            target = schedule.departsAt,
-                        ),
-                    )
+        // First group by line
+        val schedulesByLine = schedules.groupBy { it.line }
+        return schedulesByLine.mapNotNull { (line, schedulesForLine) ->
+            // Within each line, group by destination station
+            val schedulesByDestination = schedulesForLine.groupBy { it.stationDestinationId }
+            
+            val destinationGroups = schedulesByDestination.mapNotNull { (destinationId, schedulesForDest) ->
+                val destinationStation = stations.firstOrNull { it.id == destinationId }
+                destinationStation?.let {
+                    val sortedSchedules = schedulesForDest
+                        .filter { it.departsAt.isAfter(currentTime) }
+                        .sortedBy { it.departsAt }
+                    
+                    val uiSchedules = sortedSchedules.map { schedule ->
+                        DepartureGroup.ScheduleGroup.DestinationGroup.UISchedule(
+                            schedule = schedule,
+                            eta = etaString(
+                                context = injectContext(),
+                                now = currentTime,
+                                target = schedule.departsAt,
+                            ),
+                        )
+                    }
+                    
+                    if (uiSchedules.isNotEmpty()) {
+                        DepartureGroup.ScheduleGroup.DestinationGroup(
+                            destinationStation = destinationStation,
+                            schedules = uiSchedules
+                        )
+                    } else null
                 }
-                if (uiSchedules.isNotEmpty()) {
-                    DepartureGroup.ScheduleGroup(
-                        destinationStation = destinationStation,
-                        schedules = uiSchedules
-                    )
-                } else null
             }
-        }.sortedBy { scheduleGroup ->
-            scheduleGroup.schedules.firstOrNull()?.schedule?.line
-        }
+            
+            if (destinationGroups.isNotEmpty()) {
+                DepartureGroup.ScheduleGroup(
+                    line = line,
+                    color = destinationGroups.firstOrNull()?.schedules?.firstOrNull()?.schedule?.color,
+                    destinationGroups = destinationGroups.sortedBy { it.destinationStation.name }
+                )
+            } else null
+        }.sortedBy { it.line }
     }
 
     private fun getScheduleFlow(stationId: String): StateFlow<List<Schedule>?> {

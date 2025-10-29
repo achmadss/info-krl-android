@@ -11,9 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.stringResource
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
 
 object TripTab : Tab {
@@ -25,7 +27,7 @@ object TripTab : Tab {
             val isSelected = LocalTabNavigator.current.current.key == key
             return TabOptions(
                 index = 2u,
-                title = "Trip", // TODO string resource
+                title = stringResource(R.string.trip),
                 icon = rememberVectorPainter(
                     when {
                         isSelected -> Icons.Default.Map
@@ -41,7 +43,7 @@ object TripTab : Tab {
         Scaffold(
             topBar = {
                 AppBar(
-                    title = "Trip", // TODO string resource
+                    title = stringResource(R.string.trip),
                 )
             }
         ) { contentPadding ->

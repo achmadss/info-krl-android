@@ -110,7 +110,7 @@ private fun TimelineScreen(
     Scaffold(
         topBar = {
             AppBar(
-                title = "${stringResource(R.string.train)} $trainId",
+                title = stringResource(R.string.train, trainId),
                 navigateUp = onNavigateUp,
                 shadowElevation = 4.dp,
             )

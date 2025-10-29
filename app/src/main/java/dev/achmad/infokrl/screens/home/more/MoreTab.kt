@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.outlined.Calculate
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Report
@@ -32,7 +31,6 @@ import dev.achmad.infokrl.components.AppBar
 import dev.achmad.infokrl.components.LogoHeader
 import dev.achmad.infokrl.components.preference.widget.ListPreferenceWidget
 import dev.achmad.infokrl.components.preference.widget.TextPreferenceWidget
-import dev.achmad.infokrl.screens.about.AboutScreen
 import dev.achmad.infokrl.screens.fare.FareCalculatorScreen
 import dev.achmad.infokrl.screens.settings.SettingsScreen
 import dev.achmad.infokrl.screens.settings.theme.themeOptions
@@ -47,7 +45,7 @@ object MoreTab : Tab {
             val isSelected = LocalTabNavigator.current.current.key == key
             return TabOptions(
                 index = 2u,
-                title = "More", // TODO string resource
+                title = stringResource(R.string.more),
                 icon = rememberVectorPainter(
                     when {
                         isSelected -> Icons.Default.MoreHoriz
@@ -69,9 +67,6 @@ object MoreTab : Tab {
             onClickSettings = {
                 navigator.push(SettingsScreen)
             },
-            onClickAbout = {
-                navigator.push(AboutScreen)
-            }
         )
     }
 }
@@ -82,7 +77,6 @@ private fun MoreTab(
     onClickReport: () -> Unit = {},
     onClickFareCalc: () -> Unit = {},
     onClickSettings: () -> Unit = {},
-    onClickAbout: () -> Unit = {},
 ) {
     val applicationPreference by injectLazy<ApplicationPreference>()
     val themePreference = applicationPreference.appTheme()
@@ -120,30 +114,23 @@ private fun MoreTab(
             item { HorizontalDivider() }
             item {
                 TextPreferenceWidget(
-                    title = "Fare Calculator",
+                    title = stringResource(R.string.fare_calculator),
                     icon = Icons.Outlined.Calculate,
                     onPreferenceClick = onClickFareCalc
                 )
             }
             item {
                 TextPreferenceWidget(
-                    title = "Report",
+                    title = stringResource(R.string.report_problem),
                     icon = Icons.Outlined.Report,
                     onPreferenceClick = onClickReport
                 )
             }
             item {
                 TextPreferenceWidget(
-                    title = "Settings",
+                    title = stringResource(R.string.settings),
                     icon = Icons.Outlined.Settings,
                     onPreferenceClick = onClickSettings
-                )
-            }
-            item {
-                TextPreferenceWidget(
-                    title = "About",
-                    icon = Icons.Outlined.Info,
-                    onPreferenceClick = onClickAbout
                 )
             }
         }
