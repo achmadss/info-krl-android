@@ -10,7 +10,7 @@ class ApplicationPreference(
 ) {
     fun scheduleLayoutType() = preferenceStore.getEnum(
         key = "schedule_layout_type",
-        defaultValue = ScheduleLayouts.COMFORTABLE
+        defaultValue = ScheduleLayouts.NORMAL
     )
 
     fun hasCompletedOnboarding() = preferenceStore.getBoolean(

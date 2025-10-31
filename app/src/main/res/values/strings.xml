@@ -61,9 +61,8 @@
     <string name="theme_system">Follow system</string>
     <string name="language">Language</string>
     <string name="schedule_layout_type">Schedule Layout</string>
-    <string name="compact_schedule_layout">Compact Layout</string>
-    <string name="comfortable_schedule_layout">Comfortable Layout</string>
-    <string name="detailed_schedule_layout">Detailed Layout</string>
+    <string name="minimal_schedule_layout">Minimal Layout</string>
+    <string name="normal_schedule_layout">Normal Layout</string>
     <string name="time_format_24h">24-hour format</string>
     <string name="data">Data</string>
     <string name="warning">Warning</string>

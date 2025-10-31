@@ -434,7 +434,7 @@ private fun mapTabContents(
                                         key = { _, item -> item.line }
                                     ) { index, scheduleGroup ->
                                         when (scheduleLayout) {
-                                            ScheduleLayouts.COMPACT -> {
+                                            ScheduleLayouts.MINIMAL -> {
                                                 MinimalLineGroup(
                                                     index = index,
                                                     scheduleGroup = scheduleGroup,
@@ -443,7 +443,7 @@ private fun mapTabContents(
                                                     originStationId = group.station.id
                                                 )
                                             }
-                                            ScheduleLayouts.COMFORTABLE -> {
+                                            ScheduleLayouts.NORMAL -> {
                                                 LineAccordion(
                                                     index = index,
                                                     scheduleGroup = scheduleGroup,
@@ -452,8 +452,6 @@ private fun mapTabContents(
                                                     originStationId = group.station.id
                                                 )
                                             }
-
-                                            ScheduleLayouts.DETAILED -> TODO()
                                         }
                                     }
                                 }

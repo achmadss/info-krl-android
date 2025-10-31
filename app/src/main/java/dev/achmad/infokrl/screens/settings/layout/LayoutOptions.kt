@@ -9,9 +9,8 @@ import dev.achmad.infokrl.R
 fun scheduleLayoutOptions(): Map<ScheduleLayouts, String> {
     return ScheduleLayouts.entries.associateWith {
         when(it) {
-            ScheduleLayouts.COMPACT -> stringResource(R.string.compact_schedule_layout)
-            ScheduleLayouts.COMFORTABLE -> stringResource(R.string.comfortable_schedule_layout)
-            ScheduleLayouts.DETAILED -> stringResource(R.string.detailed_schedule_layout)
+            ScheduleLayouts.MINIMAL -> stringResource(R.string.minimal_schedule_layout)
+            ScheduleLayouts.NORMAL -> stringResource(R.string.normal_schedule_layout)
         }
     }
 }
