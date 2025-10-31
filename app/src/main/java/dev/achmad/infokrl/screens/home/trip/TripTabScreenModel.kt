@@ -2,7 +2,7 @@ package dev.achmad.infokrl.screens.home.trip
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import dev.achmad.core.di.util.inject
+import dev.achmad.core.util.inject
 import dev.achmad.domain.station.interactor.GetStation
 import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.model.Station
