@@ -78,7 +78,7 @@
     <string name="credits">Credits &amp; Licenses</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="check_for_updates">Check for updates</string>
-    <string name="check_for_update_on_launch">Check for update on app launch</string>
+    <string name="check_for_update_on_launch">Automatically check for updates</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Train Icon</string>

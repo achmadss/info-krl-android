@@ -78,7 +78,7 @@
     <string name="credits">Kredit &amp; Lisensi</string>
     <string name="privacy_policy">Kebijakan Privasi</string>
     <string name="check_for_updates">Periksa pembaruan</string>
-    <string name="check_for_update_on_launch">Periksa pembaruan saat aplikasi dibuka</string>
+    <string name="check_for_update_on_launch">Periksa pembaruan secara otomatis</string>
 
     <!-- CreditsScreen -->
     <string name="credits_train_icon">Ikon Kereta</string>
