@@ -4,15 +4,19 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Route
+import androidx.compose.material.icons.filled.Train
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +36,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -45,8 +51,8 @@ import dev.achmad.domain.station.interactor.SyncStation
 import dev.achmad.domain.station.model.Station
 import dev.achmad.infokrl.R
 import dev.achmad.infokrl.components.AppBar
+import dev.achmad.infokrl.components.FromToSelector
 import dev.achmad.infokrl.components.StationSelectionBottomSheet
-import dev.achmad.infokrl.components.StationTextField
 import kotlinx.coroutines.launch
 
 object FareCalculatorScreen: Screen {
@@ -126,36 +132,26 @@ private fun FareCalculatorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Origin station textbox
-            StationTextField(
-                label = stringResource(R.string.from),
-                value = originStation.second,
-                onClick = {
+            FromToSelector(
+                fromLabel = stringResource(R.string.from),
+                fromValue = originStation.second,
+                onFromValueChanged = {
                     stationSelectionTarget = "origin"
-                }
-            )
-
-            // Destination station textbox
-            StationTextField(
-                label = stringResource(R.string.to),
-                value = destinationStation.second,
-                onClick = {
+                },
+                toLabel = stringResource(R.string.to),
+                toValue = destinationStation.second,
+                onToValueChanged = {
                     stationSelectionTarget = "destination"
+                },
+                onClickSwapButton = {
+                    val temp = originStation
+                    onChangeOrigin(destinationStation)
+                    onChangeDestination(temp)
+                },
+                onBothFilledChanged = { _, _ ->
+                    onTryAgain()
                 }
             )
-
-            // Calculate button
-            val calculateButtonEnabled =
-                originStation.first.isNotBlank() &&
-                destinationStation.first.isNotBlank() &&
-                syncFareResult !is SyncFare.Result.Loading
-            Button(
-                onClick = onTryAgain,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = calculateButtonEnabled
-            ) {
-                Text(text = stringResource(R.string.calculate))
-            }
 
             // Fare display section
             if (syncFareResult is SyncFare.Result.Loading) {
@@ -193,23 +189,37 @@ private fun FareCalculatorScreen(
                     }
                 }
             } else if (fare != null) {
+                // Total Fare Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                    ),
+                    shape = RectangleShape
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        horizontalAlignment = Alignment.Start
                     ) {
-                        Text(
-                            text = stringResource(R.string.fare),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.total_fare),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Rp ${
@@ -222,6 +232,55 @@ private fun FareCalculatorScreen(
                             style = MaterialTheme.typography.headlineLarge,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
+                    }
+                }
+
+                // Journey Details Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ),
+                    shape = RectangleShape
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.journey_details),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Route,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp).rotate(90f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.distance),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = "${fare.distance} km",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
             }

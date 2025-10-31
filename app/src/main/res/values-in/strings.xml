@@ -50,7 +50,10 @@
     <string name="to">Ke</string>
     <string name="calculate">Hitung</string>
     <string name="fare">Tarif</string>
+    <string name="total_fare">Total Tarif</string>
     <string name="select_station">Pilih stasiun</string>
+    <string name="journey_details">Detail Perjalanan</string>
+    <string name="distance">Jarak</string>
 
     <!-- SettingsScreen -->
     <string name="settings">Pengaturan</string>
